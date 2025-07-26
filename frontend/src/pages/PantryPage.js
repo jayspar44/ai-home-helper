@@ -68,7 +68,7 @@ const ItemsList = ({ title, items, onDelete }) => {
   );
 };
 
-const SuggestionPanel = ({ suggestionResult, onAccept, onCustomize, onTryAgain, onProceed, onOpenPhotoModal, inputQuery }) => {
+const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgain, onProceed, onOpenPhotoModal, inputQuery }) => {
   if (!suggestionResult) return null;
 
   const { action, suggestions, guidance, confidence } = suggestionResult;
@@ -86,10 +86,10 @@ const SuggestionPanel = ({ suggestionResult, onAccept, onCustomize, onTryAgain, 
             <p className="text-xs text-green-500 mt-1">AI Confidence: {Math.round(confidence * 100)}%</p>
           </div>
           <div className="flex flex-col gap-2">
-            <button onClick={() => onAccept(suggestion)} className="bg-green-600 text-white px-4 py-2 rounded text-sm">
+            <button onClick={() => onDirectAdd(suggestion)} className="bg-green-600 text-white px-4 py-2 rounded text-sm">
               Use This
             </button>
-            <button onClick={onCustomize} className="border border-green-600 text-green-600 px-4 py-2 rounded text-sm">
+            <button onClick={() => onCustomize(suggestion)} className="border border-green-600 text-green-600 px-4 py-2 rounded text-sm">
               Customize
             </button>
           </div>
@@ -114,7 +114,7 @@ const SuggestionPanel = ({ suggestionResult, onAccept, onCustomize, onTryAgain, 
           {suggestions.map((option, idx) => (
             <button
               key={idx}
-              onClick={() => onAccept(option)}
+              onClick={() => onDirectAdd(option)}
               className="text-left p-3 border border-yellow-300 rounded hover:bg-yellow-100 transition-colors"
             >
               <div className="font-medium text-yellow-900">{option.name}</div>
@@ -214,8 +214,8 @@ export default function PantryPage() {
     setError('');
   };
 
-  // Add new item
-  const handleAddItem = async (e) => {
+  // Manual Add Item (from form)
+  const handleManualAddItem = async (e) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
 
@@ -236,13 +236,36 @@ export default function PantryPage() {
       if (!response.ok) throw new Error('Failed to add item');
 
       const newItem = await response.json();
-      // The backend now returns the object without the timestamp, so we create a client-side version
       const displayItem = { ...itemToAdd, id: newItem.id };
       setItems(prev => [displayItem, ...prev]);
       resetForm();
 
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  // Direct Add Item (from suggestion)
+  const handleDirectAddItem = async (suggestion) => {
+    try {
+        const itemToAdd = {
+            name: suggestion.name,
+            location: suggestion.location,
+            quantity: suggestion.quantity,
+            daysUntilExpiry: suggestion.daysUntilExpiry,
+        };
+        const response = await fetch(`/api/pantry/${activeHomeId}`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(itemToAdd)
+        });
+        if (!response.ok) throw new Error('Failed to add suggested item');
+        const newItem = await response.json();
+        const displayItem = { ...itemToAdd, id: newItem.id };
+        setItems(prev => [displayItem, ...prev]);
+        resetForm();
+    } catch (err) {
+        setError(err.message);
     }
   };
 
@@ -282,13 +305,13 @@ export default function PantryPage() {
     }
   };
   
-  const handleAcceptSuggestion = (suggestion) => {
+  const handleCustomizeSuggestion = (suggestion) => {
     setNewItemName(suggestion.name);
     setNewItemQuantity(suggestion.quantity || '');
     setNewItemDaysUntilExpiry(suggestion.daysUntilExpiry || '');
     setNewItemLocation(suggestion.location || 'pantry');
-    setShowManualForm(true); // Show form pre-filled
-    setSuggestionResult(null); // Clear suggestions
+    setSuggestionResult(null);
+    setShowManualForm(true); 
   };
 
   const handleTryAgain = () => {
@@ -327,7 +350,6 @@ export default function PantryPage() {
         })
       );
 
-      // We need to create the display version of the items
       const displayItems = detectedItems.map((item, index) => ({
           ...item,
           id: newItemsData[index].id,
@@ -344,14 +366,14 @@ export default function PantryPage() {
     return <div className="text-center py-8">Loading...</div>;
   }
 
-  const showFullForm = showManualForm || (suggestionResult?.action === 'accept' && showManualForm);
+  const showFullForm = showManualForm;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Add Item Form */}
         <div className="bg-white rounded-lg shadow p-6">
-          <form onSubmit={handleAddItem}>
+          <form onSubmit={handleManualAddItem}>
             <div className="flex-1">
               <label htmlFor="itemName" className="block text-sm font-medium text-gray-700 mb-1">
                 Item Name
@@ -369,6 +391,7 @@ export default function PantryPage() {
                 className="w-full rounded-lg border-gray-300 focus:border-orange-500 focus:ring-orange-500"
                 placeholder="e.g., 'eggs', 'milk', 'chocolate'"
                 required
+                disabled={showFullForm}
               />
             </div>
             
@@ -401,8 +424,8 @@ export default function PantryPage() {
             <SuggestionPanel
               suggestionResult={suggestionResult}
               inputQuery={newItemName}
-              onAccept={handleAcceptSuggestion}
-              onCustomize={() => setShowManualForm(true)}
+              onDirectAdd={handleDirectAddItem}
+              onCustomize={handleCustomizeSuggestion}
               onTryAgain={handleTryAgain}
               onProceed={handleProceedManually}
               onOpenPhotoModal={() => setShowAIModal(true)}
