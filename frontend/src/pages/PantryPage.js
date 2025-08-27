@@ -263,7 +263,10 @@ export default function PantryPage() {
         const newItem = await response.json();
         const displayItem = { ...itemToAdd, id: newItem.id };
         setItems(prev => [displayItem, ...prev]);
-        resetForm();
+        setNewItemName('');
+        setShowManualForm(false);
+        setSuggestionResult(null);
+        setError('');
     } catch (err) {
         setError(err.message);
     }
