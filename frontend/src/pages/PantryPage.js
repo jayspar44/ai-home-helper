@@ -114,7 +114,11 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
           {suggestions.map((option, idx) => (
             <button
               key={idx}
-              onClick={() => onDirectAdd(option)}
+              type="button"
+              onClick={(e) => {
+                  e.preventDefault();
+                  onDirectAdd(option);
+              }}
               className="text-left p-3 border border-yellow-300 rounded hover:bg-yellow-100 transition-colors"
             >
               <div className="font-medium text-yellow-900">{option.name}</div>
@@ -263,10 +267,7 @@ export default function PantryPage() {
         const newItem = await response.json();
         const displayItem = { ...itemToAdd, id: newItem.id };
         setItems(prev => [displayItem, ...prev]);
-        setNewItemName('');
-        setShowManualForm(false);
-        setSuggestionResult(null);
-        setError('');
+        resetForm();
     } catch (err) {
         setError(err.message);
     }
