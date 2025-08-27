@@ -50,6 +50,7 @@ firestore-debug.log
 
 # Replit specific (keep .replit but ignore temp files)
 .replit-lock
+package-lock.json
 .upm/
 
 # Temporary files
