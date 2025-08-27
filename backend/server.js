@@ -18,7 +18,7 @@ try {
 
 const db = admin.firestore();
 const app = express();
-const port = process.env.PORT || 3001;
+let port = process.env.PORT || 3001;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const fetch = require('node-fetch');  // Add this with other imports at the top
 const multer = require('multer');
@@ -249,30 +249,11 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
         const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions);
 
         // Make direct API call to Gemini
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }],
-                key: process.env.GEMINI_API_KEY
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Gemini API error:', errorData);
-            throw new Error(errorData.error?.message || 'Failed to generate recipe');
-        }
-
-        const data = await response.json();
-        const generatedText = data.candidates[0].content.parts[0].text;
-
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const generatedText = response.text();
+        
         // Use existing parse function to format the response
         const recipe = parseRecipeResponse(generatedText, servingSize);
 
@@ -394,6 +375,94 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
 });
 
 // --- Pantry API Routes ---
+
+// Suggest pantry item based on user input
+app.post('/api/pantry/suggest-item', checkAuth, async (req, res) => {
+  try {
+    const { itemName, homeId } = req.body;
+    
+    if (!itemName || !itemName.trim()) {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
+
+    const prompt = `Analyze this food/pantry item name: "${itemName}"
+
+Your goal is to help users create specific, useful pantry entries. Provide suggestions based on confidence level:
+
+HIGH CONFIDENCE (>80%): Item is specific and clearly identifiable
+- Return ONE detailed suggestion with exact name, typical quantity, shelf life
+- Example: "eggs" → "Large white eggs, dozen, 21-28 days"
+
+MEDIUM CONFIDENCE (40-80%): Item is recognizable but vague/ambiguous  
+- Return 3-4 common specific variations
+- Include brand examples and common sizes
+- Encourage user to be more specific
+- Example: "chocolate" → ["Milk chocolate bar 1.5oz", "Dark chocolate chips 12oz", "Chocolate candy assorted 8oz"]
+
+LOW CONFIDENCE (<40%): Item is too vague, unclear, or non-food
+- Provide guidance on being more specific
+- Give examples of better alternatives
+- Suggest photo upload for unclear items
+- Example: "stuff" → guidance to be more specific
+
+Focus on:
+- Common grocery items and typical household sizes
+- Realistic shelf life estimates (in days)
+- Encouraging specificity over generic terms
+- Educational guidance for better entries
+
+Return JSON format:
+{
+  "confidence": 0.0-1.0,
+  "action": "accept" | "choose" | "specify",
+  "suggestions": [
+    {
+      "name": "Specific item name",
+      "quantity": "Amount with unit",
+      "shelfLife": "X days",
+      "location": "pantry" | "fridge" | "freezer",
+      "daysUntilExpiry": number
+    }
+  ],
+  "guidance": {
+    "message": "Helpful message",
+    "examples": ["example1", "example2"],
+    "reasoning": "Why this confidence level"
+  }
+}`;
+
+    // Call Gemini API
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Parse AI response
+    let suggestionData;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/s);
+      if (jsonMatch) {
+        suggestionData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No valid JSON found in response');
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      console.error('Raw AI response:', text);
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    res.json(suggestionData);
+
+  } catch (error) {
+    console.error('Error in suggest-item:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate suggestions', 
+      details: error.message 
+    });
+  }
+});
+
 // Get all pantry items for a home
 app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
   try {
@@ -469,11 +538,15 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
       .collection('pantry_items')
       .add(newItem);
 
-    res.json({ 
+    const resultData = { 
       id: itemRef.id, 
-      ...newItem,
-      createdAt: new Date().toISOString() // Convert server timestamp for immediate use
-    });
+      ...newItem
+    };
+    // Don't send back server timestamp object
+    delete resultData.createdAt;
+
+    res.status(201).json(resultData);
+
   } catch (error) {
     console.error('Error adding pantry item:', error);
     res.status(500).json({ error: 'Failed to add pantry item' });
@@ -655,6 +728,7 @@ If no food items are detected, return an empty array: []`;
   }
 });
 
+
 // --- Serve React App ---
 const startServer = async () => {
   try {
@@ -669,18 +743,16 @@ const startServer = async () => {
     // Try to start server with port handling
     const server = app.listen(port, () => {
       console.log(`🚀 Home Helper API running on port ${port}`);
-    });
-
-    server.on('error', (err) => {
+    }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
-        console.log(`Port ${port} is busy, trying ${port + 1}...`);
+        console.log(`Port ${port} is busy, trying a new one...`);
         port++;
-        server.close();
-        startServer();
+        startServer(); // Retry with a new port
       } else {
         console.error('Server error:', err);
       }
     });
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
