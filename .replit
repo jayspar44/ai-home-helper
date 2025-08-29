@@ -36,3 +36,6 @@ args = "cd backend && npm install"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node backend/server.js"
+
+[agent]
+expertMode = true
