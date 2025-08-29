@@ -175,11 +175,27 @@ const AddItemModal = ({
 
   const itemNameInputRef = useRef(null);
 
-  // Update form when initialName changes
+  // Update form when initialName changes and auto-fetch AI suggestions
   useEffect(() => {
     setFormData(prev => ({ ...prev, name: initialName }));
     setActiveTab(initialMode);
+    
+    // Auto-fetch AI suggestions if we have a name and we're in AI mode
+    if (initialName.trim() && initialMode === 'ai') {
+      fetchAISuggestions();
+    }
   }, [initialName, initialMode]);
+
+  // Auto-fetch when formData.name changes in AI tab
+  useEffect(() => {
+    if (activeTab === 'ai' && formData.name.trim() && !isLoadingSuggestions && !suggestionResult) {
+      const timeoutId = setTimeout(() => {
+        fetchAISuggestions();
+      }, 500); // Small delay to avoid too many API calls
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData.name, activeTab, isLoadingSuggestions, suggestionResult]);
 
   const resetForm = () => {
     setFormData({
@@ -283,34 +299,155 @@ const AddItemModal = ({
             </button>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b" style={{ borderColor: 'var(--border-light)' }}>
-            {[
-              { id: 'manual', label: 'Manual Entry', icon: null },
-              { id: 'ai', label: 'AI Suggestions', icon: Bot },
-              { id: 'photo', label: 'Photo Upload', icon: Camera }
-            ].map(({ id, label, icon: Icon }) => (
+          {/* Show tabs only for photo mode */}
+          {activeTab === 'photo' && (
+            <div className="flex border-b" style={{ borderColor: 'var(--border-light)' }}>
               <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                  activeTab === id 
-                    ? 'border-b-2 border-blue-500' 
-                    : 'hover:bg-gray-50'
-                }`}
+                onClick={() => setActiveTab('ai')}
+                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:bg-gray-50"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <Bot className="w-4 h-4" />
+                Back to AI Suggestions
+              </button>
+              <button
+                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2"
                 style={{ 
-                  color: activeTab === id ? 'var(--color-primary)' : 'var(--text-muted)',
-                  borderBottomColor: activeTab === id ? 'var(--color-primary)' : 'transparent'
+                  color: 'var(--color-primary)',
+                  borderBottomColor: 'var(--color-primary)'
                 }}
               >
-                {Icon && <Icon className="w-4 h-4" />}
-                {label}
+                <Camera className="w-4 h-4" />
+                Photo Upload
               </button>
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Content */}
           <div className="p-6">
+            {activeTab === 'ai' && (
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="aiItemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    What item would you like to add?
+                  </label>
+                  <input
+                    type="text"
+                    id="aiItemName"
+                    value={formData.name}
+                    onChange={e => {
+                      setFormData(prev => ({ ...prev, name: e.target.value }));
+                      if (suggestionResult) setSuggestionResult(null);
+                      if (showManualForm) setShowManualForm(false);
+                    }}
+                    className="input-base focus-ring w-full"
+                    placeholder="e.g., 'eggs', 'milk', 'chocolate'"
+                    disabled={showManualForm}
+                  />
+                </div>
+
+                {isLoadingSuggestions && (
+                  <div className="text-center py-8">
+                    <div className="animate-pulse text-lg mb-2" style={{ color: 'var(--color-primary)' }}>
+                      Getting AI suggestions...
+                    </div>
+                    <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                      Analyzing "{formData.name}"
+                    </div>
+                  </div>
+                )}
+
+                {error && !suggestionResult && (
+                  <div className="mt-4 p-4 rounded-lg" style={{ 
+                    backgroundColor: 'var(--color-error-light)', 
+                    borderLeft: '4px solid var(--color-error)',
+                    color: 'var(--color-error)' 
+                  }}>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  </div>
+                )}
+
+                <SuggestionPanel
+                  suggestionResult={suggestionResult}
+                  inputQuery={formData.name}
+                  onDirectAdd={onDirectAdd}
+                  onCustomize={handleCustomizeSuggestion}
+                  onTryAgain={handleTryAgain}
+                  onProceed={handleProceedManually}
+                  onOpenPhotoModal={() => setActiveTab('photo')}
+                />
+
+                {showManualForm && (
+                  <form onSubmit={handleManualSubmit} className="mt-6 space-y-4 animate-slide-up">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Quantity</label>
+                        <input 
+                          type="text" 
+                          value={formData.quantity} 
+                          onChange={e => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
+                          className="input-base focus-ring w-full" 
+                          placeholder="e.g., 1 dozen"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="daysUntilExpiry" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires in (days)</label>
+                        <input 
+                          type="number" 
+                          value={formData.daysUntilExpiry} 
+                          onChange={e => setFormData(prev => ({ ...prev, daysUntilExpiry: e.target.value }))}
+                          className="input-base focus-ring w-full" 
+                          placeholder="e.g., 7"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Location</label>
+                        <LocationSelect 
+                          value={formData.location} 
+                          onChange={value => setFormData(prev => ({ ...prev, location: value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setShowManualForm(false);
+                          setSuggestionResult(null);
+                        }} 
+                        className="btn-base btn-ghost"
+                      >
+                        Back
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="btn-base btn-primary"
+                      >
+                        Add Item
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Manual Add Option */}
+                {!showManualForm && !isLoadingSuggestions && (
+                  <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+                    <button 
+                      type="button"
+                      onClick={() => setShowManualForm(true)}
+                      className="text-sm underline hover:no-underline"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      Enter details manually instead
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === 'manual' && (
               <form onSubmit={handleManualSubmit}>
                 <div className="space-y-4">
@@ -389,121 +526,6 @@ const AddItemModal = ({
               </form>
             )}
 
-            {activeTab === 'ai' && (
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="aiItemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    What item would you like to add?
-                  </label>
-                  <input
-                    type="text"
-                    id="aiItemName"
-                    value={formData.name}
-                    onChange={e => {
-                      setFormData(prev => ({ ...prev, name: e.target.value }));
-                      if (suggestionResult) setSuggestionResult(null);
-                      if (showManualForm) setShowManualForm(false);
-                    }}
-                    className="input-base focus-ring w-full"
-                    placeholder="e.g., 'eggs', 'milk', 'chocolate'"
-                    disabled={showManualForm}
-                  />
-                </div>
-
-                {!showManualForm && !suggestionResult && (
-                  <button 
-                    type="button"
-                    onClick={fetchAISuggestions}
-                    disabled={!formData.name.trim() || isLoadingSuggestions}
-                    className="btn-base btn-primary w-full"
-                  >
-                    {isLoadingSuggestions ? (
-                      <div className="animate-pulse">Getting suggestions...</div>
-                    ) : (
-                      <>
-                        <Bot className="w-5 h-5 mr-2" /> 
-                        Get AI Suggestions
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {error && !suggestionResult && (
-                  <div className="mt-4 p-4 rounded-lg" style={{ 
-                    backgroundColor: 'var(--color-error-light)', 
-                    borderLeft: '4px solid var(--color-error)',
-                    color: 'var(--color-error)' 
-                  }}>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  </div>
-                )}
-
-                <SuggestionPanel
-                  suggestionResult={suggestionResult}
-                  inputQuery={formData.name}
-                  onDirectAdd={onDirectAdd}
-                  onCustomize={handleCustomizeSuggestion}
-                  onTryAgain={handleTryAgain}
-                  onProceed={handleProceedManually}
-                  onOpenPhotoModal={() => {
-                    setActiveTab('photo');
-                    setShowAIModal(true);
-                  }}
-                />
-
-                {showManualForm && (
-                  <form onSubmit={handleManualSubmit} className="mt-6 space-y-4 animate-slide-up">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Quantity</label>
-                        <input 
-                          type="text" 
-                          value={formData.quantity} 
-                          onChange={e => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                          className="input-base focus-ring w-full" 
-                          placeholder="e.g., 1 dozen"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="daysUntilExpiry" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires in (days)</label>
-                        <input 
-                          type="number" 
-                          value={formData.daysUntilExpiry} 
-                          onChange={e => setFormData(prev => ({ ...prev, daysUntilExpiry: e.target.value }))}
-                          className="input-base focus-ring w-full" 
-                          placeholder="e.g., 7"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Location</label>
-                        <LocationSelect 
-                          value={formData.location} 
-                          onChange={value => setFormData(prev => ({ ...prev, location: value }))}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-                      <button 
-                        type="button" 
-                        onClick={resetForm} 
-                        className="btn-base btn-ghost"
-                      >
-                        Reset
-                      </button>
-                      <button 
-                        type="submit" 
-                        className="btn-base btn-primary"
-                      >
-                        Add Item
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
 
             {activeTab === 'photo' && (
               <div className="text-center py-8">

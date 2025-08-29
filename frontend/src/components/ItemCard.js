@@ -70,71 +70,84 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
 
   return (
     <div 
-      className="card-interactive p-3 rounded-lg hover-lift transition-all duration-200 relative"
+      className="card-interactive p-4 rounded-lg hover-lift transition-all duration-200 relative"
       style={{ 
         backgroundColor: 'var(--bg-tertiary)',
         border: expiryInfo.isExpired ? '2px solid var(--color-error)' : 
                expiryInfo.isExpiringSoon ? '2px solid var(--color-warning)' : 
                '1px solid var(--border-light)',
-        minHeight: '80px'
+        minHeight: '140px'
       }}
     >
       {/* Expired/Expiring Soon Badge */}
       {(expiryInfo.isExpired || expiryInfo.isExpiringSoon) && (
         <div 
-          className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
+          className="absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
           style={{ 
             backgroundColor: expiryInfo.isExpired ? 'var(--color-error)' : 'var(--color-warning)',
             color: 'white'
           }}
         >
-          {ExpiryIcon && <ExpiryIcon className="w-2.5 h-2.5" />}
+          {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}
           {expiryInfo.isExpired ? 'Expired' : 'Soon'}
         </div>
       )}
 
-      <div className="flex items-center justify-between h-full">
-        {/* Main Content - Horizontal Layout */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* Item Info */}
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm mb-0.5 truncate" style={{ color: 'var(--text-primary)' }}>
-              {item.name}
-            </div>
-            
-            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              {/* Location */}
-              <span>{item.location === 'pantry' ? '🏠' : item.location === 'fridge' ? '❄️' : '🧊'}</span>
-              
-              {/* Quantity */}
-              {item.quantity && (
-                <>
-                  <span>•</span>
-                  <span>{item.quantity}</span>
-                </>
-              )}
-              
-              {/* AI Badge */}
-              {item.detectedBy === 'ai' && (
-                <>
-                  <span>•</span>
-                  <span className="inline-flex items-center gap-1" 
-                        style={{ color: 'var(--color-primary)' }}>
-                    <Sparkles className="w-2.5 h-2.5" /> AI
-                  </span>
-                </>
-              )}
-            </div>
+      <div className="flex flex-col h-full">
+        {/* Item Name */}
+        <div className="flex-1 mb-3">
+          <h3 
+            className="font-medium text-sm leading-tight mb-2"
+            style={{ 
+              color: 'var(--text-primary)',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}
+            title={item.name}
+          >
+            {item.name}
+          </h3>
+          
+          {/* Location Badge */}
+          <div className="inline-flex items-center text-xs px-2 py-1 rounded-full mb-2" 
+               style={{ 
+                 backgroundColor: 'var(--bg-card)', 
+                 color: 'var(--text-muted)',
+                 border: '1px solid var(--border-light)'
+               }}>
+            <span className="mr-1">
+              {item.location === 'pantry' ? '🏠' : item.location === 'fridge' ? '❄️' : '🧊'}
+            </span>
+            <span className="capitalize">{item.location}</span>
           </div>
 
+          {/* Quantity */}
+          {item.quantity && (
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Qty: {item.quantity}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Section */}
+        <div className="flex items-end justify-between">
           {/* Expiry Info */}
-          <div className="text-right flex items-center gap-1">
+          <div className="flex-1">
             <div className="text-xs font-medium flex items-center gap-1" style={{ color: expiryInfo.color }}>
               {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}
-              <span className="whitespace-nowrap">{expiryInfo.text}</span>
+              <span className="truncate">{expiryInfo.text}</span>
             </div>
+            
+            {/* AI Badge */}
+            {item.detectedBy === 'ai' && (
+              <div className="text-xs mt-1 inline-flex items-center gap-1" 
+                   style={{ color: 'var(--color-primary)' }}>
+                <Sparkles className="w-3 h-3" /> AI
+              </div>
+            )}
           </div>
-        </div>
 
         {/* Three-dot menu */}
         <div className="relative ml-4" ref={menuRef}>
