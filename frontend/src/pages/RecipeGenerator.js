@@ -3,9 +3,9 @@ import { useOutletContext, useLocation } from 'react-router-dom';
 
 // --- Helper Components for Icons ---
 const ChefHatIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 text-orange-500"><path d="M19.8 11.7a3.2 3.2 0 0 0-2.2-5.2A3.2 3.2 0 0 0 15.4 9a3.2 3.2 0 0 0-5.6 0 3.2 3.2 0 0 0-2.2-2.5 3.2 3.2 0 0 0-2.2 5.2c0 1.2.8 2.3 2 2.3h8.8c1.2 0 2-1.1 2-2.3Z"/><path d="M8.6 14h6.8c1.2 0 2-1.1 2-2.3V11h-11v.7c0 1.2.8 2.3 2 2.3Z"/><path d="M12 14v7.5"/><path d="M12 21.5h-4a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h4"/><path d="M12 21.5h4a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-4"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12" style={{ color: 'var(--color-primary)' }}><path d="M19.8 11.7a3.2 3.2 0 0 0-2.2-5.2A3.2 3.2 0 0 0 15.4 9a3.2 3.2 0 0 0-5.6 0 3.2 3.2 0 0 0-2.2-2.5 3.2 3.2 0 0 0-2.2 5.2c0 1.2.8 2.3 2 2.3h8.8c1.2 0 2-1.1 2-2.3Z"/><path d="M8.6 14h6.8c1.2 0 2-1.1 2-2.3V11h-11v.7c0 1.2.8 2.3 2 2.3Z"/><path d="M12 14v7.5"/><path d="M12 21.5h-4a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h4"/><path d="M12 21.5h4a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-4"/></svg>
 );
-const LoadingSpinner = () => <div className="w-6 h-6 border-4 border-gray-200 border-t-orange-600 rounded-full animate-spin"></div>;
+const LoadingSpinner = () => <div className="w-6 h-6 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--border-light)', borderTopColor: 'var(--color-primary)' }}></div>;
 const SkeletonCard = () => (
   <div className="space-y-6 p-6">
     <div className="animate-shimmer h-8 rounded"></div>
@@ -26,54 +26,61 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
-const BookmarkIcon = ({ saved }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 transition-all ${saved ? 'text-orange-500' : 'text-gray-500'}`}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>;
+const BookmarkIcon = ({ saved }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 transition-all" style={{ color: saved ? 'var(--color-primary)' : 'var(--text-muted)' }}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>;
 const ChevronDownIcon = () => <svg className="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" /></svg>;
-const SearchIcon = () => <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>;
+const SearchIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>;
 
 function RecipeCard({ recipe, onSave, isSaved }) {
   if (!recipe) return null;
   return (
     <div className="space-y-6 animate-fade-in relative">
-       <button onClick={onSave} disabled={isSaved} className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed transition-all" aria-label="Save recipe"><BookmarkIcon saved={isSaved} /></button>
+       <button onClick={onSave} disabled={isSaved} className="absolute top-4 right-4 p-2 rounded-full shadow-md card-interactive disabled:opacity-70 disabled:cursor-not-allowed transition-all" style={{ backgroundColor: 'var(--bg-card)' }} aria-label="Save recipe"><BookmarkIcon saved={isSaved} /></button>
       <div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-2 pr-12">{recipe.title}</h2>
-        <p className="text-gray-600 mb-4">{recipe.description}</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 border-t border-b py-3">
+        <h2 className="text-3xl font-bold mb-2 pr-12" style={{ color: 'var(--text-primary)' }}>{recipe.title}</h2>
+        <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>{recipe.description}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm py-3" style={{ 
+          color: 'var(--text-secondary)', 
+          borderTop: '1px solid var(--border-light)', 
+          borderBottom: '1px solid var(--border-light)' 
+        }}>
           <div className="flex items-center gap-1.5"><span>⏱️</span> Prep: <strong>{recipe.prepTime}</strong></div>
           <div className="flex items-center gap-1.5"><span>🍳</span> Cook: <strong>{recipe.cookTime}</strong></div>
           <div className="flex items-center gap-1.5"><span>👥</span> Serves: <strong>{recipe.servings}</strong></div>
-          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium">{recipe.difficulty}</span>
+          <span className="px-3 py-1 rounded-full font-medium" style={{ 
+            backgroundColor: 'var(--color-success-light)', 
+            color: 'var(--color-success)' 
+          }}>{recipe.difficulty}</span>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">Ingredients</h3>
+          <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Ingredients</h3>
           <ul className="space-y-2">{recipe.ingredients.map((ing, i) => {
             const isPantryItem = recipe.pantryIngredients && recipe.pantryIngredients.includes(ing);
             return (
               <li key={i} className="flex items-start gap-3">
-                <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${isPantryItem ? 'bg-green-500' : 'bg-orange-500'}`}></span>
-                <span className={`text-gray-700 ${isPantryItem ? 'text-green-800' : ''}`}>{ing}</span>
+                <span className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: isPantryItem ? 'var(--color-success)' : 'var(--color-accent)' }}></span>
+                <span style={{ color: isPantryItem ? 'var(--color-success)' : 'var(--text-secondary)' }}>{ing}</span>
               </li>
             );
           })}</ul>
           {recipe.missingIngredients && recipe.missingIngredients.length > 0 && (
-            <div className="mt-4 p-3 bg-orange-50 rounded-lg">
-              <h4 className="font-semibold text-orange-800 text-sm mb-2">🛒 What's Missing?</h4>
-              <ul className="text-sm text-orange-700 space-y-1">
+            <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-warning-light)' }}>
+              <h4 className="font-semibold text-sm mb-2" style={{ color: 'var(--color-warning)' }}>🛒 What's Missing?</h4>
+              <ul className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
                 {recipe.missingIngredients.map((ing, i) => <li key={i}>• {ing}</li>)}
               </ul>
             </div>
           )}
         </div>
         <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">Chef's Tips</h3>
-          <ul className="space-y-2">{recipe.tips.map((tip, i) => <li key={i} className="flex items-start gap-3 text-sm"><span className="text-blue-500 mt-1">💡</span><span className="text-gray-700">{tip}</span></li>)}</ul>
+          <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Chef's Tips</h3>
+          <ul className="space-y-2">{recipe.tips.map((tip, i) => <li key={i} className="flex items-start gap-3 text-sm"><span className="mt-1" style={{ color: 'var(--color-primary)' }}>💡</span><span style={{ color: 'var(--text-secondary)' }}>{tip}</span></li>)}</ul>
         </div>
       </div>
       <div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-3">Instructions</h3>
-        <ol className="space-y-4">{recipe.instructions.map((step, i) => <li key={i} className="flex gap-4"><span className="flex-shrink-0 w-7 h-7 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold">{i + 1}</span><span className="text-gray-700 pt-0.5">{step}</span></li>)}</ol>
+        <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Instructions</h3>
+        <ol className="space-y-4">{recipe.instructions.map((step, i) => <li key={i} className="flex gap-4"><span className="flex-shrink-0 w-7 h-7 text-white rounded-full flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--color-primary)' }}>{i + 1}</span><span className="pt-0.5" style={{ color: 'var(--text-secondary)' }}>{step}</span></li>)}</ol>
       </div>
     </div>
   );
@@ -294,25 +301,26 @@ export default function RecipeGenerator() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
-        <header>
+    <div className="section-padding">
+      <div className="container-mobile lg:max-w-none lg:px-8">
+        <header className="animate-fade-in mb-8 lg:mb-12">
             <div className="text-center">
                 <div className="flex items-center justify-center gap-4 mb-4"><ChefHatIcon /></div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800">AI Recipe Generator</h1>
-                <p className="text-gray-600 text-lg">Turn your ingredients into delicious meals.</p>
+                <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>AI Recipe Generator</h1>
+                <p className="text-lg" style={{ color: 'var(--text-muted)' }}>Turn your ingredients into delicious meals.</p>
             </div>
         </header>
 
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
-            <section className="bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-6 lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <section className="card p-6 space-y-6 lg:col-span-1">
                 {/* Pantry Items Panel */}
-                <div className="border-b pb-6 mb-6">
+                <div className="pb-6 mb-6" style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <button 
                     onClick={() => setIsPantryExpanded(!isPantryExpanded)}
-                    className="w-full flex items-center justify-between text-left"
+                    className="w-full flex items-center justify-between text-left card-interactive transition-colors"
                   >
-                    <h2 className="text-xl font-semibold text-gray-800">🥫 Pantry Items</h2>
-                    <div className={`transition-transform ${isPantryExpanded ? 'rotate-180' : ''}`}>
+                    <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>🥫 Pantry Items</h2>
+                    <div className={`transition-transform ${isPantryExpanded ? 'rotate-180' : ''}`} style={{ color: 'var(--text-secondary)' }}>
                       <ChevronDownIcon />
                     </div>
                   </button>
@@ -329,19 +337,19 @@ export default function RecipeGenerator() {
                           placeholder="Search pantry items..."
                           value={pantrySearch}
                           onChange={(e) => setPantrySearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm"
+                          className="input-base focus-ring text-sm pl-10"
                         />
                       </div>
 
                       {/* Selected Items Counter */}
                       {selectedPantryItems.length > 0 && (
-                        <div className="flex items-center justify-between bg-orange-50 p-2 rounded-lg">
-                          <span className="text-sm text-orange-800">
+                        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--color-primary-light)' }}>
+                          <span className="text-sm" style={{ color: 'var(--color-primary)' }}>
                             {selectedPantryItems.length} item{selectedPantryItems.length !== 1 ? 's' : ''} selected
                           </span>
                           <button
                             onClick={handleUseSelectedItems}
-                            className="text-xs bg-orange-600 text-white px-3 py-1 rounded-full hover:bg-orange-700 transition-colors"
+                            className="btn-base btn-primary text-xs px-3 py-1"
                           >
                             Use Selected
                           </button>
@@ -358,7 +366,7 @@ export default function RecipeGenerator() {
                         ) : Object.keys(groupedPantryItems).length > 0 ? (
                           Object.entries(groupedPantryItems).map(([location, items]) => (
                             <div key={location} className="space-y-1">
-                              <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wider">
+                              <h4 className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                                 {locationLabels[location]}
                               </h4>
                               {items.map(item => {
@@ -369,29 +377,40 @@ export default function RecipeGenerator() {
                                 return (
                                   <label
                                     key={item.id}
-                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 transition-colors ${
-                                      isSelected ? 'bg-orange-50 border border-orange-200' : 'border border-gray-100'
+                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer card-interactive transition-colors ${
+                                      isSelected ? 'border-2' : 'border'
                                     }`}
+                                    style={{ 
+                                      backgroundColor: isSelected ? 'var(--color-primary-light)' : 'var(--bg-card)',
+                                      borderColor: isSelected ? 'var(--color-primary)' : 'var(--border-light)'
+                                    }}
                                   >
                                     <input
                                       type="checkbox"
                                       checked={isSelected}
                                       onChange={() => handlePantryItemToggle(item)}
-                                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                      className="rounded focus-ring"
+                                      style={{ 
+                                        borderColor: 'var(--border-light)',
+                                        color: 'var(--color-primary)'
+                                      }}
                                     />
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-gray-900 truncate">
+                                        <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                                           {item.name}
                                         </span>
                                         {isExpiringSoon && (
-                                          <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ 
+                                            backgroundColor: 'var(--color-error-light)',
+                                            color: 'var(--color-error)'
+                                          }}>
                                             {daysUntilExpiry}d
                                           </span>
                                         )}
                                       </div>
                                       {item.quantity && (
-                                        <span className="text-xs text-gray-500">{item.quantity}</span>
+                                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.quantity}</span>
                                       )}
                                     </div>
                                   </label>
@@ -400,7 +419,7 @@ export default function RecipeGenerator() {
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-gray-500 text-center py-4">
+                          <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>
                             {pantrySearch ? 'No items match your search' : 'No pantry items found'}
                           </p>
                         )}
@@ -410,29 +429,37 @@ export default function RecipeGenerator() {
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-semibold mb-2">Your Ingredients</h2>
-                  <div className="flex flex-wrap gap-2 min-h-[44px] bg-gray-50 p-2 rounded-lg">
+                  <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Your Ingredients</h2>
+                  <div className="flex flex-wrap gap-2 min-h-[44px] p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                     {ingredients.length > 0 ? (
-                      ingredients.map((ing, i) => <span key={i} className="bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-2 animate-fade-in">{ing}<button onClick={() => removeIngredient(i)} className="bg-orange-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-orange-700 transition-colors">×</button></span>)
-                    ) : (<p className="text-gray-400 text-sm p-1.5">Add some items...</p>)}
+                      ingredients.map((ing, i) => <span key={i} className="text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-2 animate-fade-in" style={{ 
+                        backgroundColor: 'var(--color-primary-light)',
+                        color: 'var(--color-primary)'
+                      }}>{ing}<button onClick={() => removeIngredient(i)} className="rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover-lift transition-colors" style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'white'
+                      }}>×</button></span>)
+                    ) : (<p className="text-sm p-1.5" style={{ color: 'var(--text-muted)' }}>Add some items...</p>)}
                   </div>
                 </div>
                 <div className="flex flex-col gap-4">
                   <div className="flex gap-2">
-                    <input type="text" value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} onKeyDown={(e) => {if (e.key === 'Enter') addIngredient()}} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" />
-                    <button onClick={addIngredient} className="px-5 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold">Add</button>
+                    <input type="text" value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} onKeyDown={(e) => {if (e.key === 'Enter') addIngredient()}} className="flex-1 input-base focus-ring" />
+                    <button onClick={addIngredient} className="btn-base btn-primary px-5 py-2 font-semibold">Add</button>
                   </div>
                   <div className="space-y-4">
-                    <div><label htmlFor="serving-size" className="block text-sm font-medium text-gray-700 mb-1">👥 Serving Size</label><select id="serving-size" defaultValue="2" className="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="1">1 person</option><option value="2">2 people</option><option value="4">4 people</option><option value="6">6 people</option></select></div>
-                    <div><label htmlFor="dietary-restrictions" className="block text-sm font-medium text-gray-700 mb-1">Dietary Restrictions (optional)</label><input type="text" id="dietary-restrictions" placeholder="e.g., vegetarian" className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+                    <div><label htmlFor="serving-size" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>👥 Serving Size</label><select id="serving-size" defaultValue="2" className="input-base focus-ring w-full"><option value="1">1 person</option><option value="2">2 people</option><option value="4">4 people</option><option value="6">6 people</option></select></div>
+                    <div><label htmlFor="dietary-restrictions" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Dietary Restrictions (optional)</label><input type="text" id="dietary-restrictions" placeholder="e.g., vegetarian" className="input-base focus-ring w-full" /></div>
                     
                     {/* Recipe Type Selector */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">⏱️ Recipe Complexity</label>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>⏱️ Recipe Complexity</label>
                       <div className="grid grid-cols-2 gap-2">
-                        <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                          recipeType === 'quick' ? 'bg-orange-50 border-orange-300 text-orange-800' : 'border-gray-300 hover:bg-gray-50'
-                        }`}>
+                        <label className="flex items-center justify-center p-3 border rounded-lg cursor-pointer card-interactive transition-all" style={{
+                          backgroundColor: recipeType === 'quick' ? 'var(--color-primary-light)' : 'var(--bg-card)',
+                          borderColor: recipeType === 'quick' ? 'var(--color-primary)' : 'var(--border-light)',
+                          color: recipeType === 'quick' ? 'var(--color-primary)' : 'var(--text-primary)'
+                        }}>
                           <input
                             type="radio"
                             value="quick"
@@ -442,12 +469,14 @@ export default function RecipeGenerator() {
                           />
                           <div className="text-center">
                             <div className="font-medium text-sm">Quick & Easy</div>
-                            <div className="text-xs text-gray-500">15-30 min</div>
+                            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>15-30 min</div>
                           </div>
                         </label>
-                        <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                          recipeType === 'sophisticated' ? 'bg-orange-50 border-orange-300 text-orange-800' : 'border-gray-300 hover:bg-gray-50'
-                        }`}>
+                        <label className="flex items-center justify-center p-3 border rounded-lg cursor-pointer card-interactive transition-all" style={{
+                          backgroundColor: recipeType === 'sophisticated' ? 'var(--color-primary-light)' : 'var(--bg-card)',
+                          borderColor: recipeType === 'sophisticated' ? 'var(--color-primary)' : 'var(--border-light)',
+                          color: recipeType === 'sophisticated' ? 'var(--color-primary)' : 'var(--text-primary)'
+                        }}>
                           <input
                             type="radio"
                             value="sophisticated"
@@ -457,7 +486,7 @@ export default function RecipeGenerator() {
                           />
                           <div className="text-center">
                             <div className="font-medium text-sm">Sophisticated</div>
-                            <div className="text-xs text-gray-500">45+ min</div>
+                            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>45+ min</div>
                           </div>
                         </label>
                       </div>
@@ -470,51 +499,63 @@ export default function RecipeGenerator() {
                           type="checkbox"
                           checked={generateMultiple}
                           onChange={(e) => setGenerateMultiple(e.target.checked)}
-                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                          className="rounded focus-ring"
+                          style={{ 
+                            borderColor: 'var(--border-light)',
+                            color: 'var(--color-primary)'
+                          }}
                         />
-                        <span className="text-sm font-medium text-gray-700">Generate 3 recipe options</span>
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Generate 3 recipe options</span>
                       </label>
-                      <div className="text-xs text-gray-500" title="Get multiple recipe variations to choose from">
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }} title="Get multiple recipe variations to choose from">
                         ℹ️
                       </div>
                     </div>
                   </div>
-                  <button onClick={handleGenerateRecipe} disabled={isLoading || ingredients.length === 0} className="w-full py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-lg">{isLoading ? <LoadingSpinner /> : '✨'} {isLoading ? 'Generating...' : 'Generate Recipe'}</button>
+                  <button onClick={handleGenerateRecipe} disabled={isLoading || ingredients.length === 0} className="w-full py-3 btn-base font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-lg" style={{ 
+                    background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+                    color: 'white',
+                    border: 'none'
+                  }}>{isLoading ? <LoadingSpinner /> : '✨'} {isLoading ? 'Generating...' : 'Generate Recipe'}</button>
                 </div>
             </section>
 
-            <section className="bg-white rounded-2xl shadow-lg p-6 md:p-8 lg:col-span-2">
-                {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-4"><p><strong>Error:</strong> {error}</p></div>}
+            <section className="card p-6 lg:col-span-2">
+                {error && <div className="p-4 rounded-lg mb-4" style={{ 
+                  backgroundColor: 'var(--color-error-light)', 
+                  borderLeft: '4px solid var(--color-error)',
+                  color: 'var(--color-error)' 
+                }}><p><strong>Error:</strong> {error}</p></div>}
                 {isLoading && (
                   <div>
-                    <div className="text-center py-6 border-b mb-6">
+                    <div className="text-center py-6 mb-6" style={{ borderBottom: '1px solid var(--border-light)' }}>
                       <LoadingSpinner />
-                      <p className="text-gray-600 text-lg mt-4 animate-pulse">
+                      <p className="text-lg mt-4 animate-pulse" style={{ color: 'var(--text-secondary)' }}>
                         {generateMultiple ? 'Creating your recipe options...' : 'Creating your perfect recipe...'}
                       </p>
                     </div>
                     <SkeletonCard />
                   </div>
                 )}
-                {!isLoading && !generatedRecipe && <div className="text-center py-12 flex flex-col items-center justify-center h-full"><div className="text-6xl mb-4">🍽️</div><h3 className="text-xl font-semibold text-gray-700">Your recipe awaits!</h3><p className="text-gray-500">Add ingredients and click generate, or check out your saved recipes below.</p></div>}
+                {!isLoading && !generatedRecipe && <div className="text-center py-12 flex flex-col items-center justify-center h-full"><div className="text-6xl mb-4">🍽️</div><h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Your recipe awaits!</h3><p style={{ color: 'var(--text-muted)' }}>Add ingredients and click generate, or check out your saved recipes below.</p></div>}
                 
                 {!isLoading && generatedRecipe && (
                   <div>
                     {/* Recipe Navigation for Multiple Recipes */}
                     {generatedRecipes.length > 1 && (
-                      <div className="flex items-center justify-between mb-6 pb-4 border-b">
+                      <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: '1px solid var(--border-light)' }}>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Recipe Options:</span>
+                          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Recipe Options:</span>
                           <div className="flex gap-1">
                             {generatedRecipes.map((_, index) => (
                               <button
                                 key={index}
                                 onClick={() => handleRecipeNavigation(index)}
-                                className={`w-8 h-8 rounded-full text-sm font-semibold transition-all ${
-                                  index === currentRecipeIndex 
-                                    ? 'bg-orange-600 text-white' 
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                className="w-8 h-8 rounded-full text-sm font-semibold card-interactive transition-all"
+                                style={{
+                                  backgroundColor: index === currentRecipeIndex ? 'var(--color-primary)' : 'var(--bg-secondary)',
+                                  color: index === currentRecipeIndex ? 'white' : 'var(--text-secondary)'
+                                }}
                               >
                                 {index + 1}
                               </button>
@@ -525,14 +566,14 @@ export default function RecipeGenerator() {
                           <button
                             onClick={() => handleRecipeNavigation(Math.max(0, currentRecipeIndex - 1))}
                             disabled={currentRecipeIndex === 0}
-                            className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 text-sm btn-base btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             ← Previous
                           </button>
                           <button
                             onClick={() => handleRecipeNavigation(Math.min(generatedRecipes.length - 1, currentRecipeIndex + 1))}
                             disabled={currentRecipeIndex === generatedRecipes.length - 1}
-                            className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 text-sm btn-base btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Next →
                           </button>
@@ -546,23 +587,24 @@ export default function RecipeGenerator() {
             </section>
         </div>
 
-        <section className="max-w-6xl mx-auto mt-12">
-            <h2 className="text-3xl font-bold mb-6">My Saved Recipes</h2>
+        <section className="mt-12">
+            <h2 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>My Saved Recipes</h2>
             {savedRecipes.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {savedRecipes.map(recipe => (
-                    <div key={recipe.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl hover-lift transition-smooth cursor-pointer" onClick={() => handleViewRecipe(recipe)}>
-                      <h3 className="text-xl font-semibold text-gray-800 truncate">{recipe.title}</h3>
-                      <p className="text-gray-600 text-sm mt-2 h-10 overflow-hidden">{recipe.description}</p>
-                      <div className="text-xs mt-4 flex items-center justify-between text-gray-500">
+                    <div key={recipe.id} className="card card-interactive p-6 hover-lift cursor-pointer" onClick={() => handleViewRecipe(recipe)}>
+                      <h3 className="text-xl font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{recipe.title}</h3>
+                      <p className="text-sm mt-2 h-10 overflow-hidden" style={{ color: 'var(--text-secondary)' }}>{recipe.description}</p>
+                      <div className="text-xs mt-4 flex items-center justify-between" style={{ color: 'var(--text-muted)' }}>
                         <span>{recipe.difficulty}</span>
                         <span>Serves {recipe.servings}</span>
                       </div>
                     </div>
                   ))}
                 </div>
-            ) : (<p className="text-gray-500 bg-white p-6 rounded-lg shadow-sm">You haven't saved any recipes yet.</p>)}
+            ) : (<p className="card p-6" style={{ color: 'var(--text-muted)' }}>You haven't saved any recipes yet.</p>)}
         </section>
+      </div>
     </div>
   );
 }

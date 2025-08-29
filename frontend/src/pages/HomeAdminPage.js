@@ -118,85 +118,135 @@ export default function HomeAdminPage() {
 
   // Handle missing context gracefully - after all hooks
   if (!context) {
-    return <div className="container mx-auto px-4 py-8"><p>Loading...</p></div>;
+    return <div className="section-padding"><div className="container-mobile"><p style={{ color: 'var(--text-secondary)' }}>Loading...</p></div></div>;
   }
 
   if (isLoading) {
-    return <p>Loading members...</p>;
+    return (
+      <div className="section-padding">
+        <div className="container-mobile">
+          <div className="text-center py-8">
+            <div className="animate-pulse mb-4">
+              <div className="animate-shimmer h-8 rounded w-1/3 mx-auto mb-4"></div>
+              <div className="animate-shimmer h-4 rounded w-1/2 mx-auto"></div>
+            </div>
+            <p style={{ color: 'var(--text-secondary)' }}>Loading members...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <p className="text-red-500">Error: {error}</p>;
+    return (
+      <div className="section-padding">
+        <div className="container-mobile">
+          <div className="p-4 rounded-lg" style={{ 
+            backgroundColor: 'var(--color-error-light)', 
+            borderLeft: '4px solid var(--color-error)',
+            color: 'var(--color-error)' 
+          }}>
+            <p><strong>Error:</strong> {error}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!isAdmin) {
     return (
-      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg">
-        <p className="font-bold">Admin Access Required</p>
-        <p>You do not have permission to manage this home.</p>
+      <div className="section-padding">
+        <div className="container-mobile">
+          <div className="p-4 rounded-lg" style={{ 
+            backgroundColor: 'var(--color-warning-light)', 
+            borderLeft: '4px solid var(--color-warning)',
+            color: 'var(--color-warning)' 
+          }}>
+            <p className="font-bold">Admin Access Required</p>
+            <p>You do not have permission to manage this home.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">Home Management</h2>
+    <div className="section-padding">
+      <div className="container-mobile lg:max-w-4xl">
+        <div className="animate-fade-in mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>🏠 Home Management</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Manage members and settings for your home.</p>
+        </div>
 
         {/* Add Member Form */}
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4">Add New Member</h3>
+        <div className="card p-6 mb-8">
+          <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Add New Member</h3>
           <form onSubmit={handleInviteMember} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                 Email Address
               </label>
-              <div className="mt-1 flex rounded-md shadow-sm">
+              <div className="flex gap-3">
                 <input
                   type="email"
                   id="email"
                   value={newMemberEmail}
                   onChange={(e) => setNewMemberEmail(e.target.value)}
-                  className="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  className="flex-1 input-base focus-ring"
                   placeholder="Enter email address"
                   required
                 />
                 <button
                   type="submit"
                   disabled={isInviting}
-                  className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+                  className="btn-base btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50"
                 >
                   {isInviting ? 'Adding...' : 'Add Member'}
                 </button>
               </div>
             </div>
             {inviteError && (
-              <p className="mt-2 text-sm text-red-600">{inviteError}</p>
+              <div className="mt-4 p-3 rounded-lg" style={{ 
+                backgroundColor: 'var(--color-error-light)', 
+                borderLeft: '4px solid var(--color-error)',
+                color: 'var(--color-error)' 
+              }}>
+                <p className="text-sm">{inviteError}</p>
+              </div>
             )}
           </form>
         </div>
 
         {/* Members List */}
-        <div className="bg-white shadow rounded-lg">
-          <h3 className="text-lg font-semibold p-6 border-b">Home Members</h3>
-          <ul className="divide-y divide-gray-200">
+        <div className="card">
+          <h3 className="text-lg font-semibold p-6" style={{ 
+            color: 'var(--text-primary)',
+            borderBottom: '1px solid var(--border-light)'
+          }}>Home Members</h3>
+          <ul style={{ borderColor: 'var(--border-light)' }} className="divide-y">
             {members.map(member => (
               <li key={member.id} className="p-6 flex justify-between items-center">
                 <div>
-                  <p className="font-semibold">
+                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
                     {member.name}
-                    <span className={`ml-2 text-xs font-mono px-2 py-0.5 rounded-full ${
-                      member.role === 'admin' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span className="ml-2 text-xs font-mono px-2 py-0.5 rounded-full" style={{
+                      backgroundColor: member.role === 'admin' ? 'var(--color-primary-light)' : 'var(--bg-secondary)',
+                      color: member.role === 'admin' ? 'var(--color-primary)' : 'var(--text-muted)'
+                    }}>
                       {member.role}
                     </span>
                   </p>
-                  <p className="text-sm text-gray-500">{member.email}</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{member.email}</p>
                 </div>
                 {member.role !== 'admin' && member.id !== profile?.uid && (
                   <button
                     onClick={() => handleRemoveMember(member.id)}
-                    className="px-3 py-1 bg-red-500 text-white text-sm font-semibold rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    className="btn-base text-sm font-semibold px-3 py-1"
+                    style={{
+                      backgroundColor: 'var(--color-error)',
+                      color: 'white',
+                      borderColor: 'var(--color-error)'
+                    }}
                   >
                     Remove
                   </button>
@@ -204,8 +254,5 @@ export default function HomeAdminPage() {
               </li>
             ))}
           </ul>
-        </div>
-      </div>
-    </div>
-  );
+        </div>\n      </div>\n    </div>\n  );
 }

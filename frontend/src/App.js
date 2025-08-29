@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
+import { ThemeProvider } from './hooks/useTheme';
 import AuthPage from './auth/AuthPage';
 import SharedLayout from './components/SharedLayout';
 import HomePage from './pages/HomePage';
@@ -73,8 +74,27 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-orange-50">
-        <p className="text-xl font-semibold text-gray-700">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="text-center">
+          {/* Roscoe Logo */}
+          <div className="mb-8 flex justify-center">
+            <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 0C22.3858 0 0 22.3858 0 50C0 77.6142 22.3858 100 50 100C77.6142 100 100 77.6142 100 50C100 22.3858 77.6142 0 50 0ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20V80Z" fill="#34D399"/>
+              <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
+            </svg>
+          </div>
+          
+          {/* Loading text and spinner */}
+          <div className="space-y-4">
+            <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Roscoe</h1>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }}></div>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)', animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)', animationDelay: '0.4s' }}></div>
+            </div>
+            <p style={{ color: 'var(--text-secondary)' }}>Setting up your home helper...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -86,16 +106,18 @@ export default function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
-          <Route index element={<HomePage />} />
-          <Route path="recipe-generator" element={<RecipeGenerator />} />
-          <Route path="home-admin" element={<HomeAdminPage />} />
-          <Route path="/pantry" element={<PantryPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
+            <Route index element={<HomePage />} />
+            <Route path="recipe-generator" element={<RecipeGenerator />} />
+            <Route path="home-admin" element={<HomeAdminPage />} />
+            <Route path="/pantry" element={<PantryPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
