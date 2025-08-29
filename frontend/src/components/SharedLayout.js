@@ -1,34 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTheme } from '../hooks/useTheme';
 
+// ===== ICONS =====
 const HomeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
+
 const RecipeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 11.08V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M18 22a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path><path d="M18 16v.01"></path><path d="M18 20v.01"></path></svg>;
+
 const AdminIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
+
+const PantryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M19 11V9a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v2" /><path d="M6 11h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Z" /><path d="M10 11V9" /><path d="M14 11V9" /></svg>;
+
 const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>;
+
 const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 
-// Add this new icon component for Pantry
-const PantryIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-    <path d="M19 11V9a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v2" />
-    <path d="M6 11h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Z" />
-    <path d="M10 11V9" />
-    <path d="M14 11V9" />
-  </svg>
-);
+const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
+
+const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
+
+
+
 
 export default function SharedLayout({ profile, onLogout, userToken }) {
   console.log('SharedLayout render - profile:', !!profile, 'userToken:', !!userToken);
   
+  const { theme, toggleTheme, isDark } = useTheme();
   const [showHomeDropdown, setShowHomeDropdown] = useState(false);
   const [selectedHomeId, setSelectedHomeId] = useState(profile?.primaryHomeId);
   const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const navLinkClasses = "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors";
-  const activeClasses = "bg-orange-100 text-orange-700 font-semibold";
-  const inactiveClasses = "text-gray-600 hover:bg-orange-50 hover:text-orange-600";
   
   // Get current home
   const currentHome = profile?.homes?.find(h => h.id === selectedHomeId) || profile?.homes?.[0];
@@ -62,107 +64,203 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
     { 
       name: 'Home', 
       path: '/', 
-      icon: HomeIcon 
+      icon: HomeIcon,
+      mobileLabel: 'Home'
     },
     { 
       name: 'Pantry', 
       path: '/pantry', 
-      icon: PantryIcon 
+      icon: PantryIcon,
+      mobileLabel: 'Pantry'
     },
     { 
-      name: 'Recipe Generator', 
+      name: 'Recipes', 
       path: '/recipe-generator', 
-      icon: RecipeIcon 
+      icon: RecipeIcon,
+      mobileLabel: 'Recipes'
     },
     { 
-      name: 'Home Admin', 
+      name: 'Admin', 
       path: '/home-admin', 
-      icon: AdminIcon 
+      icon: AdminIcon,
+      mobileLabel: 'Admin'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-orange-50 font-sans text-gray-800">
-      <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-6">
-              <div className="font-bold text-xl text-orange-600">HomeHelper</div>
-              
-              {/* Home Selector Dropdown */}
-              {profile?.homes && profile.homes.length > 0 && (
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setShowHomeDropdown(!showHomeDropdown)}
-                    className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    <span className="text-sm font-medium text-gray-700">{currentHome?.name || 'Select Home'}</span>
-                    <ChevronDownIcon />
-                  </button>
-                  
-                  {showHomeDropdown && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                      <div className="py-1">
-                        {profile.homes.map(home => (
-                          <button
-                            key={home.id}
-                            onClick={() => handleHomeChange(home.id)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between group"
-                          >
-                            <div>
-                              <div className="font-medium text-gray-900">{home.name}</div>
-                              <div className="text-xs text-gray-500">Role: {home.role}</div>
-                            </div>
-                            {selectedHomeId === home.id && <CheckIcon />}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <nav className="hidden md:flex items-center gap-2">
-                {navigation.map(({ name, path, icon: Icon }) => (
-                  <NavLink
-                    key={path}
-                    to={path}
-                    className={({ isActive }) => `${navLinkClasses} ${isActive ? activeClasses : inactiveClasses}`}
-                    end
-                  >
-                    <Icon /> {name}
-                  </NavLink>
-                ))}
-              </nav>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right text-sm">
-                <p className="font-semibold text-gray-800">{profile.name}</p>
-                <p className="text-gray-600 text-sm">{profile?.email}</p>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+      
+      {/* ===== DESKTOP SIDEBAR ===== */}
+      <aside className="desktop-only fixed left-0 top-0 h-full z-30" style={{ width: 'var(--sidebar-width)', backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border-light)' }}>
+        <div className="flex flex-col h-full">
+          
+          {/* Sidebar Header */}
+          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="flex items-center gap-3">
+              {/* Roscoe Logo */}
+              <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0C22.3858 0 0 22.3858 0 50C0 77.6142 22.3858 100 50 100C77.6142 100 100 77.6142 100 50C100 22.3858 77.6142 0 50 0ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20V80Z" fill="#34D399"/>
+                <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
+              </svg>
+              <div>
+                <h1 className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Roscoe</h1>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Home Helper</p>
               </div>
-              <button onClick={onLogout} className="bg-white px-4 py-2 rounded-lg shadow font-semibold text-gray-700 hover:bg-gray-100 hover:text-red-600 transition-colors">Logout</button>
             </div>
+          </div>
+          
+          {/* User Profile */}
+          <div className="p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
+                {profile.name?.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{profile.name}</p>
+                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{profile?.email}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Home Selector */}
+          {profile?.homes && profile.homes.length > 0 && (
+            <div className="p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowHomeDropdown(!showHomeDropdown)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-opacity-80"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                >
+                  <span className="font-medium">{currentHome?.name || 'Select Home'}</span>
+                  <ChevronDownIcon />
+                </button>
+                
+                {showHomeDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-lg shadow-lg border z-50" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-medium)' }}>
+                    <div className="py-2">
+                      {profile.homes.map(home => (
+                        <button
+                          key={home.id}
+                          onClick={() => handleHomeChange(home.id)}
+                          className="w-full text-left px-4 py-3 hover:bg-opacity-80 flex items-center justify-between transition-colors"
+                          style={{ 
+                            backgroundColor: selectedHomeId === home.id ? 'var(--bg-tertiary)' : 'transparent',
+                            ':hover': { backgroundColor: 'var(--bg-tertiary)' }
+                          }}
+                        >
+                          <div>
+                            <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{home.name}</div>
+                            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Role: {home.role}</div>
+                          </div>
+                          {selectedHomeId === home.id && <CheckIcon />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Navigation */}
+          <nav className="flex-1 p-4">
+            <div className="space-y-2">
+              {navigation.map(({ name, path, icon: Icon }) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${
+                    isActive 
+                      ? 'text-white shadow-sm' 
+                      : 'hover:bg-opacity-80'
+                  }`}
+                  style={({ isActive }) => ({
+                    backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
+                    color: isActive ? 'white' : 'var(--text-primary)',
+                    ':hover': { backgroundColor: isActive ? 'var(--color-primary)' : 'var(--bg-tertiary)' }
+                  })}
+                  end
+                >
+                  <Icon />
+                  <span>{name}</span>
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+          
+          
+        </div>
+      </aside>
+
+      {/* ===== MOBILE/DESKTOP HEADER ===== */}
+      <header className="sticky top-0 z-20 border-b lg:pl-[var(--sidebar-width)]" style={{ 
+        backgroundColor: 'var(--bg-overlay)', 
+        borderColor: 'var(--border-light)',
+        backdropFilter: 'blur(10px)',
+        height: 'var(--header-height)'
+      }}>
+        <div className="flex items-center justify-between h-full px-4 lg:px-6">
+          
+          {/* Mobile Header Left */}
+          <div className="flex items-center gap-4">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex items-center gap-2">
+              <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0C22.3858 0 0 22.3858 0 50C0 77.6142 22.3858 100 50 100C77.6142 100 100 77.6142 100 50C100 22.3858 77.6142 0 50 0ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20V80Z" fill="#34D399"/>
+                <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
+              </svg>
+              <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Roscoe</span>
+            </div>
+          </div>
+          
+          {/* Header Right */}
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-opacity-80"
+              style={{ backgroundColor: 'var(--bg-tertiary)' }}
+            >
+              {isDark ? <SunIcon /> : <MoonIcon />}
+            </button>
           </div>
         </div>
       </header>
 
-      <main>
-        <Outlet context={outletContext} />
+      {/* ===== MAIN CONTENT ===== */}
+      <main className="mobile-nav-space" style={{ paddingLeft: '0' }}>
+        <div className="lg:pl-[var(--sidebar-width)]">
+          <Outlet context={outletContext} />
+        </div>
       </main>
 
-      {/* Bottom navigation for mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-t-md flex justify-around py-2">
-          {navigation.map(({ name, path, icon: Icon }) => (
+      {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
+      <nav className="mobile-only fixed bottom-0 left-0 right-0 border-t z-10" style={{ 
+        backgroundColor: 'var(--bg-card)', 
+        borderColor: 'var(--border-light)',
+        height: 'var(--bottom-nav-height)'
+      }}>
+        <div className="flex justify-around items-center h-full px-2">
+          {navigation.map(({ mobileLabel, path, icon: Icon }) => (
             <NavLink
               key={path}
               to={path}
-              className={({ isActive }) => `flex flex-col items-center gap-1 text-xs ${isActive ? 'text-orange-600' : 'text-gray-500'}`}
+              className={({ isActive }) => `flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-lg transition-all min-w-0 flex-1 ${
+                isActive ? 'text-white' : ''
+              }`}
+              style={({ isActive }) => ({
+                backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
+                color: isActive ? 'white' : 'var(--text-muted)'
+              })}
               end
             >
-              <Icon /> {name}
+              <Icon />
+              <span className="text-xs font-medium truncate">{mobileLabel}</span>
             </NavLink>
           ))}
+        </div>
       </nav>
+
     </div>
   );
 }

@@ -240,22 +240,61 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
 
 app.post('/api/generate-recipe', checkAuth, async (req, res) => {
     try {
-        const { ingredients, servingSize, dietaryRestrictions } = req.body;
+        const { 
+            ingredients, 
+            servingSize, 
+            dietaryRestrictions, 
+            recipeType = 'quick', 
+            generateCount = 1,
+            pantryItems = []
+        } = req.body;
+        
         if (!ingredients || ingredients.length === 0) {
             return res.status(400).json({ error: 'Ingredients are required' });
         }
 
-        // Use existing prompt generation
-        const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions);
+        // If generating multiple recipes, create multiple prompts and run them
+        if (generateCount > 1) {
+            const recipes = [];
+            const promises = [];
+            
+            for (let i = 0; i < generateCount; i++) {
+                const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, i + 1);
+                
+                const promise = (async () => {
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                    const result = await model.generateContent(prompt);
+                    const response = await result.response;
+                    const generatedText = response.text();
+                    return parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients);
+                })();
+                
+                promises.push(promise);
+            }
+            
+            const results = await Promise.all(promises);
+            
+            // Validate all recipes
+            const validRecipes = results.filter(recipe => 
+                recipe.title && recipe.ingredients && recipe.instructions
+            );
+            
+            if (validRecipes.length === 0) {
+                throw new Error('Failed to generate valid recipes');
+            }
+            
+            return res.json(validRecipes);
+        }
 
-        // Make direct API call to Gemini
+        // Single recipe generation (existing logic enhanced)
+        const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems);
+        
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const generatedText = response.text();
         
-        // Use existing parse function to format the response
-        const recipe = parseRecipeResponse(generatedText, servingSize);
+        const recipe = parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients);
 
         // Validate recipe structure
         if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
@@ -274,17 +313,97 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
 });
 
 // --- Helper Functions ---
-function createRecipePrompt(ingredients, servingSize, dietaryRestrictions) {
+function createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType = 'quick', pantryItems = [], variationNumber = 1) {
   const restrictionsText = dietaryRestrictions ? `\n- Follow these dietary restrictions: ${dietaryRestrictions}` : '';
-  return `Create a complete recipe using these ingredients: ${ingredients.join(', ')}\n\nRequirements:\n- Serves ${servingSize} people\n- Include prep time and cook time\n- Rate difficulty as Easy, Medium, or Hard\n- Provide a brief description${restrictionsText}\n\nPlease format your response EXACTLY like this JSON structure:\n{\n  "title": "Recipe Name",\n  "description": "Brief appealing description",\n  "prepTime": "X minutes",\n  "cookTime": "X minutes",\n  "difficulty": "Easy/Medium/Hard",\n  "ingredients": [\n    "ingredient with amount",\n    "another ingredient with amount"\n  ],\n  "instructions": [\n    "Step 1 instruction",\n    "Step 2 instruction"\n  ],\n  "tips": [\n    "Helpful cooking tip",\n    "Another useful tip"\n  ]\n}\n\nMake sure the recipe is practical, delicious, and uses the provided ingredients as the main components. Add common pantry staples as needed.`;
+  
+  // Build pantry context
+  let pantryContext = '';
+  if (pantryItems && pantryItems.length > 0) {
+    const pantryIngredients = pantryItems.map(item => {
+      const expiry = item.daysUntilExpiry ? ` (${item.daysUntilExpiry} days until expiry)` : '';
+      return `${item.name}${item.quantity ? ` - ${item.quantity}` : ''}${expiry}`;
+    });
+    
+    pantryContext = `\n\nAVAILABLE PANTRY ITEMS:\n${pantryIngredients.join('\n')}\n- PRIORITIZE using pantry items that expire soon (3 days or less)\n- Mark which ingredients come from pantry vs need to be purchased`;
+  }
+  
+  // Recipe complexity guidance
+  const complexityGuidance = recipeType === 'sophisticated' 
+    ? `\n- CREATE A SOPHISTICATED RECIPE: Use advanced cooking techniques, complex flavor profiles, multiple cooking methods, longer prep/cook times (45+ minutes total), restaurant-quality presentation`
+    : `\n- CREATE A QUICK & EASY RECIPE: Simple techniques, minimal prep, 15-30 minute total time, accessible for home cooks, streamlined process`;
+  
+  // Variation guidance for multiple recipes
+  const variationText = variationNumber > 1 
+    ? `\n- This is variation #${variationNumber} - make it DISTINCTLY DIFFERENT from other variations in cooking method, cuisine style, or flavor profile`
+    : '';
+  
+  return `Create a complete recipe using these ingredients: ${ingredients.join(', ')}${pantryContext}
+
+Requirements:
+- Serves ${servingSize} people
+- Include prep time and cook time
+- Rate difficulty as Easy, Medium, or Hard
+- Provide a brief description${restrictionsText}${complexityGuidance}${variationText}
+
+Please format your response EXACTLY like this JSON structure:
+{
+  "title": "Recipe Name",
+  "description": "Brief appealing description",
+  "prepTime": "X minutes",
+  "cookTime": "X minutes", 
+  "difficulty": "Easy/Medium/Hard",
+  "ingredients": [
+    "ingredient with amount",
+    "another ingredient with amount"
+  ],
+  "instructions": [
+    "Step 1 instruction",
+    "Step 2 instruction"
+  ],
+  "tips": [
+    "Helpful cooking tip",
+    "Another useful tip"
+  ]
 }
 
-function parseRecipeResponse(text, servingSize) {
+Make sure the recipe is practical, delicious, and uses the provided ingredients as the main components. Add common pantry staples as needed.`;
+}
+
+function parseRecipeResponse(text, servingSize, pantryItems = [], originalIngredients = []) {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const jsonText = jsonMatch[0];
       const parsed = JSON.parse(jsonText);
+      
+      // Identify which ingredients come from pantry and which are missing
+      const recipeIngredients = parsed.ingredients || [];
+      const pantryIngredients = [];
+      const missingIngredients = [];
+      
+      if (pantryItems && pantryItems.length > 0) {
+        const pantryNames = pantryItems.map(item => item.name.toLowerCase());
+        
+        recipeIngredients.forEach(ingredient => {
+          const ingredientLower = ingredient.toLowerCase();
+          const isFromPantry = pantryNames.some(pantryName => 
+            ingredientLower.includes(pantryName) || pantryName.includes(ingredientLower)
+          );
+          
+          if (isFromPantry) {
+            pantryIngredients.push(ingredient);
+          } else {
+            // Check if it's not in original ingredients either
+            const isOriginal = originalIngredients.some(orig => 
+              ingredientLower.includes(orig.toLowerCase()) || orig.toLowerCase().includes(ingredientLower)
+            );
+            if (!isOriginal) {
+              missingIngredients.push(ingredient);
+            }
+          }
+        });
+      }
+      
       return {
         title: parsed.title || "Delicious Recipe",
         description: parsed.description || "A wonderful meal made with your ingredients",
@@ -292,9 +411,11 @@ function parseRecipeResponse(text, servingSize) {
         cookTime: parsed.cookTime || "30 minutes",
         servings: servingSize,
         difficulty: parsed.difficulty || "Medium",
-        ingredients: parsed.ingredients || [],
+        ingredients: recipeIngredients,
         instructions: parsed.instructions || [],
-        tips: parsed.tips || ["Enjoy your meal!"]
+        tips: parsed.tips || ["Enjoy your meal!"],
+        pantryIngredients: pantryIngredients,
+        missingIngredients: missingIngredients
       };
     }
   } catch (error) {
@@ -309,7 +430,9 @@ function parseRecipeResponse(text, servingSize) {
     difficulty: "Medium",
     ingredients: ["Check server logs for full response"],
     instructions: ["AI response parsing failed - check logs"],
-    tips: ["Recipe generation succeeded but formatting needs adjustment"]
+    tips: ["Recipe generation succeeded but formatting needs adjustment"],
+    pantryIngredients: [],
+    missingIngredients: []
   };
 }
 

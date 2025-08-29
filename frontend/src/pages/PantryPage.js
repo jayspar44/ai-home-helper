@@ -7,62 +7,67 @@ const LocationSelect = ({ value, onChange, disabled }) => (
   <select 
     value={value} 
     onChange={e => onChange(e.target.value)}
-    className="rounded-lg border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+    className="input-base focus-ring"
     disabled={disabled}
   >
-    <option value="pantry">Pantry</option>
-    <option value="fridge">Fridge</option>
-    <option value="freezer">Freezer</option>
+    <option value="pantry">🏠 Pantry</option>
+    <option value="fridge">❄️ Fridge</option>
+    <option value="freezer">🧊 Freezer</option>
   </select>
 );
 
 const ItemsList = ({ title, items, onDelete }) => {
   const getExpiryColor = (daysUntilExpiry) => {
-    if (daysUntilExpiry === null || daysUntilExpiry === undefined) return 'text-gray-500';
-    if (daysUntilExpiry <= 3) return 'text-red-600';
-    if (daysUntilExpiry <= 7) return 'text-yellow-600';
-    return 'text-green-600';
+    if (daysUntilExpiry === null || daysUntilExpiry === undefined) return { color: 'var(--text-muted)' };
+    if (daysUntilExpiry <= 3) return { color: 'var(--color-error)' };
+    if (daysUntilExpiry <= 7) return { color: 'var(--color-warning)' };
+    return { color: 'var(--color-success)' };
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4">{title}</h2>
+    <div className="card p-6">
+      <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{title}</h2>
       {items.length === 0 ? (
-        <p className="text-gray-500 text-sm">No items yet</p>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">📦</div>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No items yet</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Add items to get started</p>
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="space-y-3">
           {items.map(item => (
-            <li key={item.id} className="bg-gray-50 p-3 rounded">
+            <div key={item.id} className="card-interactive p-4 rounded-lg hover-lift" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="font-medium">{item.name}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-base mb-1" style={{ color: 'var(--text-primary)' }}>{item.name}</div>
                   {item.quantity && (
-                    <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
+                    <div className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>Qty: {item.quantity}</div>
                   )}
                    {item.daysUntilExpiry !== undefined && item.daysUntilExpiry !== null ? (
-                    <div className={`text-sm ${getExpiryColor(item.daysUntilExpiry)}`}>
-                      Expires in {item.daysUntilExpiry} days
+                    <div className="text-sm font-medium" style={getExpiryColor(item.daysUntilExpiry)}>
+                      Expires in {item.daysUntilExpiry} day{item.daysUntilExpiry !== 1 ? 's' : ''}
                     </div>
                   ) : (
-                     <div className="text-sm text-gray-400">No expiry date</div>
+                     <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No expiry date</div>
                   )}
                   {item.detectedBy === 'ai' && (
-                    <div className="text-xs text-blue-600 mt-1 inline-flex items-center gap-1">
+                    <div className="text-xs mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' }}>
                       <Sparkles className="w-3 h-3" /> AI Detected
                     </div>
                   )}
                 </div>
                 <button
                   onClick={() => onDelete(item.id)}
-                  className="text-red-500 hover:text-red-700 text-xl"
+                  className="ml-4 p-2 rounded-lg hover:bg-opacity-80 transition-colors"
+                  style={{ color: 'var(--color-error)', backgroundColor: 'var(--color-error-light)' }}
                   aria-label="Delete item"
                 >
-                  ×
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
@@ -76,27 +81,45 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
   if (action === 'accept') {
     const suggestion = suggestions[0];
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+      <div className="card p-4 mt-4" style={{ 
+        backgroundColor: 'var(--color-success-light)', 
+        borderLeft: '4px solid var(--color-success)' 
+      }}>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h4 className="font-semibold text-green-800">{suggestion.name}</h4>
-            <p className="text-sm text-green-600 mt-1">
+            <h4 className="font-semibold mb-1" style={{ color: 'var(--color-success)' }}>{suggestion.name}</h4>
+            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
               Quantity: {suggestion.quantity} • Shelf Life: {suggestion.shelfLife}
             </p>
-            <p className="text-xs text-green-500 mt-1">AI Confidence: {Math.round(confidence * 100)}%</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>AI Confidence: {Math.round(confidence * 100)}%</p>
           </div>
           <div className="flex flex-col gap-2">
-            <button onClick={() => onDirectAdd(suggestion)} className="bg-green-600 text-white px-4 py-2 rounded text-sm">
+            <button 
+              onClick={() => onDirectAdd(suggestion)} 
+              className="btn-base px-4 py-2 text-sm"
+              style={{ 
+                backgroundColor: 'var(--color-success)', 
+                color: 'white',
+                borderColor: 'var(--color-success)'
+              }}
+            >
               Use This
             </button>
-            <button onClick={() => onCustomize(suggestion)} className="border border-green-600 text-green-600 px-4 py-2 rounded text-sm">
+            <button 
+              onClick={() => onCustomize(suggestion)} 
+              className="btn-base btn-ghost px-4 py-2 text-sm"
+              style={{ 
+                borderColor: 'var(--color-success)',
+                color: 'var(--color-success)'
+              }}
+            >
               Customize
             </button>
           </div>
         </div>
-        <div className="mt-3 pt-3 border-t border-green-200">
-          <p className="text-sm text-green-700">
-            💡 Or <button onClick={onOpenPhotoModal} className="underline text-blue-600">upload a photo</button> for even more accuracy
+        <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            💡 Or <button onClick={onOpenPhotoModal} className="underline" style={{ color: 'var(--color-primary)' }}>upload a photo</button> for even more accuracy
           </p>
         </div>
       </div>
@@ -105,10 +128,13 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 
   if (action === 'choose') {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+      <div className="card p-4 mt-4" style={{ 
+        backgroundColor: 'var(--color-warning-light)', 
+        borderLeft: '4px solid var(--color-warning)' 
+      }}>
         <div className="mb-3">
-          <h4 className="font-semibold text-yellow-800">"{inputQuery}" could be several things:</h4>
-          <p className="text-sm text-yellow-700 mt-1">{guidance.message}</p>
+          <h4 className="font-semibold" style={{ color: 'var(--color-warning)' }}>"{inputQuery}" could be several things:</h4>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{guidance.message}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {suggestions.map((option, idx) => (
@@ -119,18 +145,19 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
                   e.preventDefault();
                   onDirectAdd(option);
               }}
-              className="text-left p-3 border border-yellow-300 rounded hover:bg-yellow-100 transition-colors"
+              className="text-left p-3 card-interactive transition-colors"
+              style={{ borderColor: 'var(--border-light)' }}
             >
-              <div className="font-medium text-yellow-900">{option.name}</div>
-              <div className="text-sm text-yellow-700">{option.quantity}</div>
-              <div className="text-xs text-yellow-600">~{option.shelfLife}</div>
+              <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{option.name}</div>
+              <div className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{option.quantity}</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>~{option.shelfLife}</div>
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2 pt-3 border-t border-yellow-200">
-          <button onClick={onTryAgain} className="text-blue-600 hover:underline text-sm">✏️ Try a more specific name</button>
-          <button onClick={onOpenPhotoModal} className="text-green-600 hover:underline text-sm">📷 Upload photo instead</button>
-          <button onClick={onProceed} className="text-gray-600 hover:underline text-sm">Enter manually anyway</button>
+        <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
+          <button onClick={onTryAgain} className="hover:underline text-sm" style={{ color: 'var(--color-primary)' }}>✏️ Try a more specific name</button>
+          <button onClick={onOpenPhotoModal} className="hover:underline text-sm" style={{ color: 'var(--color-success)' }}>📷 Upload photo instead</button>
+          <button onClick={onProceed} className="hover:underline text-sm" style={{ color: 'var(--text-muted)' }}>Enter manually anyway</button>
         </div>
       </div>
     );
@@ -138,20 +165,44 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 
   if (action === 'specify') {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+      <div className="card p-4 mt-4" style={{ 
+        backgroundColor: 'var(--color-error-light)', 
+        borderLeft: '4px solid var(--color-error)' 
+      }}>
         <div className="text-center">
-          <h4 className="font-semibold text-red-800 mb-2">Need more details about "{inputQuery}"</h4>
-          <p className="text-red-700 mb-4">{guidance.message}</p>
-          <div className="bg-white rounded-lg p-3 mb-4">
-            <div className="text-sm text-gray-700 space-y-1">
+          <h4 className="font-semibold mb-2" style={{ color: 'var(--color-error)' }}>Need more details about "{inputQuery}"</h4>
+          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>{guidance.message}</p>
+          <div className="card p-3 mb-4" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
               {guidance.examples.map((ex, i) => <div key={i}>{ex}</div>)}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button onClick={onTryAgain} className="bg-blue-600 text-white px-6 py-2 rounded-lg">✏️ Be More Specific</button>
-            <button onClick={onOpenPhotoModal} className="bg-green-600 text-white px-6 py-2 rounded-lg">📷 Upload Photo</button>
+            <button 
+              onClick={onTryAgain} 
+              className="btn-base btn-primary px-6 py-2"
+            >
+              ✏️ Be More Specific
+            </button>
+            <button 
+              onClick={onOpenPhotoModal} 
+              className="btn-base px-6 py-2"
+              style={{ 
+                backgroundColor: 'var(--color-success)', 
+                color: 'white',
+                borderColor: 'var(--color-success)'
+              }}
+            >
+              📷 Upload Photo
+            </button>
           </div>
-          <button onClick={onProceed} className="text-gray-600 hover:underline text-sm mt-3 block mx-auto">Skip suggestions and enter manually</button>
+          <button 
+            onClick={onProceed} 
+            className="hover:underline text-sm mt-3 block mx-auto" 
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Skip suggestions and enter manually
+          </button>
         </div>
       </div>
     );
@@ -373,13 +424,24 @@ export default function PantryPage() {
   const showFullForm = showManualForm;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="section-padding">
+      <div className="container-mobile lg:max-w-none lg:px-8">
+        {/* Page Header */}
+        <div className="animate-fade-in mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            🥫 Pantry Manager
+          </h1>
+          <p style={{ color: 'var(--text-muted)' }}>
+            Keep track of your ingredients across pantry, fridge, and freezer
+          </p>
+        </div>
+
         {/* Add Item Form */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="card p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Add New Item</h2>
           <form onSubmit={handleManualAddItem}>
-            <div className="flex-1">
-              <label htmlFor="itemName" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="mb-4">
+              <label htmlFor="itemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                 Item Name
               </label>
               <input
@@ -392,7 +454,7 @@ export default function PantryPage() {
                   if(suggestionResult) setSuggestionResult(null);
                   if(showManualForm) setShowManualForm(false);
                 }}
-                className="w-full rounded-lg border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                className="input-base focus-ring"
                 placeholder="e.g., 'eggs', 'milk', 'chocolate'"
                 required
                 disabled={showFullForm}
@@ -400,19 +462,31 @@ export default function PantryPage() {
             </div>
             
             {!showFullForm && !suggestionResult && (
-              <div className="flex gap-2 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <button 
                   type="button"
                   onClick={fetchAISuggestions}
                   disabled={!newItemName.trim() || isLoadingSuggestions}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex-1 flex items-center justify-center gap-2"
+                  className="btn-base btn-primary"
                 >
-                  {isLoadingSuggestions ? 'Getting suggestions...' : <> <Bot className="w-5 h-5" /> Get AI Suggestions </>}
+                  {isLoadingSuggestions ? (
+                    <div className="animate-pulse">Getting suggestions...</div>
+                  ) : (
+                    <>
+                      <Bot className="w-5 h-5" /> 
+                      Get AI Suggestions
+                    </>
+                  )}
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowAIModal(true)}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex-1 flex items-center justify-center gap-2"
+                  className="btn-base btn-secondary"
+                  style={{ 
+                    backgroundColor: 'var(--color-accent)',
+                    color: 'white',
+                    borderColor: 'var(--color-accent)'
+                  }}
                 >
                   <Camera className="w-5 h-5" /> Upload Photo
                 </button>
@@ -420,8 +494,15 @@ export default function PantryPage() {
             )}
             
             {error && !suggestionResult && (
-              <div className="mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
-                {error}
+              <div className="mt-4 p-4 rounded-lg" style={{ 
+                backgroundColor: 'var(--color-error-light)', 
+                borderLeft: '4px solid var(--color-error)',
+                color: 'var(--color-error)' 
+              }}>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
               </div>
             )}
 
@@ -436,24 +517,49 @@ export default function PantryPage() {
             />
 
             {showFullForm && (
-              <div className="mt-4 space-y-4">
+              <div className="mt-6 space-y-4 animate-slide-up">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                        <input type="text" id="quantity" value={newItemQuantity} onChange={e => setNewItemQuantity(e.target.value)} className="w-full rounded-lg border-gray-300" placeholder="e.g., 1 dozen"/>
+                        <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Quantity</label>
+                        <input 
+                          type="text" 
+                          id="quantity" 
+                          value={newItemQuantity} 
+                          onChange={e => setNewItemQuantity(e.target.value)} 
+                          className="input-base focus-ring" 
+                          placeholder="e.g., 1 dozen"
+                        />
                     </div>
                     <div>
-                        <label htmlFor="daysUntilExpiry" className="block text-sm font-medium text-gray-700 mb-1">Expires in (days)</label>
-                        <input type="number" id="daysUntilExpiry" value={newItemDaysUntilExpiry} onChange={e => setNewItemDaysUntilExpiry(e.target.value)} className="w-full rounded-lg border-gray-300" placeholder="e.g., 7"/>
+                        <label htmlFor="daysUntilExpiry" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires in (days)</label>
+                        <input 
+                          type="number" 
+                          id="daysUntilExpiry" 
+                          value={newItemDaysUntilExpiry} 
+                          onChange={e => setNewItemDaysUntilExpiry(e.target.value)} 
+                          className="input-base focus-ring" 
+                          placeholder="e.g., 7"
+                        />
                     </div>
                     <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Location</label>
                         <LocationSelect value={newItemLocation} onChange={setNewItemLocation} />
                     </div>
                 </div>
-                <div className="flex justify-end gap-3">
-                    <button type="button" onClick={resetForm} className="text-gray-600 hover:underline">Cancel</button>
-                    <button type="submit" className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700">Add Item</button>
+                <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+                    <button 
+                      type="button" 
+                      onClick={resetForm} 
+                      className="btn-base btn-ghost"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn-base btn-primary"
+                    >
+                      Add Item
+                    </button>
                 </div>
               </div>
             )}
@@ -461,36 +567,66 @@ export default function PantryPage() {
         </div>
 
         {/* Create Recipe Button */}
-        <button
-          onClick={handleCreateRecipe}
-          disabled={items.length === 0}
-          className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-4 rounded-lg font-semibold text-lg hover:from-orange-700 hover:to-red-700 disabled:opacity-60"
-        >
-          Create a Recipe with What I Have
-        </button>
+        <div className="mb-8">
+          <button
+            onClick={handleCreateRecipe}
+            disabled={items.length === 0}
+            className="w-full btn-base py-4 text-lg font-semibold transition-all disabled:opacity-50 hover-lift"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+              color: 'white',
+              border: 'none'
+            }}
+          >
+            ✨ Create a Recipe with What I Have
+          </button>
+          <p className="text-xs mt-2 text-center" style={{ color: 'var(--text-muted)' }}>
+            {items.length === 0 ? 'Add some items to get started' : `${items.length} item${items.length !== 1 ? 's' : ''} available`}
+          </p>
+        </div>
 
         {/* General Error Message */}
         {error && suggestionResult && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
-            {error}
+          <div className="mb-8 p-4 rounded-lg" style={{ 
+            backgroundColor: 'var(--color-error-light)', 
+            borderLeft: '4px solid var(--color-error)',
+            color: 'var(--color-error)' 
+          }}>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
           </div>
         )}
 
         {/* Items Lists */}
-        {isLoading ? (<p>Loading items...</p>) : (
+        {isLoading ? (
           <div className="grid md:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="card p-6 animate-pulse">
+                <div className="animate-shimmer h-6 rounded mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map(j => (
+                    <div key={j} className="animate-shimmer h-16 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
             <ItemsList
-              title="Pantry"
+              title="🏠 Pantry"
               items={items.filter(item => item.location === 'pantry')}
               onDelete={handleDeleteItem}
             />
             <ItemsList
-              title="Fridge"
+              title="❄️ Fridge"
               items={items.filter(item => item.location === 'fridge')}
               onDelete={handleDeleteItem}
             />
             <ItemsList
-              title="Freezer"
+              title="🧊 Freezer"
               items={items.filter(item => item.location === 'freezer')}
               onDelete={handleDeleteItem}
             />
