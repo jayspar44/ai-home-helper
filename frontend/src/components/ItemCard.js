@@ -149,50 +149,51 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
             )}
           </div>
 
-        {/* Three-dot menu */}
-        <div className="relative ml-4" ref={menuRef}>
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg hover:bg-opacity-80 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            aria-label="Item options"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-
-          {showMenu && (
-            <div 
-              className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border z-10 min-w-[140px]"
-              style={{ 
-                backgroundColor: 'var(--bg-card)', 
-                borderColor: 'var(--border-light)',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-              }}
+          {/* Three-dot menu */}
+          <div className="relative ml-2" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1 rounded hover:bg-opacity-80 transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              aria-label="Item options"
             >
-              <button
-                onClick={() => {
-                  onEdit(item);
-                  setShowMenu(false);
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {showMenu && (
+              <div 
+                className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border z-10 min-w-[120px]"
+                style={{ 
+                  backgroundColor: 'var(--bg-card)', 
+                  borderColor: 'var(--border-light)',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                 }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-opacity-50 flex items-center gap-2 transition-colors rounded-t-lg"
-                style={{ color: 'var(--text-primary)' }}
               >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
-              <button
-                onClick={() => {
-                  onDelete(item.id);
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-opacity-50 flex items-center gap-2 transition-colors rounded-b-lg"
-                style={{ color: 'var(--color-error)' }}
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    onEdit(item);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs hover:bg-opacity-50 flex items-center gap-2 transition-colors rounded-t-lg"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <Edit2 className="w-3 h-3" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(item.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs hover:bg-opacity-50 flex items-center gap-2 transition-colors rounded-b-lg"
+                  style={{ color: 'var(--color-error)' }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
