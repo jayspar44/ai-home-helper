@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { auth } from '../firebase';
 
 export default function HomeAdminPage() {
   const context = useOutletContext();

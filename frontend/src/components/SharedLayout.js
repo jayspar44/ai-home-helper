@@ -19,11 +19,8 @@ const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 
 const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
 
-const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>;
 
-const BellIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>;
 
-const MenuIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>;
 
 export default function SharedLayout({ profile, onLogout, userToken }) {
   console.log('SharedLayout render - profile:', !!profile, 'userToken:', !!userToken);
@@ -31,7 +28,6 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
   const { theme, toggleTheme, isDark } = useTheme();
   const [showHomeDropdown, setShowHomeDropdown] = useState(false);
   const [selectedHomeId, setSelectedHomeId] = useState(profile?.primaryHomeId);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -95,7 +91,7 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
       
       {/* ===== DESKTOP SIDEBAR ===== */}
-      <aside className={`desktop-only fixed left-0 top-0 h-full z-30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} style={{ width: 'var(--sidebar-width)', backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border-light)' }}>
+      <aside className="desktop-only fixed left-0 top-0 h-full z-30" style={{ width: 'var(--sidebar-width)', backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border-light)' }}>
         <div className="flex flex-col h-full">
           
           {/* Sidebar Header */}
@@ -192,17 +188,6 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
             </div>
           </nav>
           
-          {/* Theme Toggle */}
-          <div className="p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors hover:bg-opacity-80"
-              style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-            >
-              {isDark ? <SunIcon /> : <MoonIcon />}
-              <span className="font-medium">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-            </button>
-          </div>
           
           {/* Logout */}
           <div className="p-4">
@@ -233,15 +218,6 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
           
           {/* Mobile Header Left */}
           <div className="flex items-center gap-4">
-            {/* Mobile Menu Button */}
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-opacity-80"
-              style={{ backgroundColor: 'var(--bg-tertiary)' }}
-            >
-              <MenuIcon />
-            </button>
-            
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center gap-2">
               <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -250,43 +226,17 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
               </svg>
               <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Roscoe</span>
             </div>
-            
-            {/* Desktop Search */}
-            <div className="hidden lg:flex items-center max-w-md">
-              <div className="relative w-full">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
-                  <SearchIcon />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="input-base pl-12 py-2 text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-secondary)',
-                    borderColor: 'var(--border-light)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
-            </div>
           </div>
           
           {/* Header Right */}
           <div className="flex items-center gap-3">
-            {/* Mobile Theme Toggle */}
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="lg:hidden p-2 rounded-lg hover:bg-opacity-80"
+              className="p-2 rounded-lg hover:bg-opacity-80"
               style={{ backgroundColor: 'var(--bg-tertiary)' }}
             >
               {isDark ? <SunIcon /> : <MoonIcon />}
-            </button>
-            
-            {/* Notifications */}
-            <button className="p-2 rounded-lg hover:bg-opacity-80 relative" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-              <BellIcon />
-              {/* Notification dot */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--color-accent)' }}></div>
             </button>
           </div>
         </div>
@@ -326,13 +276,6 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
         </div>
       </nav>
 
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
     </div>
   );
 }

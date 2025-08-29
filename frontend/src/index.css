@@ -11,7 +11,7 @@
   /* ===== BRAND COLORS ===== */
   --color-primary: #34D399;        /* green-400 */
   --color-primary-light: #A7F3D0;  /* green-200 */
-  --color-primary-dark: #10B981;   /* green-500 */
+  --color-primary-dark: #047857;   /* green-700 - darker for better contrast */
   --color-accent: #F97316;         /* orange-500 */
   --color-accent-light: #FED7AA;   /* orange-200 */
   
@@ -28,7 +28,7 @@
   --color-gray-900: #111827;
   
   /* ===== SEMANTIC COLORS ===== */
-  --color-success: #10B981;
+  --color-success: #047857;        /* green-700 - darker for better contrast */
   --color-success-light: #D1FAE5;
   --color-warning: #F59E0B;
   --color-warning-light: #FEF3C7;
@@ -89,7 +89,7 @@
   --transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   
   /* ===== LAYOUT DIMENSIONS ===== */
-  --container-mobile: 430px;
+  --container-mobile: 100%;
   --sidebar-width: 280px;
   --sidebar-right-width: 380px;
   --header-height: 64px;
@@ -426,6 +426,8 @@ body {
   max-width: var(--container-mobile);
   margin: 0 auto;
   padding: 0 var(--spacing-2);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-padding {
