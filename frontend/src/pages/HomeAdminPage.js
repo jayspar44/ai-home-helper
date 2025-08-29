@@ -254,5 +254,8 @@ export default function HomeAdminPage() {
               </li>
             ))}
           </ul>
-        </div>\n      </div>\n    </div>\n  );
+        </div>
+      </div>
+    </div>
+  );
 }
