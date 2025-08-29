@@ -28,6 +28,12 @@ export default function PantryPage() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
+  // Auth headers callback
+  const getAuthHeaders = useCallback(() => ({
+    'Authorization': `Bearer ${userToken}`,
+    'Content-Type': 'application/json'
+  }), [userToken]);
+
   // Custom hooks
   const {
     searchQuery,
@@ -47,13 +53,7 @@ export default function PantryPage() {
     handleEditItem,
     handleDeleteItem,
     handleAIItemsDetected
-  } = useItemManager(
-    useCallback(() => ({
-      'Authorization': `Bearer ${userToken}`,
-      'Content-Type': 'application/json'
-    }), [userToken]),
-    activeHomeId
-  );
+  } = useItemManager(getAuthHeaders, activeHomeId);
 
   // Fetch items
   useEffect(() => {
@@ -65,10 +65,7 @@ export default function PantryPage() {
       
       try {
         const response = await fetch(`/api/pantry/${activeHomeId}`, {
-          headers: {
-            'Authorization': `Bearer ${userToken}`,
-            'Content-Type': 'application/json'
-          }
+          headers: getAuthHeaders()
         });
         
         if (!response.ok) throw new Error('Failed to fetch pantry items');
@@ -91,7 +88,7 @@ export default function PantryPage() {
     };
     
     fetchItems();
-  }, [activeHomeId, userToken]);
+  }, [activeHomeId, userToken, getAuthHeaders]);
 
   // Handlers
   const handleDirectAdd = async (itemToAdd) => {
@@ -146,10 +143,7 @@ export default function PantryPage() {
           onAIItemsDetected={handleAIItemsAdd}
           activeHomeId={activeHomeId}
           userToken={userToken}
-          getAuthHeaders={useCallback(() => ({
-            'Authorization': `Bearer ${userToken}`,
-            'Content-Type': 'application/json'
-          }), [userToken])}
+          getAuthHeaders={getAuthHeaders}
         />
 
         {/* View & Manage Section */}
