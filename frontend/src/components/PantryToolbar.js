@@ -7,7 +7,9 @@ const PantryToolbar = ({
   viewMode, 
   onViewModeChange, 
   onOpenFilter,
-  activeFiltersCount 
+  activeFiltersCount,
+  onCreateRecipe,
+  totalItems
 }) => {
   return (
     <div className="card p-4 mb-6">
@@ -76,6 +78,21 @@ const PantryToolbar = ({
             <List className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Create Recipe Button */}
+        <button
+          onClick={onCreateRecipe}
+          disabled={totalItems === 0}
+          className="btn-base px-4 py-2 text-sm font-medium transition-all disabled:opacity-50"
+          style={{ 
+            background: totalItems > 0 ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)' : 'var(--bg-tertiary)',
+            color: totalItems > 0 ? 'white' : 'var(--text-muted)',
+            border: 'none'
+          }}
+          title={totalItems === 0 ? 'Add some items to create recipes' : `Create recipe with ${totalItems} items`}
+        >
+          ✨ Recipe ({totalItems})
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Bot, Camera, Plus } from 'lucide-react';
+import { Camera, Plus } from 'lucide-react';
 import AddItemModal from './AddItemModal';
 
 const AddItemSection = ({ 
@@ -17,13 +17,8 @@ const AddItemSection = ({
     e.preventDefault();
     if (!quickAddName.trim()) return;
 
-    const itemToAdd = {
-      name: quickAddName.trim(),
-      location: 'pantry'
-    };
-
-    await onDirectAdd(itemToAdd);
-    setQuickAddName('');
+    // Open AI modal with the entered name
+    openAddModal('ai');
   };
 
   const openAddModal = (mode = 'manual') => {
@@ -63,35 +58,15 @@ const AddItemSection = ({
           </div>
         </form>
 
-        {/* Advanced Add Options */}
-        <div className="flex flex-wrap gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-          <button 
-            type="button"
-            onClick={() => openAddModal('ai')}
-            className="btn-base btn-secondary flex items-center gap-2"
-          >
-            <Bot className="w-4 h-4" />
-            Get AI Suggestions
-          </button>
+        {/* Photo Upload Option */}
+        <div className="flex justify-center pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
           <button 
             type="button"
             onClick={() => openAddModal('photo')}
-            className="btn-base flex items-center gap-2"
-            style={{ 
-              backgroundColor: 'var(--color-accent)',
-              color: 'white',
-              borderColor: 'var(--color-accent)'
-            }}
+            className="btn-base btn-ghost flex items-center gap-2 text-sm"
           >
             <Camera className="w-4 h-4" />
-            Upload Photo
-          </button>
-          <button 
-            type="button"
-            onClick={() => openAddModal('manual')}
-            className="btn-base btn-ghost flex items-center gap-2"
-          >
-            More Options
+            Or upload a photo for AI detection
           </button>
         </div>
       </div>
@@ -99,7 +74,11 @@ const AddItemSection = ({
       <AddItemModal
         isOpen={!!showAddModal}
         initialMode={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        initialName={quickAddName}
+        onClose={() => {
+          setShowAddModal(false);
+          setQuickAddName('');
+        }}
         onDirectAdd={onDirectAdd}
         onAIItemsDetected={onAIItemsDetected}
         activeHomeId={activeHomeId}

@@ -109,11 +109,6 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
             {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}
             {expiryInfo.text}
           </div>
-          {expiryInfo.isExpired && (
-            <div className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
-              Expired
-            </div>
-          )}
         </div>
       </div>
 

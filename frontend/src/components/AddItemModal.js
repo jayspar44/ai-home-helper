@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Bot, Camera, AlertCircle, Sparkles } from 'lucide-react';
 import AIItemDetectionModal from './AIItemDetectionModal';
 
@@ -148,6 +148,7 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 const AddItemModal = ({ 
   isOpen, 
   initialMode = 'manual', 
+  initialName = '',
   onClose, 
   onDirectAdd, 
   onAIItemsDetected,
@@ -161,7 +162,7 @@ const AddItemModal = ({
   
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
+    name: initialName,
     quantity: '',
     daysUntilExpiry: '',
     location: 'pantry'
@@ -173,6 +174,12 @@ const AddItemModal = ({
   const [showManualForm, setShowManualForm] = useState(false);
 
   const itemNameInputRef = useRef(null);
+
+  // Update form when initialName changes
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, name: initialName }));
+    setActiveTab(initialMode);
+  }, [initialName, initialMode]);
 
   const resetForm = () => {
     setFormData({

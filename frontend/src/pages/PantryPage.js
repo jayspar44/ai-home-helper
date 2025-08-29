@@ -5,7 +5,7 @@ import { AlertCircle } from 'lucide-react';
 // New Components
 import AddItemSection from '../components/AddItemSection';
 import PantryToolbar from '../components/PantryToolbar';
-import PantryViewSection from '../components/PantryViewSection';
+import UnifiedListView from '../components/UnifiedListView';
 import FilterModal from '../components/FilterModal';
 import EditItemModal from '../components/EditItemModal';
 
@@ -40,7 +40,7 @@ export default function PantryPage() {
     setSearchQuery,
     filters,
     setFilters,
-    groupedItems,
+    filteredItems,
     activeFiltersCount,
     clearFilters
   } = usePantryFilters(items);
@@ -160,6 +160,8 @@ export default function PantryPage() {
             onViewModeChange={setViewMode}
             onOpenFilter={() => setShowFilterModal(true)}
             activeFiltersCount={activeFiltersCount}
+            onCreateRecipe={handleCreateRecipe}
+            totalItems={totalItems}
           />
 
           {/* Error Display */}
@@ -187,65 +189,24 @@ export default function PantryPage() {
 
           {/* Items Display */}
           {isLoading ? (
-            <div className="grid md:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="card p-6 animate-pulse">
-                  <div className="animate-shimmer h-6 rounded mb-4"></div>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(j => (
-                      <div key={j} className="animate-shimmer h-16 rounded"></div>
-                    ))}
-                  </div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="animate-pulse h-20 bg-gray-200 rounded-lg" 
+                     style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
-              <PantryViewSection
-                title="🏠 Pantry"
-                items={groupedItems.pantry}
+            <div className="animate-slide-up">
+              <UnifiedListView
+                items={filteredItems}
                 viewMode={viewMode}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                isEmpty={groupedItems.pantry.length === 0}
-              />
-              <PantryViewSection
-                title="❄️ Fridge"
-                items={groupedItems.fridge}
-                viewMode={viewMode}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                isEmpty={groupedItems.fridge.length === 0}
-              />
-              <PantryViewSection
-                title="🧊 Freezer"
-                items={groupedItems.freezer}
-                viewMode={viewMode}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                isEmpty={groupedItems.freezer.length === 0}
+                isEmpty={filteredItems.length === 0}
               />
             </div>
           )}
-        </div>
-
-        {/* Create Recipe Button */}
-        <div className="mb-8">
-          <button
-            onClick={handleCreateRecipe}
-            disabled={totalItems === 0}
-            className="w-full btn-base py-3 text-base font-semibold transition-all disabled:opacity-50 hover-lift"
-            style={{ 
-              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
-              color: 'white',
-              border: 'none'
-            }}
-          >
-            ✨ Create a Recipe with What I Have
-          </button>
-          <p className="text-xs mt-2 text-center" style={{ color: 'var(--text-muted)' }}>
-            {totalItems === 0 ? 'Add some items to get started' : `${totalItems} item${totalItems !== 1 ? 's' : ''} available`}
-          </p>
         </div>
 
         {/* Modals */}
