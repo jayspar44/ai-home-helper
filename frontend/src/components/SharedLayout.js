@@ -189,30 +189,15 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
           </nav>
           
           
-          {/* Logout */}
-          <div className="p-4">
-            <button 
-              onClick={onLogout}
-              className="w-full px-4 py-3 rounded-lg transition-all font-medium border hover:bg-opacity-10"
-              style={{ 
-                color: 'var(--color-error)', 
-                borderColor: 'var(--color-error)',
-                ':hover': { backgroundColor: 'var(--color-error)' }
-              }}
-            >
-              Logout
-            </button>
-          </div>
         </div>
       </aside>
 
       {/* ===== MOBILE/DESKTOP HEADER ===== */}
-      <header className="sticky top-0 z-20 border-b" style={{ 
+      <header className="sticky top-0 z-20 border-b lg:pl-[var(--sidebar-width)]" style={{ 
         backgroundColor: 'var(--bg-overlay)', 
         borderColor: 'var(--border-light)',
         backdropFilter: 'blur(10px)',
-        height: 'var(--header-height)',
-        paddingLeft: 'var(--sidebar-width)' // Desktop only
+        height: 'var(--header-height)'
       }}>
         <div className="flex items-center justify-between h-full px-4 lg:px-6">
           

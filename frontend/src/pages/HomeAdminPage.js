@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 export default function HomeAdminPage() {
   const context = useOutletContext();
@@ -8,6 +10,9 @@ export default function HomeAdminPage() {
   const userToken = context?.userToken;
   const activeHomeId = context?.activeHomeId;
   const profile = context?.profile;
+  
+  // Note: onLogout is passed as a prop to SharedLayout, need to access from parent
+  // For now, we'll use a basic logout that clears Firebase auth
   
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,6 +26,15 @@ export default function HomeAdminPage() {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${userToken}`,
   }), [userToken]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // Firebase auth state change will be handled by the parent component
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   useEffect(() => {
     // Determine if the current user is an admin for the active home
@@ -217,7 +231,7 @@ export default function HomeAdminPage() {
         </div>
 
         {/* Members List */}
-        <div className="card">
+        <div className="card mb-8">
           <h3 className="text-lg font-semibold p-6" style={{ 
             color: 'var(--text-primary)',
             borderBottom: '1px solid var(--border-light)'
@@ -253,6 +267,32 @@ export default function HomeAdminPage() {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Account Management */}
+        <div className="card">
+          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Account Settings</h3>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Manage your account and logout options</p>
+          </div>
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Logout from Roscoe</h4>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Sign out of your account</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="btn-base font-semibold px-6 py-2 border hover:bg-opacity-10 transition-colors"
+                style={{ 
+                  color: 'var(--color-error)', 
+                  borderColor: 'var(--color-error)'
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
