@@ -17,10 +17,17 @@ const LocationSelect = ({ value, onChange, disabled }) => (
 );
 
 const ItemsList = ({ title, items, onDelete }) => {
-  const getExpiryColor = (daysUntilExpiry) => {
-    if (daysUntilExpiry === null || daysUntilExpiry === undefined) return { color: 'var(--text-muted)' };
-    if (daysUntilExpiry <= 3) return { color: 'var(--color-error)' };
-    if (daysUntilExpiry <= 7) return { color: 'var(--color-warning)' };
+  const getExpiryColor = (item) => {
+    if (!item.createdAt || item.daysUntilExpiry === null || item.daysUntilExpiry === undefined) {
+      return { color: 'var(--text-muted)' };
+    }
+    
+    const expiryDate = Date.parse(item.createdAt) + (item.daysUntilExpiry * 24 * 60 * 60 * 1000);
+    const remainingDays = Math.round((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
+    
+    if (remainingDays <= 0) return { color: 'var(--color-error)' };
+    if (remainingDays <= 3) return { color: 'var(--color-error)' };
+    if (remainingDays <= 7) return { color: 'var(--color-warning)' };
     return { color: 'var(--color-success)' };
   };
 
@@ -43,11 +50,15 @@ const ItemsList = ({ title, items, onDelete }) => {
                   {item.quantity && (
                     <div className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>Qty: {item.quantity}</div>
                   )}
-                   {item.daysUntilExpiry !== undefined && item.daysUntilExpiry !== null ? (
-                    <div className="text-sm font-medium" style={getExpiryColor(item.daysUntilExpiry)}>
-                      Expires in {item.daysUntilExpiry} day{item.daysUntilExpiry !== 1 ? 's' : ''}
-                    </div>
-                  ) : (
+                   {item.createdAt && item.daysUntilExpiry !== undefined && item.daysUntilExpiry !== null ? (() => {
+                      const expiryDate = Date.parse(item.createdAt) + (item.daysUntilExpiry * 24 * 60 * 60 * 1000);
+                      const remainingDays = Math.round((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
+                      return (
+                        <div className="text-sm font-medium" style={getExpiryColor(item)}>
+                          {remainingDays <= 0 ? 'Expired!' : `Expires in ${remainingDays} day${remainingDays !== 1 ? 's' : ''}`}
+                        </div>
+                      );
+                    })() : (
                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No expiry date</div>
                   )}
                   {item.detectedBy === 'ai' && (
@@ -249,7 +260,16 @@ export default function PantryPage() {
         });
         if (!response.ok) throw new Error('Failed to fetch pantry items');
         const data = await response.json();
-        setItems(data);
+        
+        // Convert Firestore timestamps to Date objects
+        const processedData = data.map(item => ({
+          ...item,
+          createdAt: item.createdAt && item.createdAt._seconds 
+            ? new Date(item.createdAt._seconds * 1000).toISOString()
+            : item.createdAt
+        }));
+        
+        setItems(processedData);
       } catch (err) {
         setError(err.message);
       } finally {
