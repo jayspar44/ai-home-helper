@@ -372,6 +372,7 @@ const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userTo
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
             </div>
