@@ -20,7 +20,10 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       if (!response.ok) throw new Error('Failed to add item');
 
       const newItem = await response.json();
-      const displayItem = { ...itemToAdd, id: newItem.id };
+      const displayItem = { 
+        ...newItem,
+        createdAt: new Date().toISOString() // Add current timestamp for expiry calculations
+      };
       setItems(prev => [displayItem, ...prev]);
 
       // Show success toast with undo option
