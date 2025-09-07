@@ -221,6 +221,7 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
           document.body
         )}
       </div>
+      </div>
       
       {/* AI Enhancement Overlay */}
       {item.pendingEnhancement && (
