@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle } from 'lucide-react';
 
 const ItemListItem = ({ item, onEdit, onDelete }) => {
@@ -21,22 +22,35 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
 
   // Calculate optimal menu position when opening menu
   const calculateMenuPosition = () => {
-    if (!buttonRef.current) return menuPosition;
+    if (!buttonRef.current) return { top: 0, left: 0 };
 
     const rect = buttonRef.current.getBoundingClientRect();
-    const menuWidth = 120; // Minimum width of menu
-    const menuHeight = 80; // Approximate height of menu
+    const menuWidth = 140; // Minimum width of menu
+    const menuHeight = 88; // Approximate height of menu (44px * 2 items)
     
-    // Check if menu would overflow viewport
-    const shouldAlignLeft = rect.right > window.innerWidth - menuWidth - 10;
-    const shouldOpenUpward = rect.bottom > window.innerHeight - menuHeight - 10;
+    // Calculate position relative to viewport
+    let top = rect.bottom + 4; // 4px gap below button
+    let left = rect.right - menuWidth; // Align right edge
     
-    return {
-      right: shouldAlignLeft ? 0 : 'auto',
-      left: shouldAlignLeft ? 'auto' : 0,
-      top: shouldOpenUpward ? 'auto' : '100%',
-      bottom: shouldOpenUpward ? '100%' : 'auto'
-    };
+    // Adjust if menu would overflow viewport
+    if (left < 8) {
+      left = rect.left; // Align left edge instead
+    }
+    if (left + menuWidth > window.innerWidth - 8) {
+      left = window.innerWidth - menuWidth - 8;
+    }
+    
+    // Open upward if no space below
+    if (top + menuHeight > window.innerHeight - 8) {
+      top = rect.top - menuHeight - 4;
+    }
+    
+    // Ensure menu stays within viewport
+    if (top < 8) {
+      top = 8;
+    }
+    
+    return { top, left };
   };
 
   const handleMenuToggle = () => {
@@ -161,15 +175,16 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
           <MoreVertical className="w-4 h-4" />
         </button>
 
-        {showMenu && (
+        {showMenu && createPortal(
           <div 
-            className="absolute mt-1 bg-white rounded-lg shadow-xl border min-w-[120px]"
+            className="fixed bg-white rounded-lg shadow-xl border min-w-[140px]"
             style={{ 
               backgroundColor: 'var(--bg-card)', 
               borderColor: 'var(--border-light)',
               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-              zIndex: 1000,
-              ...menuPosition
+              zIndex: 9999,
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`
             }}
           >
             <button
@@ -200,7 +215,8 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
               <Trash2 className="w-4 h-4" />
               Delete
             </button>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
