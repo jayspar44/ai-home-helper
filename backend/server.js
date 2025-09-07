@@ -831,18 +831,29 @@ app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), 
     // Create the AI prompt for food detection
     const prompt = `You are an expert at identifying food items in images. Analyze this image and detect all food items visible.
 
-For each item detected, provide:
+For each item detected, you MUST provide ALL fields:
 1. Name: Be specific (e.g., "Honeycrisp Apples" not just "apples", "Whole Wheat Bread" not just "bread")
 2. Quantity: Estimate based on visual cues (e.g., "3 apples", "1 loaf", "2 lbs", "1 carton")
-3. Location: Determine if this should go in pantry, fridge, or freezer based on the item type
-4. Days until expiry: Estimate based on typical shelf life and visual freshness
+3. Location: ALWAYS determine storage location based on item type:
+   - Fresh produce, dairy, meat, leftovers → "fridge"
+   - Frozen items → "freezer" 
+   - Dry goods, canned items, snacks, spices → "pantry"
+4. Days until expiry: ALWAYS estimate realistic shelf life:
+   - Fresh produce: 3-10 days
+   - Dairy: 5-14 days
+   - Meat/fish: 1-5 days
+   - Bread: 3-7 days
+   - Pantry items: 30-365 days
+   - Consider visible freshness cues
 5. Confidence: Your confidence level (0.0-1.0) in this detection
+
+CRITICAL: Every item MUST have location and daysUntilExpiry fields filled with realistic values.
 
 Respond ONLY with a JSON array, no other text:
 [
   {
     "name": "Item name",
-    "quantity": "Amount with unit",
+    "quantity": "Amount with unit", 
     "location": "pantry|fridge|freezer",
     "daysUntilExpiry": number,
     "confidence": 0.0-1.0
