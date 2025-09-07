@@ -197,7 +197,7 @@ export default function PantryPage() {
               ))}
             </div>
           ) : (
-            <div className="animate-slide-up">
+            <div className="animate-slide-up pantry-items">
               <UnifiedListView
                 items={filteredItems}
                 viewMode={viewMode}

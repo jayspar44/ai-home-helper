@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
+import { useToast } from '../contexts/ToastContext';
 
 const useItemManager = (getAuthHeaders, activeHomeId) => {
+  const { showSuccess, showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,14 +23,23 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       const displayItem = { ...itemToAdd, id: newItem.id };
       setItems(prev => [displayItem, ...prev]);
 
+      // Show success toast with undo option
+      showSuccess(`✓ Added "${itemToAdd.name}" to ${itemToAdd.location}`, {
+        action: 'Undo',
+        onAction: () => handleDeleteItem(displayItem.id, setItems),
+        duration: 5000
+      });
+
       return displayItem;
     } catch (err) {
-      setError(err.message);
+      const errorMessage = err.message || 'Failed to add item';
+      setError(errorMessage);
+      showError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthHeaders, activeHomeId]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError]);
 
   const handleEditItem = useCallback(async (updatedItem, setItems) => {
     try {
@@ -52,14 +63,19 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
         item.id === updatedItem.id ? updatedItem : item
       ));
 
+      // Show success toast for edit
+      showSuccess(`✓ Updated "${updatedItem.name}"`);
+
       return updatedItem;
     } catch (err) {
-      setError(err.message);
+      const errorMessage = err.message || 'Failed to update item';
+      setError(errorMessage);
+      showError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthHeaders, activeHomeId]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError]);
 
   const handleDeleteItem = useCallback(async (itemId, setItems) => {
     try {
@@ -73,14 +89,31 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
 
       if (!response.ok) throw new Error('Failed to delete item');
 
-      setItems(prev => prev.filter(item => item.id !== itemId));
+      // Store the item for potential undo
+      const deletedItem = setItems(prev => {
+        const item = prev.find(i => i.id === itemId);
+        const remaining = prev.filter(i => i.id !== itemId);
+        
+        if (item) {
+          // Show success toast with undo option
+          showSuccess(`✓ Deleted "${item.name}"`, {
+            action: 'Undo',
+            onAction: () => handleDirectAddItem(item, setItems),
+            duration: 5000
+          });
+        }
+        
+        return remaining;
+      });
     } catch (err) {
-      setError(err.message);
+      const errorMessage = err.message || 'Failed to delete item';
+      setError(errorMessage);
+      showError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthHeaders, activeHomeId]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError]);
 
   const handleAIItemsDetected = useCallback(async (detectedItems, setItems) => {
     try {
@@ -109,14 +142,26 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       }));
       
       setItems(prev => [...displayItems, ...prev]);
+      
+      // Show success toast for bulk AI detection
+      showSuccess(`✓ Added ${detectedItems.length} items to pantry`, {
+        action: 'View',
+        onAction: () => {
+          // Could scroll to added items or show them highlighted
+          document.querySelector('.pantry-items')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+      
       return displayItems;
     } catch (err) {
-      setError(err.message);
+      const errorMessage = err.message || 'Failed to add detected items';
+      setError(errorMessage);
+      showError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthHeaders, activeHomeId]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError]);
 
   return {
     isLoading,

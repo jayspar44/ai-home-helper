@@ -72,8 +72,24 @@ const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userTo
 
       const data = await response.json();
       setDetectedItems(data.items);
-      setEditingItems(data.items.map(item => ({ ...item, selected: true })));
-      setStep('review');
+      
+      // Separate high confidence items (100% = 1.0) from others
+      const highConfidenceItems = data.items.filter(item => item.confidence === 1.0);
+      const reviewItems = data.items.filter(item => item.confidence < 1.0);
+      
+      // Auto-add high confidence items immediately
+      if (highConfidenceItems.length > 0) {
+        onItemsDetected(highConfidenceItems);
+      }
+      
+      // Only show review if there are items needing review
+      if (reviewItems.length > 0) {
+        setEditingItems(reviewItems.map(item => ({ ...item, selected: true })));
+        setStep('review');
+      } else {
+        // All items were auto-added, close the modal
+        handleClose();
+      }
     } catch (err) {
       setError(err.message || 'Failed to process image');
     } finally {
@@ -107,8 +123,14 @@ const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userTo
 
   const getConfidenceColor = (confidence) => {
     if (confidence >= 0.8) return 'text-green-600';
-    if (confidence >= 0.6) return 'text-yellow-600';
+    if (confidence >= 0.5) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  const getConfidenceLabel = (confidence) => {
+    if (confidence >= 0.8) return 'High confidence - likely correct';
+    if (confidence >= 0.5) return 'Medium confidence - please verify';
+    return 'Low confidence - needs attention';
   };
 
   if (!isOpen) return null;
@@ -210,18 +232,82 @@ const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userTo
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Auto-added Items Status */}
+              {detectedItems.filter(item => item.confidence === 1.0).length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <Check className="w-5 h-5" />
+                    <span className="font-medium">
+                      ✓ Auto-added {detectedItems.filter(item => item.confidence === 1.0).length} items with high confidence
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Review Header */}
+              {editingItems.length > 0 && (
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {detectedItems.filter(item => item.confidence === 1.0).length > 0 
+                      ? `${editingItems.length} items need review`
+                      : 'Review detected items'
+                    }
+                  </h3>
+                </div>
+              )}
+              
               {/* Detected Items List */}
               {editingItems.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No items detected in the image</p>
+                  <p className="text-gray-600">All items were automatically added!</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {editingItems.map((item, index) => (
+                <div className="space-y-4">
+                  {/* Bulk Actions */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <button
+                      onClick={() => {
+                        setEditingItems(prev => prev.map(item => ({ ...item, selected: true })));
+                      }}
+                      className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      Accept All Suggestions
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Only select high confidence items (>= 0.8)
+                        setEditingItems(prev => prev.map(item => ({ 
+                          ...item, 
+                          selected: item.confidence >= 0.8 
+                        })));
+                      }}
+                      className="px-3 py-1 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                    >
+                      Skip Uncertain Items
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingItems(prev => prev.map(item => ({ ...item, selected: false })));
+                      }}
+                      className="px-3 py-1 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                
+                  <div className="space-y-3">
+                  {/* Group items by confidence level */}
+                  {editingItems
+                    .sort((a, b) => b.confidence - a.confidence) // Sort by confidence descending
+                    .map((item, index) => (
                     <div
                       key={index}
                       className={`border rounded-lg p-4 ${
                         item.selected ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                      } ${
+                        item.confidence >= 0.8 ? 'border-l-4 border-l-green-500' :
+                        item.confidence >= 0.5 ? 'border-l-4 border-l-yellow-500' :
+                        'border-l-4 border-l-red-500'
                       }`}
                     >
                       <div className="flex items-start space-x-3">
@@ -276,9 +362,12 @@ const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userTo
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className={`text-sm font-medium ${getConfidenceColor(item.confidence)}`}>
+                          <div className={`text-sm font-medium ${getConfidenceColor(item.confidence)}`}>
                             {Math.round(item.confidence * 100)}% confident
-                          </span>
+                          </div>
+                          <div className={`text-xs ${getConfidenceColor(item.confidence)}`}>
+                            {getConfidenceLabel(item.confidence)}
+                          </div>
                         </div>
                       </div>
                     </div>

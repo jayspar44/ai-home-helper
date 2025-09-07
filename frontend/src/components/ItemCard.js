@@ -3,11 +3,14 @@ import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle } from 'luc
 
 const ItemCard = ({ item, onEdit, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ right: 0, top: '100%', left: 'auto', bottom: 'auto' });
   const menuRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (menuRef.current && !menuRef.current.contains(event.target) && 
+          buttonRef.current && !buttonRef.current.contains(event.target)) {
         setShowMenu(false);
       }
     };
@@ -15,6 +18,33 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Calculate optimal menu position when opening menu
+  const calculateMenuPosition = () => {
+    if (!buttonRef.current) return menuPosition;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuWidth = 120; // Minimum width of menu
+    const menuHeight = 80; // Approximate height of menu
+    
+    // Check if menu would overflow viewport
+    const shouldAlignLeft = rect.right > window.innerWidth - menuWidth - 10;
+    const shouldOpenUpward = rect.bottom > window.innerHeight - menuHeight - 10;
+    
+    return {
+      right: shouldAlignLeft ? 0 : 'auto',
+      left: shouldAlignLeft ? 'auto' : 0,
+      top: shouldOpenUpward ? 'auto' : '100%',
+      bottom: shouldOpenUpward ? '100%' : 'auto'
+    };
+  };
+
+  const handleMenuToggle = () => {
+    if (!showMenu) {
+      setMenuPosition(calculateMenuPosition());
+    }
+    setShowMenu(!showMenu);
+  };
 
   const getExpiryInfo = (item) => {
     if (!item.createdAt || item.daysUntilExpiry === null || item.daysUntilExpiry === undefined) {
@@ -70,7 +100,7 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
 
   return (
     <div 
-      className="card-interactive p-4 rounded-lg hover-lift transition-all duration-200 relative"
+      className={`card-interactive p-4 rounded-lg hover-lift transition-all duration-200 relative ${showMenu ? 'overflow-visible' : ''}`}
       style={{ 
         backgroundColor: 'var(--bg-tertiary)',
         border: expiryInfo.isExpired ? '2px solid var(--color-error)' : 
@@ -152,9 +182,17 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
           {/* Three-dot menu */}
           <div className="relative ml-2" ref={menuRef}>
             <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1 rounded hover:bg-opacity-80 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+              ref={buttonRef}
+              onClick={handleMenuToggle}
+              className="p-2 rounded hover:bg-opacity-80 transition-colors"
+              style={{ 
+                color: 'var(--text-muted)',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
               aria-label="Item options"
             >
               <MoreVertical className="w-4 h-4" />
@@ -162,11 +200,13 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
 
             {showMenu && (
               <div 
-                className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border z-10 min-w-[120px]"
+                className="absolute mt-1 bg-white rounded-lg shadow-xl border min-w-[120px]"
                 style={{ 
                   backgroundColor: 'var(--bg-card)', 
                   borderColor: 'var(--border-light)',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  zIndex: 1000,
+                  ...menuPosition
                 }}
               >
                 <button
@@ -174,10 +214,13 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
                     onEdit(item);
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-xs hover:bg-opacity-50 flex items-center gap-2 transition-colors rounded-t-lg"
-                  style={{ color: 'var(--text-primary)' }}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors rounded-t-lg"
+                  style={{ 
+                    color: 'var(--text-primary)',
+                    minHeight: '44px'
+                  }}
                 >
-                  <Edit2 className="w-3 h-3" />
+                  <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
                 <button
@@ -185,10 +228,13 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
                     onDelete(item.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-xs hover:bg-opacity-50 flex items-center gap-2 transition-colors rounded-b-lg"
-                  style={{ color: 'var(--color-error)' }}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 flex items-center gap-3 transition-colors rounded-b-lg"
+                  style={{ 
+                    color: 'var(--color-error)',
+                    minHeight: '44px'
+                  }}
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-4 h-4" />
                   Delete
                 </button>
               </div>
