@@ -7,10 +7,11 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
   const [menuPosition, setMenuPosition] = useState({ right: 0, top: '100%', left: 'auto', bottom: 'auto' });
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+  const portalMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target) && 
+      if (portalMenuRef.current && !portalMenuRef.current.contains(event.target) && 
           buttonRef.current && !buttonRef.current.contains(event.target)) {
         setShowMenu(false);
       }
