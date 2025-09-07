@@ -149,6 +149,7 @@ const AddItemModal = ({
   isOpen, 
   initialMode = 'manual', 
   initialName = '',
+  initialData = null,
   onClose, 
   onDirectAdd, 
   onAIItemsDetected,
@@ -162,29 +163,35 @@ const AddItemModal = ({
   
   // Form state
   const [formData, setFormData] = useState({
-    name: initialName,
-    quantity: '',
-    daysUntilExpiry: '',
-    location: 'pantry'
+    name: initialData?.name || initialName,
+    quantity: initialData?.quantity || '',
+    daysUntilExpiry: initialData?.daysUntilExpiry || '',
+    location: initialData?.location || 'pantry'
   });
 
   // AI suggestions state
   const [suggestionResult, setSuggestionResult] = useState(null);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [showManualForm, setShowManualForm] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(!!initialData); // Show form immediately if we have initial data
 
   const itemNameInputRef = useRef(null);
 
-  // Update form when initialName changes and auto-fetch AI suggestions
+  // Update form when initialName/initialData changes and auto-fetch AI suggestions
   useEffect(() => {
-    setFormData(prev => ({ ...prev, name: initialName }));
+    setFormData({
+      name: initialData?.name || initialName,
+      quantity: initialData?.quantity || '',
+      daysUntilExpiry: initialData?.daysUntilExpiry || '',
+      location: initialData?.location || 'pantry'
+    });
     setActiveTab(initialMode);
+    setShowManualForm(!!initialData); // Show form if we have initial data
     
     // Auto-fetch AI suggestions if we have a name and we're in AI mode
-    if (initialName.trim() && initialMode === 'ai') {
+    if ((initialData?.name || initialName).trim() && initialMode === 'ai') {
       fetchAISuggestions();
     }
-  }, [initialName, initialMode]);
+  }, [initialName, initialMode, initialData]);
 
   // Auto-fetch when formData.name changes in AI tab
   useEffect(() => {

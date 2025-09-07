@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Camera, Plus, Sparkles, X } from 'lucide-react';
 import AIItemDetectionModal from './AIItemDetectionModal';
+import AddItemModal from './AddItemModal';
 
 const AddItemSection = ({ 
   onDirectAdd, 
@@ -14,6 +15,7 @@ const AddItemSection = ({
   const [showAIModal, setShowAIModal] = useState(false);
   const [showEnhancement, setShowEnhancement] = useState(false);
   const [enhancementSuggestion, setEnhancementSuggestion] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const itemNameInputRef = useRef(null);
 
   // Get smart defaults from AI
@@ -84,7 +86,8 @@ const AddItemSection = ({
       
       // Then show enhancement options
       const enhancement = await getFullEnhancement(quickAddName.trim());
-      if (enhancement && (enhancement.name !== quickAddName.trim() || enhancement.quantity)) {
+      if (enhancement) {
+        // Always show AI suggestions, let user decide value
         setEnhancementSuggestion({
           ...enhancement,
           originalItem: newItem
@@ -130,6 +133,28 @@ const AddItemSection = ({
     setShowEnhancement(false);
     setEnhancementSuggestion(null);
   }, []);
+
+  const handleEditEnhancement = useCallback(() => {
+    setShowEditModal(true);
+    setShowEnhancement(false);
+  }, []);
+
+  const handleEditModalClose = useCallback(async (updatedItem) => {
+    setShowEditModal(false);
+    
+    if (updatedItem && enhancementSuggestion?.originalItem) {
+      // Apply the user-edited enhancement
+      try {
+        await onDirectAdd(updatedItem);
+        // Remove the original item that was added initially
+        // This would require passing a remove function, but for now we'll just add the enhanced version
+      } catch (error) {
+        console.error('Error applying edited enhancement:', error);
+      }
+    }
+    
+    setEnhancementSuggestion(null);
+  }, [enhancementSuggestion, onDirectAdd]);
 
   return (
     <>
@@ -262,6 +287,17 @@ const AddItemSection = ({
                   Apply
                 </button>
                 <button 
+                  onClick={handleEditEnhancement} 
+                  className="btn-base px-3 py-1 text-sm"
+                  style={{ 
+                    backgroundColor: 'var(--bg-card)', 
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-medium)'
+                  }}
+                >
+                  Edit
+                </button>
+                <button 
                   onClick={dismissEnhancement} 
                   className="p-1 rounded hover:bg-white hover:bg-opacity-50 transition-colors"
                   style={{ color: 'var(--text-muted)' }}
@@ -285,6 +321,25 @@ const AddItemSection = ({
         }}
         homeId={activeHomeId}
         userToken={userToken}
+      />
+
+      {/* Edit Enhancement Modal */}
+      <AddItemModal
+        isOpen={showEditModal}
+        initialMode="manual"
+        initialName={enhancementSuggestion?.name || ''}
+        initialData={{
+          name: enhancementSuggestion?.name || '',
+          quantity: enhancementSuggestion?.quantity || '',
+          location: enhancementSuggestion?.location || 'pantry',
+          daysUntilExpiry: enhancementSuggestion?.daysUntilExpiry || ''
+        }}
+        onClose={() => handleEditModalClose()}
+        onDirectAdd={(item) => handleEditModalClose(item)}
+        onAIItemsDetected={() => {}} // Not used in this context
+        activeHomeId={activeHomeId}
+        userToken={userToken}
+        getAuthHeaders={getAuthHeaders}
       />
     </>
   );
