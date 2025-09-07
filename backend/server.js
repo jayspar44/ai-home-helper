@@ -18,7 +18,7 @@ try {
 
 const db = admin.firestore();
 const app = express();
-let port = process.env.PORT || 3001;
+let port = process.env.PORT || 5000;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const fetch = require('node-fetch');  // Add this with other imports at the top
 const multer = require('multer');

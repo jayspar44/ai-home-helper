@@ -176,7 +176,6 @@ export default function PantryPage() {
         <AddItemSection
           onDirectAdd={handleDirectAdd}
           onAIItemsDetected={handleAIItemsAdd}
-          onItemEnhancementRequested={handleItemEnhancementRequested}
           activeHomeId={activeHomeId}
           userToken={userToken}
           getAuthHeaders={getAuthHeaders}
@@ -239,8 +238,6 @@ export default function PantryPage() {
                 viewMode={viewMode}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                onApplyEnhancement={handleApplyEnhancement}
-                onDismissEnhancement={handleDismissEnhancement}
                 isEmpty={filteredItems.length === 0}
               />
             </div>
