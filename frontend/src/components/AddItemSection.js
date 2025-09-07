@@ -6,6 +6,7 @@ import AddItemModal from './AddItemModal';
 const AddItemSection = ({ 
   onDirectAdd, 
   onAIItemsDetected, 
+  onItemEnhancementRequested,
   activeHomeId, 
   userToken, 
   getAuthHeaders 
@@ -13,9 +14,6 @@ const AddItemSection = ({
   const [quickAddName, setQuickAddName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
-  const [showEnhancement, setShowEnhancement] = useState(false);
-  const [enhancementSuggestion, setEnhancementSuggestion] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const itemNameInputRef = useRef(null);
 
   // Get smart defaults from AI
@@ -55,6 +53,16 @@ const AddItemSection = ({
       const data = await response.json();
       if (data.action === 'accept' && data.suggestions?.[0]) {
         return data.suggestions[0];
+      } else if (data.action === 'choose' && data.suggestions?.[0]) {
+        return data.suggestions[0]; // Use first suggestion for medium confidence
+      } else if (data.action === 'specify' && data.guidance) {
+        return {
+          isLowConfidence: true,
+          name: itemName, // Keep original name
+          guidance: data.guidance,
+          location: 'pantry', // Default
+          daysUntilExpiry: 7 // Default
+        };
       }
       return null;
     } catch (error) {
@@ -79,26 +87,18 @@ const AddItemSection = ({
         daysUntilExpiry: defaults.daysUntilExpiry
       };
       
-      await onDirectAdd(newItem);
+      const addedItem = await onDirectAdd(newItem);
       
       // Clear input
       setQuickAddName('');
       
-      // Then show enhancement options
-      const enhancement = await getFullEnhancement(quickAddName.trim());
-      if (enhancement) {
-        // Always show AI suggestions, let user decide value
-        setEnhancementSuggestion({
-          ...enhancement,
-          originalItem: newItem
-        });
-        setShowEnhancement(true);
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-          setShowEnhancement(false);
-          setEnhancementSuggestion(null);
-        }, 5000);
+      // Request enhancement for the newly added item
+      if (addedItem && onItemEnhancementRequested) {
+        const enhancement = await getFullEnhancement(quickAddName.trim());
+        if (enhancement) {
+          // Pass the enhancement to parent to attach to the specific item
+          onItemEnhancementRequested(addedItem.id, enhancement);
+        }
       }
     } catch (error) {
       // Error is already handled by useItemManager hook with toast
@@ -108,53 +108,6 @@ const AddItemSection = ({
     }
   };
 
-  const applyEnhancement = useCallback(async () => {
-    if (!enhancementSuggestion) return;
-    
-    try {
-      // Update the item with enhanced details
-      const enhancedItem = {
-        ...enhancementSuggestion.originalItem,
-        name: enhancementSuggestion.name,
-        quantity: enhancementSuggestion.quantity,
-        location: enhancementSuggestion.location,
-        daysUntilExpiry: enhancementSuggestion.daysUntilExpiry
-      };
-      
-      await onDirectAdd(enhancedItem);
-      setShowEnhancement(false);
-      setEnhancementSuggestion(null);
-    } catch (error) {
-      console.error('Error applying enhancement:', error);
-    }
-  }, [enhancementSuggestion, onDirectAdd]);
-
-  const dismissEnhancement = useCallback(() => {
-    setShowEnhancement(false);
-    setEnhancementSuggestion(null);
-  }, []);
-
-  const handleEditEnhancement = useCallback(() => {
-    setShowEditModal(true);
-    setShowEnhancement(false);
-  }, []);
-
-  const handleEditModalClose = useCallback(async (updatedItem) => {
-    setShowEditModal(false);
-    
-    if (updatedItem && enhancementSuggestion?.originalItem) {
-      // Apply the user-edited enhancement
-      try {
-        await onDirectAdd(updatedItem);
-        // Remove the original item that was added initially
-        // This would require passing a remove function, but for now we'll just add the enhanced version
-      } catch (error) {
-        console.error('Error applying edited enhancement:', error);
-      }
-    }
-    
-    setEnhancementSuggestion(null);
-  }, [enhancementSuggestion, onDirectAdd]);
 
   return (
     <>
@@ -254,61 +207,6 @@ const AddItemSection = ({
           </div>
         </div>
 
-        {/* Enhancement Bar */}
-        {showEnhancement && enhancementSuggestion && (
-          <div className="mt-4 animate-slide-down">
-            <div 
-              className="flex items-center justify-between p-4 rounded-lg" 
-              style={{ backgroundColor: 'var(--color-primary-light)', border: '1px solid var(--color-primary)' }}
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Sparkles className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                <div className="min-w-0 flex-1">
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    AI suggests: 
-                  </span>
-                  <span className="text-sm ml-1" style={{ color: 'var(--text-secondary)' }}>
-                    "{enhancementSuggestion.name}"
-                    {enhancementSuggestion.quantity && `, ${enhancementSuggestion.quantity}`}
-                    {' '}in {enhancementSuggestion.location}, expires in {enhancementSuggestion.daysUntilExpiry} days
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <button 
-                  onClick={applyEnhancement} 
-                  className="btn-base px-3 py-1 text-sm"
-                  style={{ 
-                    backgroundColor: 'var(--color-primary)', 
-                    color: 'white',
-                    border: '1px solid var(--color-primary)'
-                  }}
-                >
-                  Apply
-                </button>
-                <button 
-                  onClick={handleEditEnhancement} 
-                  className="btn-base px-3 py-1 text-sm"
-                  style={{ 
-                    backgroundColor: 'var(--bg-card)', 
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-medium)'
-                  }}
-                >
-                  Edit
-                </button>
-                <button 
-                  onClick={dismissEnhancement} 
-                  className="p-1 rounded hover:bg-white hover:bg-opacity-50 transition-colors"
-                  style={{ color: 'var(--text-muted)' }}
-                  aria-label="Dismiss"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* AI Item Detection Modal */}
@@ -323,24 +221,6 @@ const AddItemSection = ({
         userToken={userToken}
       />
 
-      {/* Edit Enhancement Modal */}
-      <AddItemModal
-        isOpen={showEditModal}
-        initialMode="manual"
-        initialName={enhancementSuggestion?.name || ''}
-        initialData={{
-          name: enhancementSuggestion?.name || '',
-          quantity: enhancementSuggestion?.quantity || '',
-          location: enhancementSuggestion?.location || 'pantry',
-          daysUntilExpiry: enhancementSuggestion?.daysUntilExpiry || ''
-        }}
-        onClose={() => handleEditModalClose()}
-        onDirectAdd={(item) => handleEditModalClose(item)}
-        onAIItemsDetected={() => {}} // Not used in this context
-        activeHomeId={activeHomeId}
-        userToken={userToken}
-        getAuthHeaders={getAuthHeaders}
-      />
     </>
   );
 };

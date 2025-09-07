@@ -7,6 +7,8 @@ const UnifiedListView = ({
   viewMode, 
   onEdit, 
   onDelete,
+  onApplyEnhancement,
+  onDismissEnhancement,
   isEmpty 
 }) => {
   if (isEmpty) {
@@ -32,6 +34,8 @@ const UnifiedListView = ({
             item={item}
             onEdit={onEdit}
             onDelete={onDelete}
+            onApplyEnhancement={onApplyEnhancement}
+            onDismissEnhancement={onDismissEnhancement}
           />
         ))}
       </div>
@@ -46,6 +50,8 @@ const UnifiedListView = ({
           item={item}
           onEdit={onEdit}
           onDelete={onDelete}
+          onApplyEnhancement={onApplyEnhancement}
+          onDismissEnhancement={onDismissEnhancement}
         />
       ))}
     </div>
