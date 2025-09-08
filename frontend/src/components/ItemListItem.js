@@ -244,7 +244,7 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
             <div className="flex-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
               {item.pendingEnhancement.isLowConfidence ? (
                 <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {item.pendingEnhancement.guidance?.message}
+                  "{item.name}" {item.pendingEnhancement.guidance?.message}
                   {item.pendingEnhancement.guidance?.examples && 
                     ` Try: ${item.pendingEnhancement.guidance.examples.slice(0, 2).join(', ')}`
                   }
@@ -252,6 +252,10 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
               ) : (
                 <>
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                    "{item.name}"
+                  </span>
+                  <span className="mx-1">→</span>
+                  <span className="font-medium" style={{ color: 'var(--color-primary)' }}>
                     "{item.pendingEnhancement.name}"
                   </span>
                   {item.pendingEnhancement.quantity && `, ${item.pendingEnhancement.quantity}`}

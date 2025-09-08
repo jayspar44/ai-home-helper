@@ -75,35 +75,39 @@ const AddItemSection = ({
     if (!quickAddName.trim()) return;
 
     setIsLoading(true);
+    const itemNameToProcess = quickAddName.trim();
     
     try {
       // Get smart defaults from AI (location + expiry)
-      const defaults = await getQuickDefaults(quickAddName.trim());
+      const defaults = await getQuickDefaults(itemNameToProcess);
       
       // Add immediately with defaults
       const newItem = {
-        name: quickAddName.trim(),
+        name: itemNameToProcess,
         location: defaults.location,
         daysUntilExpiry: defaults.daysUntilExpiry
       };
       
       const addedItem = await onDirectAdd(newItem);
       
-      // Clear input
+      // Clear input and enable form immediately - don't block user workflow
       setQuickAddName('');
+      setIsLoading(false);
       
-      // Request enhancement for the newly added item
+      // Request enhancement for the newly added item in background (non-blocking)
       if (addedItem && onItemEnhancementRequested) {
-        const enhancement = await getFullEnhancement(quickAddName.trim());
-        if (enhancement) {
-          // Pass the enhancement to parent to attach to the specific item
-          onItemEnhancementRequested(addedItem.id, enhancement);
-        }
+        // Run AI enhancement asynchronously - doesn't block input
+        getFullEnhancement(itemNameToProcess).then(enhancement => {
+          if (enhancement) {
+            onItemEnhancementRequested(addedItem.id, enhancement);
+          }
+        }).catch(error => {
+          console.error('Background enhancement error:', error);
+        });
       }
     } catch (error) {
       // Error is already handled by useItemManager hook with toast
       console.error('Error adding item:', error);
-    } finally {
       setIsLoading(false);
     }
   };

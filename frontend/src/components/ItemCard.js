@@ -265,21 +265,24 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
       {item.pendingEnhancement && (
         <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg border-2 border-dashed animate-fade-in"
              style={{ borderColor: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' }}>
-          <div className="p-4 h-full flex flex-col">
-            <div className="flex items-center gap-2 mb-3">
-              {item.pendingEnhancement.isLowConfidence ? (
-                <AlertCircle className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
-              ) : (
-                <Sparkles className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-              )}
-              <span className="text-sm font-semibold" style={{ 
-                color: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' 
-              }}>
-                {item.pendingEnhancement.isLowConfidence ? 'Item Needs Review' : 'AI Enhancement'}
-              </span>
+          <div className="p-3 h-full flex flex-col justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                {item.pendingEnhancement.isLowConfidence ? (
+                  <AlertCircle className="w-3 h-3" style={{ color: 'var(--color-warning)' }} />
+                ) : (
+                  <Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
+                )}
+                <span className="text-xs font-semibold" style={{ 
+                  color: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' 
+                }}>
+                  {item.pendingEnhancement.isLowConfidence ? 'Needs Review' : 'AI Suggestion'}
+                </span>
+              </div>
               <button 
                 onClick={() => onDismissEnhancement?.(item.id)}
-                className="ml-auto p-1 rounded hover:bg-gray-100 transition-colors"
+                className="p-1 rounded hover:bg-gray-100 transition-colors"
                 style={{ color: 'var(--text-muted)' }}
                 aria-label="Dismiss"
               >
@@ -287,51 +290,53 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
               </button>
             </div>
             
-            {item.pendingEnhancement.isLowConfidence ? (
-              <div className="flex-1 mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <div className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                  {item.pendingEnhancement.guidance?.message}
-                </div>
-                {item.pendingEnhancement.guidance?.examples && (
-                  <div>
-                    <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Try instead:</div>
-                    <div className="text-xs">
-                      {item.pendingEnhancement.guidance.examples.join(', ')}
-                    </div>
+            {/* Original → Suggestion */}
+            <div className="flex-1 text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+              {item.pendingEnhancement.isLowConfidence ? (
+                <div>
+                  <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                    "{item.name}" {item.pendingEnhancement.guidance?.message}
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1 mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                  "{item.pendingEnhancement.name}"
+                  {item.pendingEnhancement.guidance?.examples && (
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      Try: {item.pendingEnhancement.guidance.examples.slice(0, 2).join(', ')}
+                    </div>
+                  )}
                 </div>
-                {item.pendingEnhancement.quantity && (
-                  <div>Qty: {item.pendingEnhancement.quantity}</div>
-                )}
-                <div>Location: {item.pendingEnhancement.location}</div>
-                <div>Expires in: {item.pendingEnhancement.daysUntilExpiry} days</div>
-              </div>
-            )}
+              ) : (
+                <div>
+                  <div className="mb-1">
+                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>"{item.name}"</span>
+                    <span className="mx-1">→</span>
+                    <span className="font-medium" style={{ color: 'var(--color-primary)' }}>"{item.pendingEnhancement.name}"</span>
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {item.pendingEnhancement.quantity && `${item.pendingEnhancement.quantity} • `}
+                    {item.pendingEnhancement.location} • {item.pendingEnhancement.daysUntilExpiry}d
+                  </div>
+                </div>
+              )}
+            </div>
             
-            <div className="flex gap-2">
+            {/* Buttons */}
+            <div className="flex gap-1">
               {item.pendingEnhancement.isLowConfidence ? (
                 <button 
                   onClick={() => onEdit(item)}
-                  className="flex-1 btn-base py-2 text-sm font-medium"
+                  className="flex-1 btn-base py-1 text-xs font-medium"
                   style={{ 
                     backgroundColor: 'var(--color-warning)', 
                     color: 'white',
                     border: '1px solid var(--color-warning)'
                   }}
                 >
-                  Update Item
+                  Update
                 </button>
               ) : (
                 <>
                   <button 
                     onClick={() => onApplyEnhancement?.(item.id, item.pendingEnhancement)}
-                    className="flex-1 btn-base py-2 text-sm font-medium"
+                    className="flex-1 btn-base py-1 text-xs font-medium"
                     style={{ 
                       backgroundColor: 'var(--color-primary)', 
                       color: 'white',
@@ -348,7 +353,7 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
                       location: item.pendingEnhancement.location,
                       daysUntilExpiry: item.pendingEnhancement.daysUntilExpiry
                     })}
-                    className="flex-1 btn-base py-2 text-sm"
+                    className="flex-1 btn-base py-1 text-xs"
                     style={{ 
                       backgroundColor: 'var(--bg-card)', 
                       color: 'var(--text-primary)',
