@@ -92,11 +92,44 @@ export default function PantryPage() {
 
   // Handlers
   const handleDirectAdd = async (itemToAdd) => {
-    await handleDirectAddItem(itemToAdd, setItems);
+    const addedItem = await handleDirectAddItem(itemToAdd, setItems);
+    return addedItem;
   };
 
   const handleAIItemsAdd = async (detectedItems) => {
     await handleAIItemsDetected(detectedItems, setItems);
+  };
+
+  const handleItemEnhancementRequested = (itemId, enhancement) => {
+    setItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, pendingEnhancement: enhancement }
+        : item
+    ));
+  };
+
+  const handleApplyEnhancement = async (itemId, enhancement) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const enhancedItem = {
+      ...item,
+      name: enhancement.name,
+      quantity: enhancement.quantity,
+      location: enhancement.location,
+      daysUntilExpiry: enhancement.daysUntilExpiry,
+      pendingEnhancement: null
+    };
+
+    await handleEditItem(enhancedItem, setItems);
+  };
+
+  const handleDismissEnhancement = (itemId) => {
+    setItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, pendingEnhancement: null }
+        : item
+    ));
   };
 
   const handleEdit = (item) => {
@@ -104,7 +137,9 @@ export default function PantryPage() {
   };
 
   const handleSaveEdit = async (updatedItem) => {
-    await handleEditItem(updatedItem, setItems);
+    // Clear pending enhancement when manually editing
+    const itemWithoutEnhancement = { ...updatedItem, pendingEnhancement: null };
+    await handleEditItem(itemWithoutEnhancement, setItems);
   };
 
   const handleDelete = async (itemId) => {
