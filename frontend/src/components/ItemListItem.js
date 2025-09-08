@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle, X, AlertCircle } from 'lucide-react';
 
-const ItemListItem = ({ item, onEdit, onDelete }) => {
+const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ right: 0, top: '100%', left: 'auto', bottom: 'auto' });
   const menuRef = useRef(null);
@@ -114,15 +114,16 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
   const ExpiryIcon = expiryInfo.icon;
 
   return (
-    <div 
-      className="flex items-center justify-between p-3 rounded-lg hover:bg-opacity-50 transition-colors border-l-4"
-      style={{ 
-        backgroundColor: 'var(--bg-tertiary)',
-        borderLeftColor: expiryInfo.isExpired ? 'var(--color-error)' : 
-                         expiryInfo.isExpiringSoon ? 'var(--color-warning)' : 
-                         'var(--border-light)'
-      }}
-    >
+    <div className="relative">
+      <div 
+        className="flex items-center justify-between p-3 rounded-lg hover:bg-opacity-50 transition-colors border-l-4"
+        style={{ 
+          backgroundColor: 'var(--bg-tertiary)',
+          borderLeftColor: expiryInfo.isExpired ? 'var(--color-error)' : 
+                           expiryInfo.isExpiringSoon ? 'var(--color-warning)' : 
+                           'var(--border-light)'
+        }}
+      >
       <div className="flex items-center gap-4 flex-1 min-w-0">
         {/* Item Info */}
         <div className="flex-1 min-w-0">
@@ -220,6 +221,102 @@ const ItemListItem = ({ item, onEdit, onDelete }) => {
           document.body
         )}
       </div>
+      </div>
+      
+      {/* AI Enhancement Overlay */}
+      {item.pendingEnhancement && (
+        <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg border-2 border-dashed animate-fade-in"
+             style={{ borderColor: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' }}>
+          <div className="p-3 h-full flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {item.pendingEnhancement.isLowConfidence ? (
+                <AlertCircle className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
+              ) : (
+                <Sparkles className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+              )}
+              <span className="text-sm font-semibold" style={{ 
+                color: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' 
+              }}>
+                {item.pendingEnhancement.isLowConfidence ? 'Needs review:' : 'AI suggests:'}
+              </span>
+            </div>
+            
+            <div className="flex-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {item.pendingEnhancement.isLowConfidence ? (
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {item.pendingEnhancement.guidance?.message}
+                  {item.pendingEnhancement.guidance?.examples && 
+                    ` Try: ${item.pendingEnhancement.guidance.examples.slice(0, 2).join(', ')}`
+                  }
+                </span>
+              ) : (
+                <>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                    "{item.pendingEnhancement.name}"
+                  </span>
+                  {item.pendingEnhancement.quantity && `, ${item.pendingEnhancement.quantity}`}
+                  {' '}in {item.pendingEnhancement.location}, expires in {item.pendingEnhancement.daysUntilExpiry} days
+                </>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              {item.pendingEnhancement.isLowConfidence ? (
+                <button 
+                  onClick={() => onEdit(item)}
+                  className="btn-base px-3 py-1 text-sm font-medium"
+                  style={{ 
+                    backgroundColor: 'var(--color-warning)', 
+                    color: 'white',
+                    border: '1px solid var(--color-warning)'
+                  }}
+                >
+                  Update
+                </button>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => onApplyEnhancement?.(item.id, item.pendingEnhancement)}
+                    className="btn-base px-3 py-1 text-sm font-medium"
+                    style={{ 
+                      backgroundColor: 'var(--color-primary)', 
+                      color: 'white',
+                      border: '1px solid var(--color-primary)'
+                    }}
+                  >
+                    Apply
+                  </button>
+                  <button 
+                    onClick={() => onEdit({
+                      ...item,
+                      name: item.pendingEnhancement.name,
+                      quantity: item.pendingEnhancement.quantity || item.quantity,
+                      location: item.pendingEnhancement.location,
+                      daysUntilExpiry: item.pendingEnhancement.daysUntilExpiry
+                    })}
+                    className="btn-base px-3 py-1 text-sm"
+                    style={{ 
+                      backgroundColor: 'var(--bg-card)', 
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)'
+                    }}
+                  >
+                    Edit
+                  </button>
+                </>
+              )}
+              <button 
+                onClick={() => onDismissEnhancement?.(item.id)}
+                className="p-1 rounded hover:bg-gray-100 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

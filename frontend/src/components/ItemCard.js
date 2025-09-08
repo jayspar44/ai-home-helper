@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle, X, AlertCircle } from 'lucide-react';
 
-const ItemCard = ({ item, onEdit, onDelete }) => {
+const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ right: 0, top: '100%', left: 'auto', bottom: 'auto' });
   const menuRef = useRef(null);
@@ -260,6 +260,109 @@ const ItemCard = ({ item, onEdit, onDelete }) => {
           </div>
         </div>
       </div>
+
+      {/* AI Enhancement Overlay */}
+      {item.pendingEnhancement && (
+        <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg border-2 border-dashed animate-fade-in"
+             style={{ borderColor: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' }}>
+          <div className="p-4 h-full flex flex-col">
+            <div className="flex items-center gap-2 mb-3">
+              {item.pendingEnhancement.isLowConfidence ? (
+                <AlertCircle className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
+              ) : (
+                <Sparkles className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+              )}
+              <span className="text-sm font-semibold" style={{ 
+                color: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' 
+              }}>
+                {item.pendingEnhancement.isLowConfidence ? 'Item Needs Review' : 'AI Enhancement'}
+              </span>
+              <button 
+                onClick={() => onDismissEnhancement?.(item.id)}
+                className="ml-auto p-1 rounded hover:bg-gray-100 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                aria-label="Dismiss"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            
+            {item.pendingEnhancement.isLowConfidence ? (
+              <div className="flex-1 mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <div className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  {item.pendingEnhancement.guidance?.message}
+                </div>
+                {item.pendingEnhancement.guidance?.examples && (
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Try instead:</div>
+                    <div className="text-xs">
+                      {item.pendingEnhancement.guidance.examples.join(', ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1 mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                  "{item.pendingEnhancement.name}"
+                </div>
+                {item.pendingEnhancement.quantity && (
+                  <div>Qty: {item.pendingEnhancement.quantity}</div>
+                )}
+                <div>Location: {item.pendingEnhancement.location}</div>
+                <div>Expires in: {item.pendingEnhancement.daysUntilExpiry} days</div>
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              {item.pendingEnhancement.isLowConfidence ? (
+                <button 
+                  onClick={() => onEdit(item)}
+                  className="flex-1 btn-base py-2 text-sm font-medium"
+                  style={{ 
+                    backgroundColor: 'var(--color-warning)', 
+                    color: 'white',
+                    border: '1px solid var(--color-warning)'
+                  }}
+                >
+                  Update Item
+                </button>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => onApplyEnhancement?.(item.id, item.pendingEnhancement)}
+                    className="flex-1 btn-base py-2 text-sm font-medium"
+                    style={{ 
+                      backgroundColor: 'var(--color-primary)', 
+                      color: 'white',
+                      border: '1px solid var(--color-primary)'
+                    }}
+                  >
+                    Apply
+                  </button>
+                  <button 
+                    onClick={() => onEdit({
+                      ...item,
+                      name: item.pendingEnhancement.name,
+                      quantity: item.pendingEnhancement.quantity || item.quantity,
+                      location: item.pendingEnhancement.location,
+                      daysUntilExpiry: item.pendingEnhancement.daysUntilExpiry
+                    })}
+                    className="flex-1 btn-base py-2 text-sm"
+                    style={{ 
+                      backgroundColor: 'var(--bg-card)', 
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)'
+                    }}
+                  >
+                    Edit
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
