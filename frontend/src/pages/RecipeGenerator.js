@@ -314,13 +314,183 @@ export default function RecipeGenerator() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            {/* Left Column - Ingredient Selection */}
+            <section className="card p-6 space-y-6">
+                {/* Expiring Items Section */}
+                {expiringItems.length > 0 && (
+                  <div className="p-4 rounded-lg" style={{ 
+                    backgroundColor: 'var(--color-error-light)', 
+                    borderLeft: '4px solid var(--color-error)' 
+                  }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold" style={{ color: 'var(--color-error)' }}>
+                        ⚠️ Expiring Soon ({expiringItems.length})
+                      </h3>
+                      <button
+                        onClick={() => {
+                          const uniqueItems = [...new Set([...selectedPantryItems, ...expiringItems])];
+                          setSelectedPantryItems(uniqueItems);
+                        }}
+                        className="btn-base text-xs px-3 py-1"
+                        style={{
+                          backgroundColor: 'var(--color-error)',
+                          color: 'white',
+                          border: 'none'
+                        }}
+                      >
+                        Use What's Expiring
+                      </button>
+                    </div>
+                    <div className="text-sm space-y-1">
+                      {expiringItems.map(item => (
+                        <div key={item.id} className="flex justify-between" style={{ color: 'var(--color-error)' }}>
+                          <span>{item.name}</span>
+                          <span>{item.daysUntilExpiry || 0} day{(item.daysUntilExpiry || 0) !== 1 ? 's' : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pantry Items Section - Always Expanded */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      🥫 Pantry Items ({pantryItems.length})
+                    </h2>
+                    {selectedPantryItems.length > 0 && (
+                      <span className="text-sm px-3 py-1 rounded-full" style={{ 
+                        backgroundColor: 'var(--color-primary-light)',
+                        color: 'var(--color-primary)'
+                      }}>
+                        {selectedPantryItems.length} selected
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                        <SearchIcon />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search pantry items..."
+                        value={pantrySearch}
+                        onChange={(e) => setPantrySearch(e.target.value)}
+                        className="input-base focus-ring text-sm pl-10"
+                      />
+                    </div>
+
+                    {/* Pantry Items List */}
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {isLoadingPantry ? (
+                        <div className="text-center py-4">
+                          <LoadingSpinner />
+                          <p className="text-sm text-gray-500 mt-2">Loading pantry...</p>
+                        </div>
+                      ) : Object.keys(groupedPantryItems).length > 0 ? (
+                        Object.entries(groupedPantryItems).map(([location, items]) => (
+                          <div key={location} className="space-y-1">
+                            <h4 className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                              {locationLabels[location]}
+                            </h4>
+                            {items.map(item => {
+                              const isSelected = selectedPantryItems.some(p => p.id === item.id);
+                              const daysUntilExpiry = item.daysUntilExpiry || 7;
+                              const isExpiringSoon = daysUntilExpiry <= 3;
+                              
+                              return (
+                                <label
+                                  key={item.id}
+                                  className={`flex items-center gap-2 p-2 rounded cursor-pointer card-interactive transition-colors ${
+                                    isSelected ? 'border-2' : 'border'
+                                  }`}
+                                  style={{ 
+                                    backgroundColor: isSelected ? 'var(--color-primary-light)' : 'var(--bg-card)',
+                                    borderColor: isSelected ? 'var(--color-primary)' : isExpiringSoon ? 'var(--color-error)' : 'var(--border-light)'
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handlePantryItemToggle(item)}
+                                    className="rounded focus-ring"
+                                    style={{ 
+                                      borderColor: 'var(--border-light)',
+                                      color: 'var(--color-primary)'
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium truncate" style={{ 
+                                        color: isExpiringSoon ? 'var(--color-error)' : 'var(--text-primary)'
+                                      }}>
+                                        {item.name}
+                                      </span>
+                                      {isExpiringSoon && (
+                                        <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ 
+                                          backgroundColor: 'var(--color-error)',
+                                          color: 'white'
+                                        }}>
+                                          {daysUntilExpiry}d
+                                        </span>
+                                      )}
+                                    </div>
+                                    {item.quantity && (
+                                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.quantity}</span>
+                                    )}
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                          {pantrySearch ? 'No items match your search' : 'No pantry items found'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Manual Ingredients */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Manual Ingredients</h3>
+                  <div className="flex flex-wrap gap-2 min-h-[44px] p-3 rounded-lg mb-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                    {ingredients.length > 0 ? (
+                      ingredients.map((ing, i) => <span key={i} className="text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-2 animate-fade-in" style={{ 
+                        backgroundColor: 'var(--color-accent-light)',
+                        color: 'var(--color-accent)'
+                      }}>{ing}<button onClick={() => removeIngredient(i)} className="rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover-lift transition-colors" style={{
+                        backgroundColor: 'var(--color-accent)',
+                        color: 'white'
+                      }}>×</button></span>)
+                    ) : (<p className="text-sm p-1.5" style={{ color: 'var(--text-muted)' }}>Add additional ingredients...</p>)}
+                  </div>
                   <div className="flex gap-2">
-                    <input type="text" value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} onKeyDown={(e) => {if (e.key === 'Enter') addIngredient()}} className="flex-1 input-base focus-ring" />
+                    <input 
+                      type="text" 
+                      value={ingredientText} 
+                      onChange={(e) => setIngredientText(e.target.value)} 
+                      onKeyDown={(e) => {if (e.key === 'Enter') addIngredient()}} 
+                      className="flex-1 input-base focus-ring"
+                      placeholder="Add ingredients not in pantry"
+                    />
                     <button onClick={addIngredient} className="btn-base btn-primary px-5 py-2 font-semibold">Add</button>
                   </div>
-                  <div className="space-y-4">
+                </div>
+            </section>
+
+            {/* Right Column - Recipe Options & Display */}
+            <section className="space-y-6">
+                {/* Recipe Options Card */}
+                <div className="card p-6">
+                  <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Recipe Options</h2>
+                  <div className="flex flex-col gap-4">
                     <div><label htmlFor="serving-size" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>👥 Serving Size</label><select id="serving-size" defaultValue="2" className="input-base focus-ring w-full"><option value="1">1 person</option><option value="2">2 people</option><option value="4">4 people</option><option value="6">6 people</option></select></div>
                     <div><label htmlFor="dietary-restrictions" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Dietary Restrictions (optional)</label><input type="text" id="dietary-restrictions" placeholder="e.g., vegetarian" className="input-base focus-ring w-full" /></div>
                     
@@ -365,6 +535,23 @@ export default function RecipeGenerator() {
                       </div>
                     </div>
 
+                    {/* Include Dessert Toggle */}
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includeDessert}
+                          onChange={(e) => setIncludeDessert(e.target.checked)}
+                          className="rounded focus-ring"
+                          style={{ 
+                            borderColor: 'var(--border-light)',
+                            color: 'var(--color-primary)'
+                          }}
+                        />
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Include dessert component</span>
+                      </label>
+                    </div>
+                    
                     {/* Multiple Recipe Generation Toggle */}
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2 cursor-pointer">
