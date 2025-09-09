@@ -131,7 +131,7 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
           style={{ 
             backgroundColor: expiryInfo.isExpired ? 'var(--color-error)' : 'var(--color-warning)',
             color: 'white',
-            zIndex: 10000
+            zIndex: 1
           }}
         >
           {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}

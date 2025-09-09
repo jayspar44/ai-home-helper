@@ -8,6 +8,7 @@ const AddItemSection = ({
   onAIItemsDetected, 
   onItemEnhancementRequested,
   onStartEnhancementProcessing,
+  onUpdateItemDefaults,
   activeHomeId, 
   userToken, 
   getAuthHeaders 
@@ -79,11 +80,11 @@ const AddItemSection = ({
     const itemNameToProcess = quickAddName.trim();
     
     try {
-      // Add immediately with basic defaults - input freed instantly
+      // Add item with name only - minimal defaults
       const basicItem = {
         name: itemNameToProcess,
-        location: 'pantry', // Basic default
-        daysUntilExpiry: 7   // Basic default
+        location: 'pantry', // Will be updated with smart defaults
+        daysUntilExpiry: 7   // Will be updated with smart defaults
       };
       
       const addedItem = await onDirectAdd(basicItem);
@@ -93,7 +94,7 @@ const AddItemSection = ({
       setIsLoading(false);
       
       // Run both AI calls in parallel (background) - non-blocking
-      if (addedItem && onItemEnhancementRequested && onStartEnhancementProcessing) {
+      if (addedItem && onItemEnhancementRequested && onStartEnhancementProcessing && onUpdateItemDefaults) {
         // Show processing indicator
         onStartEnhancementProcessing(addedItem.id);
         
@@ -101,15 +102,9 @@ const AddItemSection = ({
           getQuickDefaults(itemNameToProcess),
           getFullEnhancement(itemNameToProcess)
         ]).then(([defaults, enhancement]) => {
-          // Update item with smart defaults if they're different from basic
+          // Update item with smart defaults using edit functionality (no duplication)
           if (defaults && (defaults.location !== 'pantry' || defaults.daysUntilExpiry !== 7)) {
-            const updatedItem = {
-              ...addedItem,
-              location: defaults.location,
-              daysUntilExpiry: defaults.daysUntilExpiry
-            };
-            // Update item with smart defaults
-            onDirectAdd(updatedItem); // This will update the existing item
+            onUpdateItemDefaults(addedItem.id, defaults);
           }
           
           // Show enhancement if available

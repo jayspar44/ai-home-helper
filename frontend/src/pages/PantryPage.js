@@ -115,6 +115,19 @@ export default function PantryPage() {
     setProcessingEnhancementIds(prev => [...prev, itemId]);
   };
 
+  const handleUpdateItemDefaults = async (itemId, defaults) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const updatedItem = {
+      ...item,
+      location: defaults.location,
+      daysUntilExpiry: defaults.daysUntilExpiry
+    };
+
+    await handleEditItem(updatedItem, setItems);
+  };
+
   const handleApplyEnhancement = async (itemId, enhancement) => {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
@@ -185,6 +198,7 @@ export default function PantryPage() {
           onAIItemsDetected={handleAIItemsAdd}
           onItemEnhancementRequested={handleItemEnhancementRequested}
           onStartEnhancementProcessing={handleStartEnhancementProcessing}
+          onUpdateItemDefaults={handleUpdateItemDefaults}
           activeHomeId={activeHomeId}
           userToken={userToken}
           getAuthHeaders={getAuthHeaders}
