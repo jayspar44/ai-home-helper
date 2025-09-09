@@ -197,6 +197,10 @@ body {
   animation: slideInUp 0.4s ease-out;
 }
 
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
 .animate-shimmer {
   background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-light) 37%, var(--bg-tertiary) 63%);
   background-size: 400% 100%;
@@ -307,6 +311,17 @@ body {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

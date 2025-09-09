@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { ThemeProvider } from './hooks/useTheme';
+import { ToastProvider } from './contexts/ToastContext';
 import AuthPage from './auth/AuthPage';
 import SharedLayout from './components/SharedLayout';
 import HomePage from './pages/HomePage';
@@ -107,17 +108,19 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
-            <Route index element={<HomePage />} />
-            <Route path="recipe-generator" element={<RecipeGenerator />} />
-            <Route path="home-admin" element={<HomeAdminPage />} />
-            <Route path="/pantry" element={<PantryPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </Router>
+      <ToastProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
+              <Route index element={<HomePage />} />
+              <Route path="recipe-generator" element={<RecipeGenerator />} />
+              <Route path="home-admin" element={<HomeAdminPage />} />
+              <Route path="/pantry" element={<PantryPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </Router>
+      </ToastProvider>
     </ThemeProvider>
   );
 }
