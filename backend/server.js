@@ -586,6 +586,70 @@ Return JSON format:
   }
 });
 
+// Quick defaults for pantry items (fast location + expiry)
+app.post('/api/pantry/quick-defaults', checkAuth, async (req, res) => {
+  try {
+    const { itemName, homeId } = req.body;
+    
+    if (!itemName || !itemName.trim()) {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
+
+    const prompt = `For the food item "${itemName}", provide quick smart defaults for location and expiry days.
+
+Respond with ONLY this JSON format (no other text):
+{
+  "location": "pantry" | "fridge" | "freezer",
+  "daysUntilExpiry": number
+}
+
+Use these rules:
+- Fresh produce, dairy, meat → "fridge" 
+- Frozen items → "freezer"
+- Dry goods, canned items, snacks → "pantry"
+- Reasonable expiry days (1-3 for fresh, 7-30 for pantry items)`;
+
+    // Call Gemini API
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Parse AI response
+    let defaultsData;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*?\}/s);
+      if (jsonMatch) {
+        defaultsData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No valid JSON found in response');
+      }
+    } catch (parseError) {
+      console.error('Error parsing quick defaults response:', parseError);
+      console.error('Raw AI response:', text);
+      // Return sensible fallback
+      defaultsData = {
+        location: itemName.toLowerCase().includes('milk') || 
+                  itemName.toLowerCase().includes('yogurt') || 
+                  itemName.toLowerCase().includes('cheese') || 
+                  itemName.toLowerCase().includes('meat') || 
+                  itemName.toLowerCase().includes('fish') ? 'fridge' : 'pantry',
+        daysUntilExpiry: 7
+      };
+    }
+
+    res.json(defaultsData);
+
+  } catch (error) {
+    console.error('Error in quick-defaults:', error);
+    // Return sensible fallback on error
+    res.json({
+      location: 'pantry',
+      daysUntilExpiry: 7
+    });
+  }
+});
+
 // Get all pantry items for a home
 app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
   try {
@@ -673,6 +737,64 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
   } catch (error) {
     console.error('Error adding pantry item:', error);
     res.status(500).json({ error: 'Failed to add pantry item' });
+  }
+});
+
+// Update pantry item
+app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
+  try {
+    const { homeId, itemId } = req.params;
+    const { name, location, quantity, expiresAt, daysUntilExpiry, confidence, detectedBy } = req.body;
+    const userUid = req.user.uid;
+
+    // Validate location
+    if (!['pantry', 'fridge', 'freezer'].includes(location)) {
+      return res.status(400).json({ error: 'Invalid location' });
+    }
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Verify item exists
+    const itemRef = db.collection('homes')
+      .doc(homeId)
+      .collection('pantry_items')
+      .doc(itemId);
+    
+    const item = await itemRef.get();
+    if (!item.exists) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const updatedFields = {
+      name,
+      location,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Add optional fields
+      ...(quantity && { quantity }),
+      ...(expiresAt && { expiresAt: new Date(expiresAt) }),
+      ...(daysUntilExpiry !== undefined && { daysUntilExpiry }),
+      ...(confidence !== undefined && { confidence }),
+      ...(detectedBy && { detectedBy })
+    };
+
+    await itemRef.update(updatedFields);
+
+    const resultData = { 
+      id: itemId,
+      ...item.data(),
+      ...updatedFields
+    };
+    // Don't send back server timestamp object
+    delete resultData.updatedAt;
+
+    res.json(resultData);
+  } catch (error) {
+    console.error('Error updating pantry item:', error);
+    res.status(500).json({ error: 'Failed to update pantry item' });
   }
 });
 
@@ -767,18 +889,29 @@ app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), 
     // Create the AI prompt for food detection
     const prompt = `You are an expert at identifying food items in images. Analyze this image and detect all food items visible.
 
-For each item detected, provide:
+For each item detected, you MUST provide ALL fields:
 1. Name: Be specific (e.g., "Honeycrisp Apples" not just "apples", "Whole Wheat Bread" not just "bread")
 2. Quantity: Estimate based on visual cues (e.g., "3 apples", "1 loaf", "2 lbs", "1 carton")
-3. Location: Determine if this should go in pantry, fridge, or freezer based on the item type
-4. Days until expiry: Estimate based on typical shelf life and visual freshness
+3. Location: ALWAYS determine storage location based on item type:
+   - Fresh produce, dairy, meat, leftovers → "fridge"
+   - Frozen items → "freezer" 
+   - Dry goods, canned items, snacks, spices → "pantry"
+4. Days until expiry: ALWAYS estimate realistic shelf life:
+   - Fresh produce: 3-10 days
+   - Dairy: 5-14 days
+   - Meat/fish: 1-5 days
+   - Bread: 3-7 days
+   - Pantry items: 30-365 days
+   - Consider visible freshness cues
 5. Confidence: Your confidence level (0.0-1.0) in this detection
+
+CRITICAL: Every item MUST have location and daysUntilExpiry fields filled with realistic values.
 
 Respond ONLY with a JSON array, no other text:
 [
   {
     "name": "Item name",
-    "quantity": "Amount with unit",
+    "quantity": "Amount with unit", 
     "location": "pantry|fridge|freezer",
     "daysUntilExpiry": number,
     "confidence": 0.0-1.0
