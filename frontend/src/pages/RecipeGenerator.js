@@ -314,9 +314,10 @@ export default function RecipeGenerator() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        {/* Top Row - Pantry and Recipe Options Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8">
             {/* Left Column - Ingredient Selection */}
-            <section className="card p-6 space-y-6">
+            <section className="card p-6 space-y-6 h-fit">
                 {/* Expiring Items Section */}
                 {expiringItems.length > 0 && (
                   <div className="p-4 rounded-lg" style={{ 
@@ -385,7 +386,7 @@ export default function RecipeGenerator() {
                     </div>
 
                     {/* Pantry Items List */}
-                    <div className="max-h-80 overflow-y-auto space-y-2">
+                    <div className="max-h-60 overflow-y-auto space-y-2">
                       {isLoadingPantry ? (
                         <div className="text-center py-4">
                           <LoadingSpinner />
@@ -485,12 +486,10 @@ export default function RecipeGenerator() {
                 </div>
             </section>
 
-            {/* Right Column - Recipe Options & Display */}
-            <section className="space-y-6">
-                {/* Recipe Options Card */}
-                <div className="card p-6">
-                  <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Recipe Options</h2>
-                  <div className="flex flex-col gap-4">
+            {/* Right Column - Recipe Options */}
+            <section className="card p-6 h-fit">
+                <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Recipe Options</h2>
+                <div className="flex flex-col gap-4">
                     <div><label htmlFor="serving-size" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>👥 Serving Size</label><select id="serving-size" defaultValue="2" className="input-base focus-ring w-full"><option value="1">1 person</option><option value="2">2 people</option><option value="4">4 people</option><option value="6">6 people</option></select></div>
                     <div><label htmlFor="dietary-restrictions" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Dietary Restrictions (optional)</label><input type="text" id="dietary-restrictions" placeholder="e.g., vegetarian" className="input-base focus-ring w-full" /></div>
                     
@@ -591,9 +590,11 @@ export default function RecipeGenerator() {
                     </p>
                   )}
                 </div>
-                
-                {/* Recipe Display Area */}
-                <div className="card p-6">
+            </section>
+        </div>
+
+        {/* Bottom Row - Full Width Recipe Display */}
+        <section className="card p-6">
                 {error && <div className="p-4 rounded-lg mb-4" style={{ 
                   backgroundColor: 'var(--color-error-light)', 
                   borderLeft: '4px solid var(--color-error)',
@@ -682,9 +683,7 @@ export default function RecipeGenerator() {
                     <RecipeCard recipe={generatedRecipe} onSave={() => handleSaveRecipe(generatedRecipe)} isSaved={isRecipeSaved} />
                   </div>
                 )}
-                </div>
-            </section>
-        </div>
+        </section>
 
         <section className="mt-12">
             <h2 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>My Saved Recipes</h2>
