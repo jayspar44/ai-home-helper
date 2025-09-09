@@ -53,14 +53,22 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          name: updatedItem.name,
-          location: updatedItem.location,
-          ...(updatedItem.quantity && { quantity: updatedItem.quantity }),
-          ...(updatedItem.daysUntilExpiry && { daysUntilExpiry: updatedItem.daysUntilExpiry }),
+          ...updatedItem,
+          // Remove frontend-only fields
+          pendingEnhancement: undefined
         })
       });
 
-      if (!response.ok) throw new Error('Failed to update item');
+      if (!response.ok) {
+        let errorMessage = 'Failed to update item';
+        try {
+          const errorData = await response.text();
+          errorMessage = `Failed to update item (${response.status}): ${errorData}`;
+        } catch (e) {
+          errorMessage = `Failed to update item (${response.status})`;
+        }
+        throw new Error(errorMessage);
+      }
 
       setItems(prev => prev.map(item => 
         item.id === updatedItem.id ? updatedItem : item
