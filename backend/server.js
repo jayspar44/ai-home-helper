@@ -740,6 +740,64 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
   }
 });
 
+// Update pantry item
+app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
+  try {
+    const { homeId, itemId } = req.params;
+    const { name, location, quantity, expiresAt, daysUntilExpiry, confidence, detectedBy } = req.body;
+    const userUid = req.user.uid;
+
+    // Validate location
+    if (!['pantry', 'fridge', 'freezer'].includes(location)) {
+      return res.status(400).json({ error: 'Invalid location' });
+    }
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Verify item exists
+    const itemRef = db.collection('homes')
+      .doc(homeId)
+      .collection('pantry_items')
+      .doc(itemId);
+    
+    const item = await itemRef.get();
+    if (!item.exists) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const updatedFields = {
+      name,
+      location,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Add optional fields
+      ...(quantity && { quantity }),
+      ...(expiresAt && { expiresAt: new Date(expiresAt) }),
+      ...(daysUntilExpiry !== undefined && { daysUntilExpiry }),
+      ...(confidence !== undefined && { confidence }),
+      ...(detectedBy && { detectedBy })
+    };
+
+    await itemRef.update(updatedFields);
+
+    const resultData = { 
+      id: itemId,
+      ...item.data(),
+      ...updatedFields
+    };
+    // Don't send back server timestamp object
+    delete resultData.updatedAt;
+
+    res.json(resultData);
+  } catch (error) {
+    console.error('Error updating pantry item:', error);
+    res.status(500).json({ error: 'Failed to update pantry item' });
+  }
+});
+
 // Delete pantry item
 app.delete('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
   try {
