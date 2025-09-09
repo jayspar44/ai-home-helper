@@ -570,7 +570,6 @@ export default function RecipeGenerator() {
                         ℹ️
                       </div>
                     </div>
-                  </div>
                   <button 
                     onClick={handleGenerateRecipe} 
                     disabled={isLoading} 
