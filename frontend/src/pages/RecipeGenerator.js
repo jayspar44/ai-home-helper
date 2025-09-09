@@ -25,7 +25,6 @@ const SkeletonCard = () => (
   </div>
 );
 const BookmarkIcon = ({ saved }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 transition-all" style={{ color: saved ? 'var(--color-primary)' : 'var(--text-muted)' }}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>;
-const ChevronDownIcon = () => <svg className="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" /></svg>;
 const SearchIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>;
 
 function RecipeCard({ recipe, onSave, isSaved }) {
@@ -265,12 +264,6 @@ export default function RecipeGenerator() {
     });
   }, []);
 
-  const handleUseSelectedItems = useCallback(() => {
-    const newIngredients = selectedPantryItems.map(item => item.name);
-    const uniqueIngredients = [...new Set([...ingredients, ...newIngredients])];
-    setIngredients(uniqueIngredients);
-    setError('');
-  }, [selectedPantryItems, ingredients]);
 
   const handleRecipeNavigation = useCallback((index) => {
     setCurrentRecipeIndex(index);
@@ -322,136 +315,6 @@ export default function RecipeGenerator() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-            <section className="card p-6 space-y-6 lg:col-span-1">
-                {/* Pantry Items Panel */}
-                <div className="pb-6 mb-6" style={{ borderBottom: '1px solid var(--border-light)' }}>
-                  <button 
-                    onClick={() => setIsPantryExpanded(!isPantryExpanded)}
-                    className="w-full flex items-center justify-between text-left card-interactive transition-colors"
-                  >
-                    <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>🥫 Pantry Items</h2>
-                    <div className={`transition-transform ${isPantryExpanded ? 'rotate-180' : ''}`} style={{ color: 'var(--text-secondary)' }}>
-                      <ChevronDownIcon />
-                    </div>
-                  </button>
-                  
-                  {isPantryExpanded && (
-                    <div className="mt-4 space-y-4 animate-fade-in">
-                      {/* Search Bar */}
-                      <div className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                          <SearchIcon />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Search pantry items..."
-                          value={pantrySearch}
-                          onChange={(e) => setPantrySearch(e.target.value)}
-                          className="input-base focus-ring text-sm pl-10"
-                        />
-                      </div>
-
-                      {/* Selected Items Counter */}
-                      {selectedPantryItems.length > 0 && (
-                        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--color-primary-light)' }}>
-                          <span className="text-sm" style={{ color: 'var(--color-primary)' }}>
-                            {selectedPantryItems.length} item{selectedPantryItems.length !== 1 ? 's' : ''} selected
-                          </span>
-                          <button
-                            onClick={handleUseSelectedItems}
-                            className="btn-base btn-primary text-xs px-3 py-1"
-                          >
-                            Use Selected
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Pantry Items List */}
-                      <div className="max-h-64 overflow-y-auto space-y-2">
-                        {isLoadingPantry ? (
-                          <div className="text-center py-4">
-                            <LoadingSpinner />
-                            <p className="text-sm text-gray-500 mt-2">Loading pantry...</p>
-                          </div>
-                        ) : Object.keys(groupedPantryItems).length > 0 ? (
-                          Object.entries(groupedPantryItems).map(([location, items]) => (
-                            <div key={location} className="space-y-1">
-                              <h4 className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                                {locationLabels[location]}
-                              </h4>
-                              {items.map(item => {
-                                const isSelected = selectedPantryItems.some(p => p.id === item.id);
-                                const daysUntilExpiry = item.daysUntilExpiry || 7;
-                                const isExpiringSoon = daysUntilExpiry <= 3;
-                                
-                                return (
-                                  <label
-                                    key={item.id}
-                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer card-interactive transition-colors ${
-                                      isSelected ? 'border-2' : 'border'
-                                    }`}
-                                    style={{ 
-                                      backgroundColor: isSelected ? 'var(--color-primary-light)' : 'var(--bg-card)',
-                                      borderColor: isSelected ? 'var(--color-primary)' : 'var(--border-light)'
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={() => handlePantryItemToggle(item)}
-                                      className="rounded focus-ring"
-                                      style={{ 
-                                        borderColor: 'var(--border-light)',
-                                        color: 'var(--color-primary)'
-                                      }}
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                                          {item.name}
-                                        </span>
-                                        {isExpiringSoon && (
-                                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ 
-                                            backgroundColor: 'var(--color-error-light)',
-                                            color: 'var(--color-error)'
-                                          }}>
-                                            {daysUntilExpiry}d
-                                          </span>
-                                        )}
-                                      </div>
-                                      {item.quantity && (
-                                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.quantity}</span>
-                                      )}
-                                    </div>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>
-                            {pantrySearch ? 'No items match your search' : 'No pantry items found'}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Your Ingredients</h2>
-                  <div className="flex flex-wrap gap-2 min-h-[44px] p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                    {ingredients.length > 0 ? (
-                      ingredients.map((ing, i) => <span key={i} className="text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-2 animate-fade-in" style={{ 
-                        backgroundColor: 'var(--color-primary-light)',
-                        color: 'var(--color-primary)'
-                      }}>{ing}<button onClick={() => removeIngredient(i)} className="rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover-lift transition-colors" style={{
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'white'
-                      }}>×</button></span>)
-                    ) : (<p className="text-sm p-1.5" style={{ color: 'var(--text-muted)' }}>Add some items...</p>)}
-                  </div>
-                </div>
                 <div className="flex flex-col gap-4">
                   <div className="flex gap-2">
                     <input type="text" value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} onKeyDown={(e) => {if (e.key === 'Enter') addIngredient()}} className="flex-1 input-base focus-ring" />
