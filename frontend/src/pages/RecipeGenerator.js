@@ -1,10 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
+import { ChefHat } from 'lucide-react';
 
 // --- Helper Components for Icons ---
-const ChefHatIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12" style={{ color: 'var(--color-primary)' }}><path d="M19.8 11.7a3.2 3.2 0 0 0-2.2-5.2A3.2 3.2 0 0 0 15.4 9a3.2 3.2 0 0 0-5.6 0 3.2 3.2 0 0 0-2.2-2.5 3.2 3.2 0 0 0-2.2 5.2c0 1.2.8 2.3 2 2.3h8.8c1.2 0 2-1.1 2-2.3Z"/><path d="M8.6 14h6.8c1.2 0 2-1.1 2-2.3V11h-11v.7c0 1.2.8 2.3 2 2.3Z"/><path d="M12 14v7.5"/><path d="M12 21.5h-4a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h4"/><path d="M12 21.5h4a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-4"/></svg>
-);
 const LoadingSpinner = () => <div className="w-6 h-6 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--border-light)', borderTopColor: 'var(--color-primary)' }}></div>;
 const SkeletonCard = () => (
   <div className="space-y-6 p-6">
@@ -106,7 +104,6 @@ export default function RecipeGenerator() {
   // New state for pantry integration
   const [pantryItems, setPantryItems] = useState([]);
   const [selectedPantryItems, setSelectedPantryItems] = useState([]);
-  const [isPantryExpanded, setIsPantryExpanded] = useState(false);
   const [pantrySearch, setPantrySearch] = useState('');
   const [isLoadingPantry, setIsLoadingPantry] = useState(false);
   
@@ -114,6 +111,9 @@ export default function RecipeGenerator() {
   const [recipeType, setRecipeType] = useState('quick'); // 'quick' or 'sophisticated'
   const [generateMultiple, setGenerateMultiple] = useState(false);
   const [currentRecipeIndex, setCurrentRecipeIndex] = useState(0);
+  const [includeDessert, setIncludeDessert] = useState(false);
+  const [expiringItems, setExpiringItems] = useState([]);
+  const [useAllPantryItems, setUseAllPantryItems] = useState(false);
 
   const getAuthHeaders = useCallback(() => ({
     'Content-Type': 'application/json',
@@ -152,6 +152,12 @@ export default function RecipeGenerator() {
         if (!response.ok) throw new Error('Failed to fetch pantry items');
         const items = await response.json();
         setPantryItems(items);
+        // Calculate expiring items (≤3 days)
+        const expiring = items.filter(item => {
+          const daysUntilExpiry = item.daysUntilExpiry || 7;
+          return daysUntilExpiry <= 3;
+        });
+        setExpiringItems(expiring);
       } catch (err) {
         console.error('Error fetching pantry items:', err);
       } finally {
@@ -182,10 +188,9 @@ export default function RecipeGenerator() {
   }, []);
 
   const handleGenerateRecipe = useCallback(async () => {
-    if (ingredients.length === 0) {
-      setError("Please add at least one ingredient.");
-      return;
-    }
+    const useAll = selectedPantryItems.length === 0 && ingredients.length === 0;
+    const finalIngredients = useAll ? [] : [...ingredients, ...selectedPantryItems.map(item => item.name)];
+    
     setIsLoading(true);
     setError('');
     setGeneratedRecipe(null);
@@ -201,11 +206,14 @@ export default function RecipeGenerator() {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ 
-          ingredients, 
+          ingredients: finalIngredients, 
+          allPantryItems: pantryItems,
           servingSize, 
           dietaryRestrictions,
           recipeType,
           generateCount,
+          includeDessert,
+          useAllPantryItems: useAll,
           pantryItems: selectedPantryItems
         }),
       });
@@ -228,7 +236,7 @@ export default function RecipeGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [ingredients, getAuthHeaders, recipeType, generateMultiple, selectedPantryItems]);
+  }, [ingredients, getAuthHeaders, recipeType, generateMultiple, selectedPantryItems, pantryItems, includeDessert]);
 
   const handleSaveRecipe = useCallback(async (recipeToSave) => {
     try {
@@ -303,13 +311,15 @@ export default function RecipeGenerator() {
   return (
     <div className="section-padding">
       <div className="container-mobile lg:max-w-none lg:px-8">
-        <header className="animate-fade-in mb-8 lg:mb-12">
-            <div className="text-center">
-                <div className="flex items-center justify-center gap-4 mb-4"><ChefHatIcon /></div>
-                <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>AI Recipe Generator</h1>
-                <p className="text-lg" style={{ color: 'var(--text-muted)' }}>Turn your ingredients into delicious meals.</p>
-            </div>
-        </header>
+        <div className="animate-fade-in mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            <ChefHat className="inline-block w-8 h-8 mr-3" style={{ color: 'var(--color-primary)' }} />
+            AI Recipe Generator
+          </h1>
+          <p style={{ color: 'var(--text-muted)' }}>
+            Turn your ingredients into delicious meals
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <section className="card p-6 space-y-6 lg:col-span-1">
@@ -512,29 +522,67 @@ export default function RecipeGenerator() {
                       </div>
                     </div>
                   </div>
-                  <button onClick={handleGenerateRecipe} disabled={isLoading || ingredients.length === 0} className="w-full py-3 btn-base font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-lg" style={{ 
-                    background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
-                    color: 'white',
-                    border: 'none'
-                  }}>{isLoading ? <LoadingSpinner /> : '✨'} {isLoading ? 'Generating...' : 'Generate Recipe'}</button>
+                  <button 
+                    onClick={handleGenerateRecipe} 
+                    disabled={isLoading} 
+                    className="w-full py-3 btn-base font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-lg" 
+                    style={{ 
+                      background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+                      color: 'white',
+                      border: 'none'
+                    }}
+                  >
+                    {isLoading ? <LoadingSpinner /> : '✨'} 
+                    {isLoading ? 'Generating...' : 'Generate Recipe'}
+                  </button>
+                  {selectedPantryItems.length === 0 && ingredients.length === 0 && (
+                    <p className="text-sm text-center mt-2" style={{ color: 'var(--text-muted)' }}>
+                      No ingredients selected - will use all pantry items
+                    </p>
+                  )}
                 </div>
-            </section>
-
-            <section className="card p-6 lg:col-span-2">
+                
+                {/* Recipe Display Area */}
+                <div className="card p-6">
                 {error && <div className="p-4 rounded-lg mb-4" style={{ 
                   backgroundColor: 'var(--color-error-light)', 
                   borderLeft: '4px solid var(--color-error)',
                   color: 'var(--color-error)' 
                 }}><p><strong>Error:</strong> {error}</p></div>}
                 {isLoading && (
-                  <div>
-                    <div className="text-center py-6 mb-6" style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <LoadingSpinner />
-                      <p className="text-lg mt-4 animate-pulse" style={{ color: 'var(--text-secondary)' }}>
-                        {generateMultiple ? 'Creating your recipe options...' : 'Creating your perfect recipe...'}
-                      </p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 border-4 rounded-full animate-spin mx-auto mb-6" 
+                         style={{ 
+                           borderColor: 'var(--border-light)', 
+                           borderTopColor: 'var(--color-primary)' 
+                         }}>
                     </div>
-                    <SkeletonCard />
+                    <p className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Creating your {generateMultiple ? 'recipes' : 'recipe'}...
+                    </p>
+                    <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                      This may take up to 30 seconds
+                    </p>
+                    <div className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                      <p>
+                        🍳 Using {selectedPantryItems.length === 0 && ingredients.length === 0 
+                          ? 'all pantry items'
+                          : `${selectedPantryItems.length + ingredients.length} ingredients`}
+                      </p>
+                      <p>
+                        ⏱️ {recipeType === 'quick' ? 'Quick & Easy' : 'Sophisticated'} recipe
+                      </p>
+                      {expiringItems.some(item => selectedPantryItems.some(selected => selected.id === item.id)) && (
+                        <p style={{ color: 'var(--color-error)' }}>
+                          ⚠️ Including expiring ingredients
+                        </p>
+                      )}
+                      {includeDessert && (
+                        <p>
+                          🍰 Including dessert component
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
                 {!isLoading && !generatedRecipe && <div className="text-center py-12 flex flex-col items-center justify-center h-full"><div className="text-6xl mb-4">🍽️</div><h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Your recipe awaits!</h3><p style={{ color: 'var(--text-muted)' }}>Add ingredients and click generate, or check out your saved recipes below.</p></div>}
@@ -584,6 +632,7 @@ export default function RecipeGenerator() {
                     <RecipeCard recipe={generatedRecipe} onSave={() => handleSaveRecipe(generatedRecipe)} isSaved={isRecipeSaved} />
                   </div>
                 )}
+                </div>
             </section>
         </div>
 

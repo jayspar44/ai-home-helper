@@ -242,15 +242,19 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
     try {
         const { 
             ingredients, 
+            allPantryItems = [],
             servingSize, 
             dietaryRestrictions, 
             recipeType = 'quick', 
             generateCount = 1,
+            includeDessert = false,
+            useAllPantryItems = false,
             pantryItems = []
         } = req.body;
         
-        if (!ingredients || ingredients.length === 0) {
-            return res.status(400).json({ error: 'Ingredients are required' });
+        // Allow empty ingredients if using all pantry items
+        if (!ingredients || (ingredients.length === 0 && !useAllPantryItems)) {
+            return res.status(400).json({ error: 'Ingredients are required or select to use all pantry items' });
         }
 
         // If generating multiple recipes, create multiple prompts and run them
@@ -259,7 +263,7 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
             const promises = [];
             
             for (let i = 0; i < generateCount; i++) {
-                const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, i + 1);
+                const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, allPantryItems, includeDessert, useAllPantryItems, i + 1);
                 
                 const promise = (async () => {
                     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -287,7 +291,7 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
         }
 
         // Single recipe generation (existing logic enhanced)
-        const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems);
+        const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, allPantryItems, includeDessert, useAllPantryItems);
         
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const result = await model.generateContent(prompt);
@@ -313,18 +317,34 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
 });
 
 // --- Helper Functions ---
-function createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType = 'quick', pantryItems = [], variationNumber = 1) {
+function createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType = 'quick', pantryItems = [], allPantryItems = [], includeDessert = false, useAllPantryItems = false, variationNumber = 1) {
   const restrictionsText = dietaryRestrictions ? `\n- Follow these dietary restrictions: ${dietaryRestrictions}` : '';
   
-  // Build pantry context
+  // Handle ingredient selection logic
+  let ingredientContext = '';
   let pantryContext = '';
-  if (pantryItems && pantryItems.length > 0) {
-    const pantryIngredients = pantryItems.map(item => {
+  
+  if (useAllPantryItems && allPantryItems.length > 0) {
+    // Use all pantry items as available ingredients
+    const availableIngredients = allPantryItems.map(item => {
       const expiry = item.daysUntilExpiry ? ` (${item.daysUntilExpiry} days until expiry)` : '';
       return `${item.name}${item.quantity ? ` - ${item.quantity}` : ''}${expiry}`;
     });
     
-    pantryContext = `\n\nAVAILABLE PANTRY ITEMS:\n${pantryIngredients.join('\n')}\n- PRIORITIZE using pantry items that expire soon (3 days or less)\n- Mark which ingredients come from pantry vs need to be purchased`;
+    pantryContext = `\n\nAVAILABLE PANTRY ITEMS:\n${availableIngredients.join('\n')}\n- PRIORITIZE using items that expire soon (3 days or less)\n- Use as many pantry items as makes sense for the recipe`;
+    ingredientContext = `\n\nUSE YOUR PANTRY: Create a recipe using ingredients from the available pantry items above. You don't need to use every single item, but try to use a good variety that makes sense together.`;
+  } else if (ingredients && ingredients.length > 0) {
+    // Use specific selected ingredients
+    ingredientContext = `\n\nREQUIRED INGREDIENTS: ${ingredients.join(', ')} - ALL of these must be used in the recipe`;
+    
+    if (allPantryItems && allPantryItems.length > 0) {
+      const availableExtras = allPantryItems.map(item => {
+        const expiry = item.daysUntilExpiry ? ` (${item.daysUntilExpiry} days until expiry)` : '';
+        return `${item.name}${item.quantity ? ` - ${item.quantity}` : ''}${expiry}`;
+      });
+      
+      pantryContext = `\n\nADDITIONAL PANTRY ITEMS (optional to use):\n${availableExtras.join('\n')}`;
+    }
   }
   
   // Recipe complexity guidance
@@ -332,18 +352,23 @@ function createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recip
     ? `\n- CREATE A SOPHISTICATED RECIPE: Use advanced cooking techniques, complex flavor profiles, multiple cooking methods, longer prep/cook times (45+ minutes total), restaurant-quality presentation`
     : `\n- CREATE A QUICK & EASY RECIPE: Simple techniques, minimal prep, 15-30 minute total time, accessible for home cooks, streamlined process`;
   
+  // Dessert guidance
+  const dessertText = includeDessert 
+    ? `\n- INCLUDE A DESSERT COMPONENT: Add a dessert recipe that complements the main meal`
+    : `\n- MAIN MEAL ONLY: Create only the main meal recipe, no desserts or multiple courses`;
+  
   // Variation guidance for multiple recipes
   const variationText = variationNumber > 1 
-    ? `\n- This is variation #${variationNumber} - make it DISTINCTLY DIFFERENT from other variations in cooking method, cuisine style, or flavor profile`
+    ? `\n- This is variation #${variationNumber} - make it DISTINCTLY DIFFERENT from other variations in cooking method, cuisine style, or flavor profile. Ensure variety in:\n  * Cooking methods (stir-fry, baked, grilled, etc.)\n  * Cuisine types (Italian, Asian, American, etc.)\n  * Meal types (unless ingredients are very limited)`
     : '';
   
-  return `Create a complete recipe using these ingredients: ${ingredients.join(', ')}${pantryContext}
+  return `Create a complete recipe${ingredientContext}${pantryContext}
 
 Requirements:
 - Serves ${servingSize} people
 - Include prep time and cook time
 - Rate difficulty as Easy, Medium, or Hard
-- Provide a brief description${restrictionsText}${complexityGuidance}${variationText}
+- Provide a brief description${restrictionsText}${complexityGuidance}${dessertText}${variationText}
 
 Please format your response EXACTLY like this JSON structure:
 {
