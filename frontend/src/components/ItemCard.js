@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle, X, AlertCircle } from 'lucide-react';
 
-const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement }) => {
+const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement, processingEnhancement = false }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ right: 0, top: '100%', left: 'auto', bottom: 'auto' });
   const menuRef = useRef(null);
@@ -130,7 +130,8 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
           className="absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
           style={{ 
             backgroundColor: expiryInfo.isExpired ? 'var(--color-error)' : 'var(--color-warning)',
-            color: 'white'
+            color: 'white',
+            zIndex: 10000
           }}
         >
           {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}
@@ -185,8 +186,14 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
               <span className="truncate">{expiryInfo.text}</span>
             </div>
             
-            {/* AI Badge */}
-            {item.detectedBy === 'ai' && (
+            {/* AI Badge / Processing Indicator */}
+            {processingEnhancement ? (
+              <div className="text-xs mt-1 inline-flex items-center gap-1" 
+                   style={{ color: 'var(--color-primary)' }}>
+                <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
+                AI processing...
+              </div>
+            ) : item.detectedBy === 'ai' && (
               <div className="text-xs mt-1 inline-flex items-center gap-1" 
                    style={{ color: 'var(--color-primary)' }}>
                 <Sparkles className="w-3 h-3" /> AI
@@ -264,18 +271,18 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
       {/* AI Enhancement Overlay */}
       {item.pendingEnhancement && (
         <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg border-2 border-dashed animate-fade-in"
-             style={{ borderColor: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' }}>
+             style={{ borderColor: item.pendingEnhancement.isLowConfidence ? 'var(--color-error)' : 'var(--color-primary)' }}>
           <div className="p-3 h-full flex flex-col justify-between">
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
                 {item.pendingEnhancement.isLowConfidence ? (
-                  <AlertCircle className="w-3 h-3" style={{ color: 'var(--color-warning)' }} />
+                  <AlertCircle className="w-3 h-3" style={{ color: 'var(--color-error)' }} />
                 ) : (
                   <Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
                 )}
                 <span className="text-xs font-semibold" style={{ 
-                  color: item.pendingEnhancement.isLowConfidence ? 'var(--color-warning)' : 'var(--color-primary)' 
+                  color: item.pendingEnhancement.isLowConfidence ? 'var(--color-error)' : 'var(--color-primary)' 
                 }}>
                   {item.pendingEnhancement.isLowConfidence ? 'Needs Review' : 'AI Suggestion'}
                 </span>
@@ -295,7 +302,7 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
               {item.pendingEnhancement.isLowConfidence ? (
                 <div>
                   <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                    "{item.name}" {item.pendingEnhancement.guidance?.message}
+                    "{item.name}" doesn't look like food
                   </div>
                   {item.pendingEnhancement.guidance?.examples && (
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -321,17 +328,30 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
             {/* Buttons */}
             <div className="flex gap-1">
               {item.pendingEnhancement.isLowConfidence ? (
-                <button 
-                  onClick={() => onEdit(item)}
-                  className="flex-1 btn-base py-1 text-xs font-medium"
-                  style={{ 
-                    backgroundColor: 'var(--color-warning)', 
-                    color: 'white',
-                    border: '1px solid var(--color-warning)'
-                  }}
-                >
-                  Update
-                </button>
+                <>
+                  <button 
+                    onClick={() => onEdit(item)}
+                    className="flex-1 btn-base py-1 text-xs font-medium"
+                    style={{ 
+                      backgroundColor: 'var(--color-error)', 
+                      color: 'white',
+                      border: '1px solid var(--color-error)'
+                    }}
+                  >
+                    Update
+                  </button>
+                  <button 
+                    onClick={() => onDelete(item.id)}
+                    className="flex-1 btn-base py-1 text-xs"
+                    style={{ 
+                      backgroundColor: 'var(--bg-card)', 
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)'
+                    }}
+                  >
+                    Remove
+                  </button>
+                </>
               ) : (
                 <>
                   <button 

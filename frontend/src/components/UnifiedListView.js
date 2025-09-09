@@ -9,6 +9,7 @@ const UnifiedListView = ({
   onDelete,
   onApplyEnhancement,
   onDismissEnhancement,
+  processingEnhancementIds = [],
   isEmpty 
 }) => {
   if (isEmpty) {
@@ -36,6 +37,7 @@ const UnifiedListView = ({
             onDelete={onDelete}
             onApplyEnhancement={onApplyEnhancement}
             onDismissEnhancement={onDismissEnhancement}
+            processingEnhancement={processingEnhancementIds.includes(item.id)}
           />
         ))}
       </div>
@@ -52,6 +54,7 @@ const UnifiedListView = ({
           onDelete={onDelete}
           onApplyEnhancement={onApplyEnhancement}
           onDismissEnhancement={onDismissEnhancement}
+          processingEnhancement={processingEnhancementIds.includes(item.id)}
         />
       ))}
     </div>

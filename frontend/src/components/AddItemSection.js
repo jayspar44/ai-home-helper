@@ -7,6 +7,7 @@ const AddItemSection = ({
   onDirectAdd, 
   onAIItemsDetected, 
   onItemEnhancementRequested,
+  onStartEnhancementProcessing,
   activeHomeId, 
   userToken, 
   getAuthHeaders 
@@ -78,31 +79,47 @@ const AddItemSection = ({
     const itemNameToProcess = quickAddName.trim();
     
     try {
-      // Get smart defaults from AI (location + expiry)
-      const defaults = await getQuickDefaults(itemNameToProcess);
-      
-      // Add immediately with defaults
-      const newItem = {
+      // Add immediately with basic defaults - input freed instantly
+      const basicItem = {
         name: itemNameToProcess,
-        location: defaults.location,
-        daysUntilExpiry: defaults.daysUntilExpiry
+        location: 'pantry', // Basic default
+        daysUntilExpiry: 7   // Basic default
       };
       
-      const addedItem = await onDirectAdd(newItem);
+      const addedItem = await onDirectAdd(basicItem);
       
-      // Clear input and enable form immediately - don't block user workflow
+      // Clear input and enable form immediately - don't block user workflow  
       setQuickAddName('');
       setIsLoading(false);
       
-      // Request enhancement for the newly added item in background (non-blocking)
-      if (addedItem && onItemEnhancementRequested) {
-        // Run AI enhancement asynchronously - doesn't block input
-        getFullEnhancement(itemNameToProcess).then(enhancement => {
+      // Run both AI calls in parallel (background) - non-blocking
+      if (addedItem && onItemEnhancementRequested && onStartEnhancementProcessing) {
+        // Show processing indicator
+        onStartEnhancementProcessing(addedItem.id);
+        
+        Promise.all([
+          getQuickDefaults(itemNameToProcess),
+          getFullEnhancement(itemNameToProcess)
+        ]).then(([defaults, enhancement]) => {
+          // Update item with smart defaults if they're different from basic
+          if (defaults && (defaults.location !== 'pantry' || defaults.daysUntilExpiry !== 7)) {
+            const updatedItem = {
+              ...addedItem,
+              location: defaults.location,
+              daysUntilExpiry: defaults.daysUntilExpiry
+            };
+            // Update item with smart defaults
+            onDirectAdd(updatedItem); // This will update the existing item
+          }
+          
+          // Show enhancement if available
           if (enhancement) {
             onItemEnhancementRequested(addedItem.id, enhancement);
           }
         }).catch(error => {
-          console.error('Background enhancement error:', error);
+          console.error('Background AI processing error:', error);
+          // Remove processing indicator on error
+          onItemEnhancementRequested(addedItem.id, null);
         });
       }
     } catch (error) {

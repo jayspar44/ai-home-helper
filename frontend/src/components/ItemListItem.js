@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle, X, AlertCircle } from 'lucide-react';
 
-const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement }) => {
+const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement, processingEnhancement = false }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ right: 0, top: '100%', left: 'auto', bottom: 'auto' });
   const menuRef = useRef(null);
@@ -129,7 +129,12 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
         <div className="flex-1 min-w-0">
           <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
             {item.name}
-            {item.detectedBy === 'ai' && (
+            {processingEnhancement ? (
+              <div className="inline-flex items-center gap-1 ml-1">
+                <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" 
+                     style={{ color: 'var(--color-primary)' }} />
+              </div>
+            ) : item.detectedBy === 'ai' && (
               <Sparkles className="inline w-3 h-3 ml-1" style={{ color: 'var(--color-primary)' }} />
             )}
           </div>

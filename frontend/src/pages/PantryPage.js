@@ -23,6 +23,7 @@ export default function PantryPage() {
   const [viewMode, setViewMode] = useState('card');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [processingEnhancementIds, setProcessingEnhancementIds] = useState([]);
 
   // Modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -106,6 +107,12 @@ export default function PantryPage() {
         ? { ...item, pendingEnhancement: enhancement }
         : item
     ));
+    // Remove from processing state when enhancement is ready
+    setProcessingEnhancementIds(prev => prev.filter(id => id !== itemId));
+  };
+  
+  const handleStartEnhancementProcessing = (itemId) => {
+    setProcessingEnhancementIds(prev => [...prev, itemId]);
   };
 
   const handleApplyEnhancement = async (itemId, enhancement) => {
@@ -177,6 +184,7 @@ export default function PantryPage() {
           onDirectAdd={handleDirectAdd}
           onAIItemsDetected={handleAIItemsAdd}
           onItemEnhancementRequested={handleItemEnhancementRequested}
+          onStartEnhancementProcessing={handleStartEnhancementProcessing}
           activeHomeId={activeHomeId}
           userToken={userToken}
           getAuthHeaders={getAuthHeaders}
@@ -241,6 +249,7 @@ export default function PantryPage() {
                 onDelete={handleDelete}
                 onApplyEnhancement={handleApplyEnhancement}
                 onDismissEnhancement={handleDismissEnhancement}
+                processingEnhancementIds={processingEnhancementIds}
                 isEmpty={filteredItems.length === 0}
               />
             </div>
