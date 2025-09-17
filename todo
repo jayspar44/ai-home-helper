@@ -1,9 +1,1 @@
-1. refactor database for expiry date, not days to expire
-2. change user logout to separate page from home admin
-3. allow dietary preferences to be added at the user and/or home level, allow home level setting for default number of users
-4. fix the recipe prompt to 
-a) handle no items selected (use all) 
-b) more diversity of protein choices
-c) deal with low number of items (use more)
-d) do a better job of presenting the info
-e) auto save recent recipes and allow users to retrieve them
+clean up the code
