@@ -6,3 +6,4 @@ cmd = "node backend/server.js"
 
 [variables]
 NODE_ENV = "production"
+DISABLE_ESLINT_PLUGIN = "true"
