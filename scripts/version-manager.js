@@ -162,6 +162,15 @@ function analyzeBumpType(changeDescription) {
     }
   }
 
+  // Special handling for documentation updates - should always be patch
+  if (description.includes('claude.md') ||
+      description.includes('documentation') ||
+      description.includes('readme') ||
+      description.includes(' docs ') ||
+      description.includes('instructions')) {
+    scores[BUMP_TYPES.PATCH] += 60; // High score to override other patterns
+  }
+
   // Special cases for better classification
   if (description.includes('version system') || description.includes('versioning')) {
     scores[BUMP_TYPES.MINOR] += 60; // New feature addition
