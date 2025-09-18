@@ -18,6 +18,7 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [configError, setConfigError] = useState(null);
+  const [profileError, setProfileError] = useState(null);
 
   // Debug: Log environment and config on app start
   useEffect(() => {
@@ -94,8 +95,10 @@ export default function App() {
           // Handle timeout or network errors
           if (error.name === 'AbortError') {
               console.error('❌ Profile fetch was aborted (timeout or manual)');
+              setProfileError('Server timeout - please try again');
           } else {
               console.log('🚪 Signing out due to network error');
+              setProfileError('Network error - please check connection');
               signOut(auth);
           }
       }
@@ -210,7 +213,51 @@ export default function App() {
     );
   }
 
-  console.log('App render - user:', !!user, 'profile:', !!profile, 'userToken:', !!userToken);
+  console.log('App render - user:', !!user, 'profile:', !!profile, 'userToken:', !!userToken, 'profileError:', profileError);
+
+  // Show profile error if we have a user but profile failed to load
+  if (user && profileError && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-orange-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+              <span className="text-white font-bold">⚠</span>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900">Profile Loading Error</h1>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Unable to load your profile from the server.
+            </p>
+
+            <div className="bg-gray-100 p-3 rounded text-sm">
+              <strong>Error:</strong> {profileError}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setProfileError(null);
+                  if (userToken) fetchProfile(userToken);
+                }}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              >
+                Retry
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !profile) {
     return <AuthPage />;

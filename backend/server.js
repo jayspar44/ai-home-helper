@@ -80,14 +80,7 @@ const checkAuth = async (req, res, next) => {
 
     try {
       console.log(`🔐 Verifying token with Firebase Admin...`);
-
-      // Add timeout to token verification
-      const tokenPromise = admin.auth().verifyIdToken(idToken);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Token verification timeout')), 10000)
-      );
-
-      req.user = await Promise.race([tokenPromise, timeoutPromise]);
+      req.user = await admin.auth().verifyIdToken(idToken);
       console.log(`✅ Token verified for user: ${req.user.uid}`);
       next();
     } catch (error) {
