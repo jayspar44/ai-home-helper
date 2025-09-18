@@ -2,18 +2,23 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
 // --- Firebase Configuration ---
-// Reads the configuration from environment variables (Replit Secrets).
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID
-};
+// Reads the configuration from a single FIREBASE_CONFIG environment variable
+let firebaseConfig;
 
-if (!firebaseConfig.apiKey) {
-    throw new Error("Firebase config is missing. Make sure your REACT_APP_FIREBASE secrets are set in Replit.");
+try {
+  // Parse the JSON string from FIREBASE_CONFIG environment variable
+  firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG || '{}');
+} catch (error) {
+  console.error('Error parsing FIREBASE_CONFIG:', error);
+  firebaseConfig = {};
+}
+
+// Validate required Firebase config fields
+const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
+
+if (missingFields.length > 0) {
+  throw new Error(`Firebase config is missing required fields: ${missingFields.join(', ')}. Make sure your REACT_APP_FIREBASE_CONFIG environment variable is properly set with a valid JSON object.`);
 }
 
 const app = initializeApp(firebaseConfig);
