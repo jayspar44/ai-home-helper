@@ -40,7 +40,17 @@ if (process.env.NODE_ENV === 'production') {
 // CORS configuration with environment-specific settings
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://your-app.railway.app'] // Update with your Railway domain
+    ? (origin, callback) => {
+        // Allow any Railway subdomain or localhost for development
+        if (!origin ||
+            origin.includes('.railway.app') ||
+            origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   optionsSuccessStatus: 200
@@ -106,6 +116,42 @@ app.get('/api/ready', (req, res) => {
   }
 
   res.status(200).json({ status: 'Ready' });
+});
+
+// Debug endpoint to help troubleshoot deployment issues
+app.get('/api/debug', (req, res) => {
+  const debugInfo = {
+    status: 'debug',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+    firebase: {
+      adminApps: admin.apps.length,
+      serviceAccountConfigured: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+      serviceAccountValid: false
+    },
+    gemini: {
+      configured: !!process.env.GEMINI_API_KEY,
+      keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0
+    },
+    server: {
+      port: process.env.PORT || 3001,
+      uptime: process.uptime()
+    }
+  };
+
+  // Test Firebase service account JSON parsing
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      debugInfo.firebase.serviceAccountValid = !!(serviceAccount.project_id && serviceAccount.private_key);
+      debugInfo.firebase.projectId = serviceAccount.project_id;
+    } catch (error) {
+      debugInfo.firebase.serviceAccountError = error.message;
+    }
+  }
+
+  res.status(200).json(debugInfo);
 });
 
 app.post('/api/register', async (req, res) => {

@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { ThemeProvider } from './hooks/useTheme';
 import { ToastProvider } from './contexts/ToastContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import AuthPage from './auth/AuthPage';
 import SharedLayout from './components/SharedLayout';
 import HomePage from './pages/HomePage';
@@ -16,6 +17,35 @@ export default function App() {
   const [userToken, setUserToken] = useState(null);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [configError, setConfigError] = useState(null);
+
+  // Debug: Log environment and config on app start
+  useEffect(() => {
+    console.log('🔧 App Debug Info:');
+    console.log('- Environment:', process.env.NODE_ENV);
+    console.log('- Firebase config exists:', !!process.env.REACT_APP_FIREBASE_CONFIG);
+    console.log('- Auth object:', !!auth);
+
+    // Check for configuration errors
+    if (!process.env.REACT_APP_FIREBASE_CONFIG) {
+      const error = 'REACT_APP_FIREBASE_CONFIG environment variable is missing';
+      console.error('❌ Config Error:', error);
+      setConfigError(error);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const config = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+      console.log('- Firebase project:', config.projectId);
+    } catch (e) {
+      const error = 'REACT_APP_FIREBASE_CONFIG is not valid JSON';
+      console.error('❌ Config Error:', error, e);
+      setConfigError(error);
+      setIsLoading(false);
+      return;
+    }
+  }, []);
 
   const fetchProfile = useCallback(async (token) => {
       try {
@@ -73,6 +103,40 @@ export default function App() {
   };
 
 
+  // Show configuration error if any
+  if (configError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mr-3">
+              <span className="text-white font-bold">!</span>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900">Configuration Error</h1>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              The application is missing required configuration. Please set up environment variables.
+            </p>
+
+            <div className="bg-gray-100 p-3 rounded text-sm">
+              <strong>Error:</strong> {configError}
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded">
+              <p className="text-blue-800 text-sm font-semibold">Required Environment Variable:</p>
+              <code className="text-xs bg-blue-100 px-1 py-0.5 rounded">REACT_APP_FIREBASE_CONFIG</code>
+              <p className="text-blue-700 text-xs mt-1">
+                This should contain your Firebase project configuration as a JSON string.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
@@ -84,7 +148,7 @@ export default function App() {
               <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
             </svg>
           </div>
-          
+
           {/* Loading text and spinner */}
           <div className="space-y-4">
             <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Roscoe</h1>
@@ -107,20 +171,22 @@ export default function App() {
   }
 
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
-              <Route index element={<HomePage />} />
-              <Route path="recipe-generator" element={<RecipeGenerator />} />
-              <Route path="home-admin" element={<HomeAdminPage />} />
-              <Route path="/pantry" element={<PantryPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </Router>
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
+                <Route index element={<HomePage />} />
+                <Route path="recipe-generator" element={<RecipeGenerator />} />
+                <Route path="home-admin" element={<HomeAdminPage />} />
+                <Route path="/pantry" element={<PantryPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </Router>
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
