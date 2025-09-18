@@ -49,53 +49,87 @@ export default function App() {
 
   const fetchProfile = useCallback(async (token) => {
       try {
+          console.log('📡 Fetching user profile...');
           const response = await fetch('/api/user/me', {
               method: 'GET',
-              headers: { 
+              headers: {
                   'Authorization': `Bearer ${token}`,
                   'Accept': 'application/json',
                   'Content-Type': 'application/json'
               }
           });
 
-          console.log('Profile response status:', response.status); // Debug logging
+          console.log('📡 Profile response status:', response.status);
 
           if (response.ok) {
               const data = await response.json();
-              console.log('Profile data:', data); // Debug logging
+              console.log('✅ Profile data received:', data);
               setProfile(data);
           } else {
-              const errorData = await response.json();
-              console.error("Failed to fetch user profile:", errorData);
+              const errorData = await response.json().catch(() => ({ error: 'No error data' }));
+              console.error("❌ Failed to fetch user profile:", errorData);
               // Only sign out on auth errors, not server errors
               if (response.status === 401) {
+                  console.log('🚪 Signing out due to 401 error');
                   signOut(auth);
               }
           }
       } catch (error) {
-          console.error("Error fetching user profile:", error);
-          // Only sign out on network/critical errors
+          console.error("❌ Error fetching user profile:", error);
+          console.error("❌ Error details:", {
+              name: error.name,
+              message: error.message,
+              stack: error.stack
+          });
+          // Only sign out on network/critical errors, not AbortError
           if (error.name !== 'AbortError') {
+              console.log('🚪 Signing out due to network error');
               signOut(auth);
           }
       }
   }, []);
 
   useEffect(() => {
+    console.log('🔥 Setting up Firebase auth listener...');
+
+    // Add a timeout fallback in case auth never resolves
+    const authTimeout = setTimeout(() => {
+      console.warn('⏰ Auth state timeout - forcing loading to false');
+      setIsLoading(false);
+    }, 10000); // 10 second timeout
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('🔥 Auth state changed:', !!currentUser);
+      clearTimeout(authTimeout); // Clear timeout since auth resolved
+
       if (currentUser) {
+        console.log('✅ User authenticated:', currentUser.uid);
         setUser(currentUser);
-        const token = await currentUser.getIdToken();
-        setUserToken(token);
-        await fetchProfile(token);
+        try {
+          const token = await currentUser.getIdToken();
+          console.log('✅ Got user token');
+          setUserToken(token);
+          await fetchProfile(token);
+        } catch (error) {
+          console.error('❌ Error getting token or profile:', error);
+        }
       } else {
+        console.log('❌ No user authenticated');
         setUser(null);
         setUserToken(null);
         setProfile(null);
       }
       setIsLoading(false);
+    }, (error) => {
+      console.error('❌ Firebase auth error:', error);
+      clearTimeout(authTimeout);
+      setIsLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      clearTimeout(authTimeout);
+      unsubscribe();
+    };
   }, [fetchProfile]);
 
   const handleLogout = () => {
