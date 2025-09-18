@@ -1,4 +1,8 @@
 // server.js - Home Helper Backend API
+
+// Load environment variables from .env file (for local development)
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -24,28 +28,139 @@ const fetch = require('node-fetch');  // Add this with other imports at the top
 const multer = require('multer');
 const fs = require('fs').promises;
 
-// Move ALL middleware to the top
-app.use(cors());
-app.use(express.json());
+// Production optimizations and middleware
+if (process.env.NODE_ENV === 'production') {
+  // Trust Railway proxy
+  app.set('trust proxy', 1);
+
+  // Disable x-powered-by header for security
+  app.disable('x-powered-by');
+}
+
+// CORS configuration with environment-specific settings
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? (origin, callback) => {
+        // Allow any Railway subdomain or localhost for development
+        if (!origin ||
+            origin.includes('.railway.app') ||
+            origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Request parsing middleware
+app.use(express.json({ limit: '10mb' })); // Increased for image uploads
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging for debugging (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // --- Authentication Middleware ---
 const checkAuth = async (req, res, next) => {
+  console.log(`🔐 CheckAuth: ${req.method} ${req.path}`);
+
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     const idToken = req.headers.authorization.split('Bearer ')[1];
+    console.log(`🔐 Token received, length: ${idToken.length}`);
+
     try {
+      console.log(`🔐 Verifying token with Firebase Admin...`);
       req.user = await admin.auth().verifyIdToken(idToken);
+      console.log(`✅ Token verified for user: ${req.user.uid}`);
       next();
     } catch (error) {
+      console.error(`❌ Token verification failed:`, error.message);
       res.status(401).send('Unauthorized: Invalid token');
     }
   } else {
+    console.log(`❌ No authorization header found`);
     res.status(401).send('Unauthorized: No token provided');
   }
 };
 
 // --- API Routes ---
 
-app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
+// Enhanced health check endpoint for Railway and monitoring
+app.get('/api/health', (req, res) => {
+  const healthCheck = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+    services: {
+      firebase: admin.apps.length > 0 ? 'connected' : 'disconnected',
+      gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not configured'
+    }
+  };
+
+  res.status(200).json(healthCheck);
+});
+
+// Readiness probe for Railway
+app.get('/api/ready', (req, res) => {
+  // Check if critical services are ready
+  if (admin.apps.length === 0) {
+    return res.status(503).json({ status: 'Service Unavailable', reason: 'Firebase not initialized' });
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(503).json({ status: 'Service Unavailable', reason: 'Gemini API not configured' });
+  }
+
+  res.status(200).json({ status: 'Ready' });
+});
+
+// Debug endpoint to help troubleshoot deployment issues
+app.get('/api/debug', (req, res) => {
+  const debugInfo = {
+    status: 'debug',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+    firebase: {
+      adminApps: admin.apps.length,
+      serviceAccountConfigured: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+      serviceAccountValid: false
+    },
+    gemini: {
+      configured: !!process.env.GEMINI_API_KEY,
+      keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0
+    },
+    server: {
+      port: process.env.PORT || 3001,
+      uptime: process.uptime()
+    }
+  };
+
+  // Test Firebase service account JSON parsing
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      debugInfo.firebase.serviceAccountValid = !!(serviceAccount.project_id && serviceAccount.private_key);
+      debugInfo.firebase.projectId = serviceAccount.project_id;
+    } catch (error) {
+      debugInfo.firebase.serviceAccountError = error.message;
+    }
+  }
+
+  res.status(200).json(debugInfo);
+});
 
 app.post('/api/register', async (req, res) => {
   try {
@@ -75,12 +190,15 @@ app.post('/api/register', async (req, res) => {
 
 app.get('/api/user/me', checkAuth, async (req, res) => {
     try {
-        console.log('Fetching profile for user:', req.user.uid); // Debug logging
+        console.log('👤 Fetching profile for user:', req.user.uid);
 
         // First verify the user exists in Firestore
+        console.log('👤 Querying users collection...');
         const userDoc = await db.collection('users').doc(req.user.uid).get();
-        
+        console.log('👤 User doc exists:', userDoc.exists);
+
         if (!userDoc.exists) {
+            console.log('👤 Creating new user document...');
             // Create user document if it doesn't exist
             const userData = {
                 uid: req.user.uid,
@@ -89,15 +207,19 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
                 createdAt: admin.firestore.FieldValue.serverTimestamp()
             };
             await db.collection('users').doc(req.user.uid).set(userData);
+            console.log('👤 User document created');
         }
 
         // Get user data (either existing or newly created)
         const userData = userDoc.exists ? userDoc.data() : {};
-        
+        console.log('👤 User data retrieved');
+
         // Fetch homes where user is a member
+        console.log('👤 Querying homes collection...');
         const homesSnapshot = await db.collection('homes')
             .where(`members.${req.user.uid}`, 'in', ['member', 'admin'])
             .get();
+        console.log('👤 Found', homesSnapshot.size, 'homes');
 
         const homes = [];
         homesSnapshot.forEach(doc => {
@@ -116,11 +238,11 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
             primaryHomeId: userData.primaryHomeId || (homes[0]?.id || null)
         };
 
-        console.log('Sending profile response:', response); // Debug logging
+        console.log('👤 Sending profile response with', homes.length, 'homes');
         res.json(response);
 
     } catch (error) {
-        console.error('Server error in /api/user/me:', error); // Debug logging
+        console.error('❌ Server error in /api/user/me:', error);
         res.status(500).json({
             error: 'Internal server error',
             message: error.message,
@@ -985,6 +1107,23 @@ If no food items are detected, return an empty array: []`;
 });
 
 
+// Global error handler for unhandled errors
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+
+  // Don't expose internal errors in production
+  const errorResponse = process.env.NODE_ENV === 'production'
+    ? { error: 'Internal server error' }
+    : { error: error.message, stack: error.stack };
+
+  res.status(500).json(errorResponse);
+});
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
 // --- Serve React App ---
 const startServer = async () => {
   try {
@@ -999,6 +1138,9 @@ const startServer = async () => {
     // Try to start server with port handling
     const server = app.listen(port, () => {
       console.log(`🚀 Home Helper API running on port ${port}`);
+      console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔥 Firebase Admin: ${admin.apps.length > 0 ? 'Connected' : 'Disconnected'}`);
+      console.log(`🤖 Gemini AI: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.log(`Port ${port} is busy, trying a new one...`);
@@ -1006,14 +1148,47 @@ const startServer = async () => {
         startServer(); // Retry with a new port
       } else {
         console.error('Server error:', err);
+        process.exit(1);
       }
     });
+
+    // Graceful shutdown handlers for production
+    const gracefulShutdown = (signal) => {
+      console.log(`\n📴 Received ${signal}, shutting down gracefully...`);
+      server.close(() => {
+        console.log('✅ HTTP server closed');
+        process.exit(0);
+      });
+
+      // Force close after 10 seconds
+      setTimeout(() => {
+        console.error('⚠️ Forced shutdown');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
 
 // Start the server
 startServer();

@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { ThemeProvider } from './hooks/useTheme';
 import { ToastProvider } from './contexts/ToastContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import AuthPage from './auth/AuthPage';
 import SharedLayout from './components/SharedLayout';
 import HomePage from './pages/HomePage';
@@ -16,62 +17,174 @@ export default function App() {
   const [userToken, setUserToken] = useState(null);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [configError, setConfigError] = useState(null);
+  const [profileError, setProfileError] = useState(null);
+
+  // Debug: Log environment and config on app start
+  useEffect(() => {
+    console.log('🔧 App Debug Info:');
+    console.log('- Environment:', process.env.NODE_ENV);
+    console.log('- Firebase config exists:', !!process.env.REACT_APP_FIREBASE_CONFIG);
+    console.log('- Auth object:', !!auth);
+
+    // Check for configuration errors
+    if (!process.env.REACT_APP_FIREBASE_CONFIG) {
+      const error = 'REACT_APP_FIREBASE_CONFIG environment variable is missing';
+      console.error('❌ Config Error:', error);
+      setConfigError(error);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const config = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+      console.log('- Firebase project:', config.projectId);
+    } catch (e) {
+      const error = 'REACT_APP_FIREBASE_CONFIG is not valid JSON';
+      console.error('❌ Config Error:', error, e);
+      setConfigError(error);
+      setIsLoading(false);
+      return;
+    }
+  }, []);
 
   const fetchProfile = useCallback(async (token) => {
       try {
+          console.log('📡 Fetching user profile...');
+
+          // Create AbortController for timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+              console.warn('⏰ Profile fetch timeout - aborting request');
+              controller.abort();
+          }, 8000); // 8 second timeout
+
           const response = await fetch('/api/user/me', {
               method: 'GET',
-              headers: { 
+              signal: controller.signal,
+              headers: {
                   'Authorization': `Bearer ${token}`,
                   'Accept': 'application/json',
                   'Content-Type': 'application/json'
               }
           });
 
-          console.log('Profile response status:', response.status); // Debug logging
+          clearTimeout(timeoutId);
+          console.log('📡 Profile response status:', response.status);
 
           if (response.ok) {
               const data = await response.json();
-              console.log('Profile data:', data); // Debug logging
+              console.log('✅ Profile data received:', data);
               setProfile(data);
           } else {
-              const errorData = await response.json();
-              console.error("Failed to fetch user profile:", errorData);
+              const errorData = await response.json().catch(() => ({ error: 'No error data' }));
+              console.error("❌ Failed to fetch user profile:", errorData);
               // Only sign out on auth errors, not server errors
               if (response.status === 401) {
+                  console.log('🚪 Signing out due to 401 error');
                   signOut(auth);
               }
           }
       } catch (error) {
-          console.error("Error fetching user profile:", error);
-          // Only sign out on network/critical errors
-          if (error.name !== 'AbortError') {
+          console.error("❌ Error fetching user profile:", error);
+          console.error("❌ Error details:", {
+              name: error.name,
+              message: error.message,
+              stack: error.stack
+          });
+          // Handle timeout or network errors
+          if (error.name === 'AbortError') {
+              console.error('❌ Profile fetch was aborted (timeout or manual)');
+              setProfileError('Server timeout - please try again');
+          } else {
+              console.log('🚪 Signing out due to network error');
+              setProfileError('Network error - please check connection');
               signOut(auth);
           }
       }
   }, []);
 
   useEffect(() => {
+    console.log('🔥 Setting up Firebase auth listener...');
+
+    // Add a timeout fallback in case auth never resolves
+    const authTimeout = setTimeout(() => {
+      console.warn('⏰ Auth state timeout - forcing loading to false');
+      setIsLoading(false);
+    }, 10000); // 10 second timeout
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('🔥 Auth state changed:', !!currentUser);
+      clearTimeout(authTimeout); // Clear timeout since auth resolved
+
       if (currentUser) {
+        console.log('✅ User authenticated:', currentUser.uid);
         setUser(currentUser);
-        const token = await currentUser.getIdToken();
-        setUserToken(token);
-        await fetchProfile(token);
+        try {
+          const token = await currentUser.getIdToken();
+          console.log('✅ Got user token');
+          setUserToken(token);
+          await fetchProfile(token);
+        } catch (error) {
+          console.error('❌ Error getting token or profile:', error);
+        }
       } else {
+        console.log('❌ No user authenticated');
         setUser(null);
         setUserToken(null);
         setProfile(null);
       }
       setIsLoading(false);
+    }, (error) => {
+      console.error('❌ Firebase auth error:', error);
+      clearTimeout(authTimeout);
+      setIsLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      clearTimeout(authTimeout);
+      unsubscribe();
+    };
   }, [fetchProfile]);
 
   const handleLogout = () => {
     signOut(auth).catch((error) => console.error("Logout Error:", error));
   };
 
+
+  // Show configuration error if any
+  if (configError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mr-3">
+              <span className="text-white font-bold">!</span>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900">Configuration Error</h1>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              The application is missing required configuration. Please set up environment variables.
+            </p>
+
+            <div className="bg-gray-100 p-3 rounded text-sm">
+              <strong>Error:</strong> {configError}
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded">
+              <p className="text-blue-800 text-sm font-semibold">Required Environment Variable:</p>
+              <code className="text-xs bg-blue-100 px-1 py-0.5 rounded">REACT_APP_FIREBASE_CONFIG</code>
+              <p className="text-blue-700 text-xs mt-1">
+                This should contain your Firebase project configuration as a JSON string.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -84,7 +197,7 @@ export default function App() {
               <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
             </svg>
           </div>
-          
+
           {/* Loading text and spinner */}
           <div className="space-y-4">
             <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Roscoe</h1>
@@ -100,27 +213,73 @@ export default function App() {
     );
   }
 
-  console.log('App render - user:', !!user, 'profile:', !!profile, 'userToken:', !!userToken);
+  console.log('App render - user:', !!user, 'profile:', !!profile, 'userToken:', !!userToken, 'profileError:', profileError);
+
+  // Show profile error if we have a user but profile failed to load
+  if (user && profileError && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-orange-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+              <span className="text-white font-bold">⚠</span>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900">Profile Loading Error</h1>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Unable to load your profile from the server.
+            </p>
+
+            <div className="bg-gray-100 p-3 rounded text-sm">
+              <strong>Error:</strong> {profileError}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setProfileError(null);
+                  if (userToken) fetchProfile(userToken);
+                }}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              >
+                Retry
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !profile) {
     return <AuthPage />;
   }
 
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
-              <Route index element={<HomePage />} />
-              <Route path="recipe-generator" element={<RecipeGenerator />} />
-              <Route path="home-admin" element={<HomeAdminPage />} />
-              <Route path="/pantry" element={<PantryPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </Router>
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
+                <Route index element={<HomePage />} />
+                <Route path="recipe-generator" element={<RecipeGenerator />} />
+                <Route path="home-admin" element={<HomeAdminPage />} />
+                <Route path="/pantry" element={<PantryPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </Router>
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
