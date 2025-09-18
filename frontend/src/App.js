@@ -50,8 +50,17 @@ export default function App() {
   const fetchProfile = useCallback(async (token) => {
       try {
           console.log('📡 Fetching user profile...');
+
+          // Create AbortController for timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+              console.warn('⏰ Profile fetch timeout - aborting request');
+              controller.abort();
+          }, 8000); // 8 second timeout
+
           const response = await fetch('/api/user/me', {
               method: 'GET',
+              signal: controller.signal,
               headers: {
                   'Authorization': `Bearer ${token}`,
                   'Accept': 'application/json',
@@ -59,6 +68,7 @@ export default function App() {
               }
           });
 
+          clearTimeout(timeoutId);
           console.log('📡 Profile response status:', response.status);
 
           if (response.ok) {
@@ -81,8 +91,10 @@ export default function App() {
               message: error.message,
               stack: error.stack
           });
-          // Only sign out on network/critical errors, not AbortError
-          if (error.name !== 'AbortError') {
+          // Handle timeout or network errors
+          if (error.name === 'AbortError') {
+              console.error('❌ Profile fetch was aborted (timeout or manual)');
+          } else {
               console.log('🚪 Signing out due to network error');
               signOut(auth);
           }

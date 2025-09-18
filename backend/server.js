@@ -72,15 +72,30 @@ if (process.env.NODE_ENV !== 'production') {
 
 // --- Authentication Middleware ---
 const checkAuth = async (req, res, next) => {
+  console.log(`🔐 CheckAuth: ${req.method} ${req.path}`);
+
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     const idToken = req.headers.authorization.split('Bearer ')[1];
+    console.log(`🔐 Token received, length: ${idToken.length}`);
+
     try {
-      req.user = await admin.auth().verifyIdToken(idToken);
+      console.log(`🔐 Verifying token with Firebase Admin...`);
+
+      // Add timeout to token verification
+      const tokenPromise = admin.auth().verifyIdToken(idToken);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Token verification timeout')), 10000)
+      );
+
+      req.user = await Promise.race([tokenPromise, timeoutPromise]);
+      console.log(`✅ Token verified for user: ${req.user.uid}`);
       next();
     } catch (error) {
+      console.error(`❌ Token verification failed:`, error.message);
       res.status(401).send('Unauthorized: Invalid token');
     }
   } else {
+    console.log(`❌ No authorization header found`);
     res.status(401).send('Unauthorized: No token provided');
   }
 };
@@ -182,12 +197,15 @@ app.post('/api/register', async (req, res) => {
 
 app.get('/api/user/me', checkAuth, async (req, res) => {
     try {
-        console.log('Fetching profile for user:', req.user.uid); // Debug logging
+        console.log('👤 Fetching profile for user:', req.user.uid);
 
         // First verify the user exists in Firestore
+        console.log('👤 Querying users collection...');
         const userDoc = await db.collection('users').doc(req.user.uid).get();
-        
+        console.log('👤 User doc exists:', userDoc.exists);
+
         if (!userDoc.exists) {
+            console.log('👤 Creating new user document...');
             // Create user document if it doesn't exist
             const userData = {
                 uid: req.user.uid,
@@ -196,15 +214,19 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
                 createdAt: admin.firestore.FieldValue.serverTimestamp()
             };
             await db.collection('users').doc(req.user.uid).set(userData);
+            console.log('👤 User document created');
         }
 
         // Get user data (either existing or newly created)
         const userData = userDoc.exists ? userDoc.data() : {};
-        
+        console.log('👤 User data retrieved');
+
         // Fetch homes where user is a member
+        console.log('👤 Querying homes collection...');
         const homesSnapshot = await db.collection('homes')
             .where(`members.${req.user.uid}`, 'in', ['member', 'admin'])
             .get();
+        console.log('👤 Found', homesSnapshot.size, 'homes');
 
         const homes = [];
         homesSnapshot.forEach(doc => {
@@ -223,11 +245,11 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
             primaryHomeId: userData.primaryHomeId || (homes[0]?.id || null)
         };
 
-        console.log('Sending profile response:', response); // Debug logging
+        console.log('👤 Sending profile response with', homes.length, 'homes');
         res.json(response);
 
     } catch (error) {
-        console.error('Server error in /api/user/me:', error); // Debug logging
+        console.error('❌ Server error in /api/user/me:', error);
         res.status(500).json({
             error: 'Internal server error',
             message: error.message,
