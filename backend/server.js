@@ -97,12 +97,22 @@ const checkAuth = async (req, res, next) => {
 
 // Enhanced health check endpoint for Railway and monitoring
 app.get('/api/health', (req, res) => {
+  // Read version from version.json
+  let version = '1.0.0'; // fallback
+  try {
+    const versionPath = path.join(__dirname, '..', 'version.json');
+    const versionData = require(versionPath);
+    version = versionData.version;
+  } catch (error) {
+    console.warn('Could not read version.json, using fallback version:', error.message);
+  }
+
   const healthCheck = {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0',
+    version: version,
     services: {
       firebase: admin.apps.length > 0 ? 'connected' : 'disconnected',
       gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not configured'

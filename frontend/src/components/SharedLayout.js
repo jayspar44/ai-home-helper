@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
+import VersionDisplay from './VersionDisplay';
 
 // ===== ICONS =====
 const HomeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
@@ -96,7 +97,7 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
           
           {/* Sidebar Header */}
           <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-2">
               {/* Roscoe Logo */}
               <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M50 0C22.3858 0 0 22.3858 0 50C0 77.6142 22.3858 100 50 100C77.6142 100 100 77.6142 100 50C100 22.3858 77.6142 0 50 0ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20V80Z" fill="#34D399"/>
@@ -107,6 +108,7 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Home Helper</p>
               </div>
             </div>
+            <VersionDisplay />
           </div>
           
           {/* User Profile */}
@@ -170,8 +172,8 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
                   key={path}
                   to={path}
                   className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${
-                    isActive 
-                      ? 'text-white shadow-sm' 
+                    isActive
+                      ? 'text-white shadow-sm'
                       : 'hover:bg-opacity-80'
                   }`}
                   style={({ isActive }) => ({
@@ -187,32 +189,46 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
               ))}
             </div>
           </nav>
-          
-          
+
+          {/* Theme Toggle (Desktop Only) */}
+          <div className="p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium hover:bg-opacity-80"
+              style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+            >
+              {isDark ? <SunIcon /> : <MoonIcon />}
+              <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+          </div>
+
         </div>
       </aside>
 
-      {/* ===== MOBILE/DESKTOP HEADER ===== */}
-      <header className="sticky top-0 z-20 border-b lg:pl-[var(--sidebar-width)]" style={{ 
-        backgroundColor: 'var(--bg-overlay)', 
+      {/* ===== MOBILE HEADER ===== */}
+      <header className="mobile-only sticky top-0 z-20 border-b" style={{
+        backgroundColor: 'var(--bg-overlay)',
         borderColor: 'var(--border-light)',
         backdropFilter: 'blur(10px)',
         height: 'var(--header-height)'
       }}>
-        <div className="flex items-center justify-between h-full px-4 lg:px-6">
-          
+        <div className="flex items-center justify-between h-full px-4">
+
           {/* Mobile Header Left */}
           <div className="flex items-center gap-4">
             {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M50 0C22.3858 0 0 22.3858 0 50C0 77.6142 22.3858 100 50 100C77.6142 100 100 77.6142 100 50C100 22.3858 77.6142 0 50 0ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20V80Z" fill="#34D399"/>
                 <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
               </svg>
-              <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Roscoe</span>
+              <div className="flex flex-col">
+                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Roscoe</span>
+                <VersionDisplay />
+              </div>
             </div>
           </div>
-          
+
           {/* Header Right */}
           <div className="flex items-center gap-3">
             {/* Theme Toggle */}
@@ -228,10 +244,8 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
       </header>
 
       {/* ===== MAIN CONTENT ===== */}
-      <main className="mobile-nav-space" style={{ paddingLeft: '0' }}>
-        <div className="lg:pl-[var(--sidebar-width)]">
-          <Outlet context={outletContext} />
-        </div>
+      <main className="mobile-nav-space lg:pl-[var(--sidebar-width)]">
+        <Outlet context={outletContext} />
       </main>
 
       {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
