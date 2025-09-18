@@ -9,9 +9,9 @@
 
 :root {
   /* ===== BRAND COLORS ===== */
-  --color-primary: #34D399;        /* green-400 */
-  --color-primary-light: #A7F3D0;  /* green-200 */
-  --color-primary-dark: #047857;   /* green-700 - darker for better contrast */
+  --color-primary: #34D399;        /* emerald-400 - brighter for light backgrounds */
+  --color-primary-light: #6EE7B7;  /* emerald-300 */
+  --color-primary-dark: #10B981;   /* emerald-500 */
   --color-accent: #F97316;         /* orange-500 */
   --color-accent-light: #FED7AA;   /* orange-200 */
   
@@ -98,21 +98,29 @@
 
 /* ===== DARK THEME ===== */
 [data-theme="dark"] {
-  --bg-primary: var(--color-gray-900);
-  --bg-secondary: var(--color-gray-800);
-  --bg-tertiary: var(--color-gray-700);
-  --bg-card: var(--color-gray-800);
-  --bg-overlay: rgba(17, 24, 39, 0.95);
-  
-  --text-primary: var(--color-gray-50);
-  --text-secondary: var(--color-gray-300);
-  --text-muted: var(--color-gray-400);
-  --text-inverse: var(--color-gray-900);
-  
-  --border-light: var(--color-gray-700);
-  --border-medium: var(--color-gray-600);
-  --border-strong: var(--color-gray-500);
-  
+  /* Brand colors for dark theme */
+  --color-primary: #10B981;        /* emerald-500 */
+  --color-primary-light: #047857;  /* emerald-700 - darker accent for monochromatic feel */
+  --color-primary-dark: #059669;   /* emerald-600 */
+
+  /* Background colors (Claude.ai inspired) */
+  --bg-primary: #1e1e1e;           /* Claude's dark background - neutral gray */
+  --bg-secondary: #2a2a2a;         /* slightly lighter charcoal */
+  --bg-tertiary: #333333;          /* medium dark gray */
+  --bg-card: #262626;              /* distinct content areas */
+  --bg-overlay: rgba(30, 30, 30, 0.95);
+
+  /* Text colors */
+  --text-primary: #F8FAFC;         /* near-white for maximum readability */
+  --text-secondary: #CBD5E1;       /* much lighter than current gray-300 */
+  --text-muted: #8B9AAF;           /* warmer, more readable */
+  --text-inverse: #1e1e1e;
+
+  /* Border colors */
+  --border-light: #3a3a3a;         /* visible on Claude-style backgrounds */
+  --border-medium: #4a4a4a;        /* clear definition */
+  --border-strong: #5a5a5a;        /* strong contrast */
+
   --shadow-color: 0, 0, 0;
 }
 

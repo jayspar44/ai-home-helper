@@ -138,6 +138,36 @@ npm start                 # Run production mode
 # Frontend specific (from /frontend)
 npm start                 # Development server
 npm run build             # Production build
+
+# Version Management
+npm run version:get        # Get current version
+npm run version:bump       # Bump version with description
+npm run version:analyze    # Analyze change description for bump type
+```
+
+### Claude Code Version Management Protocol
+
+**IMPORTANT**: When Claude Code makes changes to the codebase, it should ALWAYS run the version updater before suggesting commits. This ensures proper semantic versioning and maintains an accurate changelog.
+
+**Required Steps for Claude Code:**
+1. After completing any changes to the codebase, analyze what was modified
+2. Run: `node scripts/version-manager.js bump "description of changes made"`
+3. The system will automatically:
+   - Determine if changes are patch/minor/major
+   - Update version.json with timestamp and changelog
+   - Sync version across all package.json files
+   - Generate appropriate semantic version bump
+
+**Examples:**
+```bash
+# For UI/styling changes, bug fixes
+node scripts/version-manager.js bump "Fix layout issues and update dark theme colors"
+
+# For new features
+node scripts/version-manager.js bump "Add new recipe sharing feature with social integration"
+
+# For breaking changes
+node scripts/version-manager.js bump "Remove deprecated API endpoints and update authentication system"
 ```
 
 ### API Endpoints

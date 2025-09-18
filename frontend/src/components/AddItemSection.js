@@ -161,7 +161,7 @@ const AddItemSection = ({
                 <Camera className="w-6 h-6 text-white" />
               </div>
               
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-primary-dark)' }}>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                 Scan Multiple Items
               </h3>
               
