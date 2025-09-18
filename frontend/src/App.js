@@ -49,16 +49,20 @@ export default function App() {
   }, []);
 
   const fetchProfile = useCallback(async (token) => {
+      let timeoutId = null;
       try {
           console.log('📡 Fetching user profile...');
 
           // Create AbortController for timeout
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => {
+
+          // Set up timeout that aborts after 15 seconds
+          timeoutId = setTimeout(() => {
               console.warn('⏰ Profile fetch timeout - aborting request');
               controller.abort();
-          }, 8000); // 8 second timeout
+          }, 15000); // 15 second timeout for Railway
 
+          console.log('📡 Starting fetch request...');
           const response = await fetch('/api/user/me', {
               method: 'GET',
               signal: controller.signal,
@@ -69,7 +73,11 @@ export default function App() {
               }
           });
 
-          clearTimeout(timeoutId);
+          // Clear timeout on successful response
+          if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+          }
           console.log('📡 Profile response status:', response.status);
 
           if (response.ok) {
@@ -92,14 +100,23 @@ export default function App() {
               message: error.message,
               stack: error.stack
           });
-          // Handle timeout or network errors
+
+          // Handle different types of errors
           if (error.name === 'AbortError') {
-              console.error('❌ Profile fetch was aborted (timeout or manual)');
+              console.error('❌ Profile fetch was aborted (timeout)');
               setProfileError('Server timeout - please try again');
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+              console.error('❌ Network error - unable to reach server');
+              setProfileError('Unable to reach server - check your connection');
           } else {
-              console.log('🚪 Signing out due to network error');
-              setProfileError('Network error - please check connection');
-              signOut(auth);
+              console.error('❌ Unexpected error during profile fetch');
+              setProfileError('Unexpected error - please try again');
+              // Only sign out on auth-specific errors, not server issues
+          }
+      } finally {
+          // Always clean up timeout
+          if (timeoutId) {
+              clearTimeout(timeoutId);
           }
       }
   }, []);
