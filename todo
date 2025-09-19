@@ -5,12 +5,12 @@
 - calorie / nutrient counter
 
 # Pantry
-- refactor database for expiry date, not days to expire
 - bug on AI suggestions where it doesn't display the original value
 - make pantry AI suggestions faster
 - don't allow non-human edible items in the panty (e.g. dog food)
 - refocus the text on the pantry add text box after adding
 - review whether to store addition info about pantry items e.g. protein vs veg, calorie info, etc
+- camera based adding (not just photo based, live camera feed)
 
 # Recipe Generator
 - fix the recipe prompt to 
@@ -21,6 +21,14 @@ d) do a better job of presenting the info
 e) auto save recent recipes and allow users to retrieve them
 - ensure there's always an expiry date (currently not working reliably with AI suggestions)
 - better recipe page layout
+- integrate with shopping (future feature)
+
+# Planner
+- AI parsing of manually logged meals
+- Camera based meal logging
+- 1-click plan the week based on the pantry and recipe generator
+- 1-click plan the day based on the pantry and recipe generator
+- visual nudges for missed meals
 
 # Home Admin
 - allow dietary preferences to be added at the user and/or home level,
@@ -32,7 +40,6 @@ e) auto save recent recipes and allow users to retrieve them
 - enable account deletion
 - enable name changes
 
-
 # General
-- debug api needs to use version.json
+- visual indicator of using dev version
 

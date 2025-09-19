@@ -12,6 +12,8 @@ const AdminIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
 
 const PantryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M19 11V9a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v2" /><path d="M6 11h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Z" /><path d="M10 11V9" /><path d="M14 11V9" /></svg>;
 
+const PlannerIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
+
 const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 
 const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
@@ -62,27 +64,33 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
   };
 
   const navigation = [
-    { 
-      name: 'Home', 
-      path: '/', 
+    {
+      name: 'Home',
+      path: '/',
       icon: HomeIcon,
       mobileLabel: 'Home'
     },
-    { 
-      name: 'Pantry', 
-      path: '/pantry', 
+    {
+      name: 'Pantry',
+      path: '/pantry',
       icon: PantryIcon,
       mobileLabel: 'Pantry'
     },
-    { 
-      name: 'Recipes', 
-      path: '/recipe-generator', 
+    {
+      name: 'Planner',
+      path: '/planner',
+      icon: PlannerIcon,
+      mobileLabel: 'Planner'
+    },
+    {
+      name: 'Recipes',
+      path: '/recipe-generator',
       icon: RecipeIcon,
       mobileLabel: 'Recipes'
     },
-    { 
-      name: 'Admin', 
-      path: '/home-admin', 
+    {
+      name: 'Admin',
+      path: '/home-admin',
       icon: AdminIcon,
       mobileLabel: 'Admin'
     }

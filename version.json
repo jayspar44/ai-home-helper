@@ -1,6 +1,6 @@
 {
-  "version": "2.3.4",
-  "lastUpdated": "2025-09-19T01:48:41.657Z",
+  "version": "2.6.1",
+  "lastUpdated": "2025-09-19T05:27:15.000Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -46,6 +46,36 @@
       "description": "Fix display rendering issue where items with daysUntilExpiry but no expiresAt were showing 'No expiry date' in cards while EditItemModal displayed correct dates. Updated getExpiryInfo and getExpiryStatus functions to properly handle backward compatibility fallbacks.",
       "timestamp": "2025-09-19T01:48:41.658Z",
       "date": "September 18, 2025"
+    },
+    "2.3.5": {
+      "description": "Add comprehensive meal planner feature with mobile-first design, recipe scheduling, manual meal logging, pantry integration, and Schedule Recipe button in recipe generator",
+      "timestamp": "2025-09-19T03:57:40.509Z",
+      "date": "September 18, 2025"
+    },
+    "2.3.6": {
+      "description": "Add major new meal planner feature with calendar view, recipe scheduling, manual meal logging, pantry integration, new API endpoints, mobile-first design, and comprehensive meal planning functionality",
+      "timestamp": "2025-09-19T04:00:06.544Z",
+      "date": "September 19, 2025"
+    },
+    "2.4.0": {
+      "description": "Add comprehensive meal planner feature: new planner page with calendar view, recipe scheduling system, manual meal logging, pantry integration, new API endpoints, and Schedule Recipe button in recipe generator",
+      "timestamp": "2025-09-19T04:00:52.324Z",
+      "date": "September 19, 2025"
+    },
+    "2.5.0": {
+      "description": "Improve version manager to better detect feature additions and comprehensive features for more accurate semantic versioning",
+      "timestamp": "2025-09-19T04:02:19.720Z",
+      "date": "September 19, 2025"
+    },
+    "2.6.0": {
+      "description": "Fix RecipeSelector authentication and UI issues: standardize getAuthHeaders usage, fix recipe name display, and improve search box icon alignment",
+      "timestamp": "2025-09-19T05:15:02.251Z",
+      "date": "September 19, 2025"
+    },
+    "2.6.1": {
+      "description": "Refactor version management to use single source of truth: consolidate to root version.json, update backend endpoints to read from unified location, and establish automated version management protocol",
+      "timestamp": "2025-09-19T05:27:15.000Z",
+      "date": "September 19, 2025"
     }
   }
 }
