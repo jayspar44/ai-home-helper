@@ -4,6 +4,9 @@
 - smart shopper
 - calorie / nutrient counter
 
+# Home
+- update homepage with Planner
+
 # Pantry
 - bug on AI suggestions where it doesn't display the original value
 - make pantry AI suggestions faster
