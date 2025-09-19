@@ -6,6 +6,7 @@
 
 # Pantry
 - refactor database for expiry date, not days to expire
+- bug on AI suggestions where it doesn't display the original value
 - make pantry AI suggestions faster
 - don't allow non-human edible items in the panty (e.g. dog food)
 - refocus the text on the pantry add text box after adding
