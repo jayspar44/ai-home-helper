@@ -47,7 +47,8 @@ export const calculateRemainingDays = (expiresAt) => {
  * @returns {Object} - Expiry info with text, color, status flags
  */
 export const getExpiryInfo = (item) => {
-  if (!item.expiresAt) {
+  // Handle both missing expiresAt and empty string case, but also check for daysUntilExpiry as fallback
+  if (!item.expiresAt && !item.daysUntilExpiry) {
     return {
       text: 'No expiry date',
       color: 'var(--text-muted)',
@@ -58,7 +59,9 @@ export const getExpiryInfo = (item) => {
     };
   }
 
-  const remainingDays = calculateRemainingDays(item.expiresAt);
+  // Use expiresAt if available, otherwise fall back to daysUntilExpiry
+  const expiryDate = item.expiresAt || (item.daysUntilExpiry ? daysToExpiryDate(item.daysUntilExpiry) : null);
+  const remainingDays = calculateRemainingDays(expiryDate);
 
   // Handle invalid dates
   if (remainingDays === null) {
@@ -121,12 +124,15 @@ export const getExpiryInfo = (item) => {
  * @returns {string} - 'expired', 'expiring-soon', 'fresh', or 'unknown'
  */
 export const getExpiryStatus = (item) => {
-  if (!item.expiresAt) {
+  if (!item.expiresAt && !item.daysUntilExpiry) {
     return 'unknown';
   }
 
-  const remainingDays = calculateRemainingDays(item.expiresAt);
+  // Use expiresAt if available, otherwise fall back to daysUntilExpiry
+  const expiryDate = item.expiresAt || (item.daysUntilExpiry ? daysToExpiryDate(item.daysUntilExpiry) : null);
+  const remainingDays = calculateRemainingDays(expiryDate);
 
+  if (remainingDays === null) return 'unknown';
   if (remainingDays <= 0) return 'expired';
   if (remainingDays <= 7) return 'expiring-soon';
   return 'fresh';
