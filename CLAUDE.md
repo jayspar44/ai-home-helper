@@ -5,9 +5,9 @@
 **Roscoe** is a smart home helper application that combines AI-powered recipe generation, intelligent pantry management, and collaborative home administration. Built for families and households who want to reduce food waste, discover new recipes, and efficiently manage their kitchen inventory.
 
 ### Key Features
-- **AI Recipe Generator**: Create personalized recipes based on available pantry ingredients using Google Gemini AI
-- **Intelligent Pantry Management**: Track items across pantry, fridge, and freezer with AI-assisted photo recognition and expiry date tracking
-- **Meal Planner**: Schedule recipes, log meals, and plan weekly menus with calendar view and pantry integration
+- **AI Recipe Generator**: Create personalized recipes with Google Gemini 2.5 Flash, featuring multiple recipe generation, sophistication levels, and smart pantry integration with expiry prioritization
+- **Intelligent Pantry Management**: Advanced AI-powered system with photo recognition, smart item suggestions, location/expiry defaults, and consumption tracking
+- **Meal Planner**: Comprehensive meal planning with recipe scheduling, manual meal logging, pantry ingredient deduction, and consumption analytics
 - **Multi-User Home Management**: Invite family members with role-based access (admin/member)
 - **Responsive Design**: Mobile-first design that works across all devices
 
@@ -18,7 +18,7 @@
 - **Backend**: Node.js + Express.js with Firebase Admin SDK
 - **Database**: Firebase Firestore (multi-tenant with homes/users collections)
 - **Authentication**: Firebase Authentication
-- **AI Services**: Google Gemini API for recipe generation and image recognition
+- **AI Services**: Google Gemini 2.5 Flash API for advanced recipe generation, intelligent pantry item detection, smart suggestions, and image analysis
 - **Deployment**: Railway (with nixpacks)
 
 ### Directory Structure
@@ -32,8 +32,8 @@
 │   │   └── firebase.js   # Firebase config
 │   └── public/
 ├── backend/           # Node.js API server
-│   ├── server.js         # Main server file
-│   └── uploads/         # Temporary file uploads
+│   ├── server.js         # Main server file with comprehensive AI endpoints
+│   └── uploads/         # Temporary file uploads for AI image processing
 └── nixpacks.toml     # Railway deployment config
 ```
 
@@ -95,6 +95,7 @@ The app will be available at:
 - `homes/{homeId}/pantry_items/` - Pantry inventory per home
 - `homes/{homeId}/recipes/` - Saved recipes per home
 - `homes/{homeId}/meal_plans/` - Scheduled meals and meal logging per home
+- `homes/{homeId}/pantry_consumption_log/` - Ingredient usage and deduction tracking
 
 #### Key Data Models
 ```javascript
@@ -141,6 +142,31 @@ The app will be available at:
   },
   createdBy: "userId",
   createdAt: Timestamp
+}
+
+// Enhanced recipe document (from AI generation)
+{
+  title: "Chicken Stir Fry",
+  description: "Quick and healthy dinner",
+  prepTime: "15 minutes",
+  cookTime: "20 minutes",
+  servings: 4,
+  difficulty: "Easy", // Easy|Medium|Hard
+  ingredients: [...], // Array of ingredient strings
+  instructions: [...], // Array of instruction steps
+  tips: [...], // Array of cooking tips
+  pantryIngredients: [...], // Ingredients available from pantry
+  missingIngredients: [...] // Ingredients to purchase
+}
+
+// Pantry consumption log document
+{
+  pantryItemId: "item123",
+  originalQuantity: "1 gallon",
+  portion: "all", // all|half|quarter|custom
+  mealPlanId: "plan456",
+  consumedAt: Timestamp,
+  consumedBy: "userId"
 }
 ```
 
@@ -203,10 +229,17 @@ npm run version:get        # Get current version
 - `POST /api/pantry/:homeId` - Add new item
 - `PUT /api/pantry/:homeId/:itemId` - Update item
 - `DELETE /api/pantry/:homeId/:itemId` - Delete item
-- `POST /api/pantry/:homeId/detect-items` - AI photo detection
+- `POST /api/pantry/:homeId/detect-items` - AI photo detection and analysis
+- `POST /api/pantry/suggest-item` - AI-powered item suggestions and validation
+- `POST /api/pantry/quick-defaults` - Smart defaults for location and expiry
+- `POST /api/pantry/:homeId/deduct` - Deduct ingredients from pantry (consumption tracking)
 
 #### Recipe Generation
-- `POST /api/generate-recipe` - Generate recipes from ingredients
+- `POST /api/generate-recipe` - Enhanced AI recipe generation with Gemini 2.5 Flash
+  - Supports multiple recipe generation (`generateCount` parameter)
+  - Recipe complexity levels: quick vs sophisticated
+  - Smart pantry integration with expiry prioritization
+  - Missing ingredient detection and pantry matching
 - `POST /api/recipes/save` - Save recipe to home
 - `POST /api/recipes/list` - Get saved recipes
 
@@ -218,7 +251,8 @@ npm run version:get        # Get current version
 - `POST /api/planner/:homeId/log-meal` - Log a manual meal entry
 
 #### System
-- `GET /api/health` - Health check with version info
+- `GET /api/health` - Health check with version info and service status
+- `GET /api/ready` - Readiness probe for Railway deployment
 - `GET /api/debug` - Debug information for troubleshooting
 
 ## 🚀 Railway Deployment
@@ -296,6 +330,19 @@ CI=false
 
 ## 🔄 Recent Updates & TODO
 
+### Current Major Features
+- **Enhanced AI Integration**: Upgraded to Gemini 2.5 Flash with sophisticated prompting for recipe generation, pantry suggestions, and image analysis
+- **Consumption Tracking System**: Comprehensive ingredient deduction and usage logging when meals are prepared
+- **Smart Pantry Management**: AI-powered item suggestions, location/expiry defaults, and confidence-based validation
+- **Advanced Recipe Generation**: Multi-recipe generation, complexity levels (quick vs sophisticated), and pantry integration with expiry prioritization
+- **Comprehensive Meal Planner**: Full CRUD operations for meal planning with calendar view and pantry integration
+
+### Recent Technical Improvements
+- **File Upload System**: Multer integration for AI image processing with automatic cleanup
+- **Enhanced Error Handling**: Comprehensive error responses and logging throughout the API
+- **Performance Optimizations**: Smart caching, batch operations, and optimized database queries
+- **Security Enhancements**: Improved authentication middleware and request validation
+- **Monitoring & Debugging**: Enhanced health checks, debug endpoints, and comprehensive logging
 
 ### Version Information
 - Current version: 2.6.1 (see version.json for detailed changelog)
