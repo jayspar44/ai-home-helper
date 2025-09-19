@@ -1,6 +1,6 @@
 {
   "name": "home-helper",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "Home Helper app with Vercel serverless backend",
   "main": "api/index.js",
   "scripts": {

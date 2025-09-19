@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
-import { daysToExpiryDate, expiryDateToDays } from '../utils/dateUtils';
+import { daysToExpiryDate, expiryDateToDays, safeToDateInputValue } from '../utils/dateUtils';
 
 const LocationSelect = ({ value, onChange, disabled }) => (
   <select 
@@ -36,7 +36,7 @@ const EditItemModal = ({
       setFormData({
         name: item.name || '',
         quantity: item.quantity || '',
-        expiresAt: item.expiresAt ? new Date(item.expiresAt).toISOString().split('T')[0] : (item.daysUntilExpiry ? daysToExpiryDate(item.daysUntilExpiry).toISOString().split('T')[0] : ''),
+        expiresAt: item.expiresAt ? safeToDateInputValue(item.expiresAt) : (item.daysUntilExpiry ? safeToDateInputValue(daysToExpiryDate(item.daysUntilExpiry)) : ''),
         location: item.location || 'pantry'
       });
       setError('');

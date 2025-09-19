@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Bot, Camera, AlertCircle, Sparkles } from 'lucide-react';
 import AIItemDetectionModal from './AIItemDetectionModal';
-import { daysToExpiryDate, expiryDateToDays } from '../utils/dateUtils';
+import { daysToExpiryDate, expiryDateToDays, safeToDateInputValue } from '../utils/dateUtils';
 
 const LocationSelect = ({ value, onChange, disabled }) => (
   <select 
@@ -166,7 +166,7 @@ const AddItemModal = ({
   const [formData, setFormData] = useState({
     name: initialData?.name || initialName,
     quantity: initialData?.quantity || '',
-    expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split('T')[0] : '',
+    expiresAt: initialData?.expiresAt ? safeToDateInputValue(initialData.expiresAt) : '',
     location: initialData?.location || 'pantry'
   });
 
@@ -182,7 +182,7 @@ const AddItemModal = ({
     setFormData({
       name: initialData?.name || initialName,
       quantity: initialData?.quantity || '',
-      expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split('T')[0] : '',
+      expiresAt: initialData?.expiresAt ? safeToDateInputValue(initialData.expiresAt) : '',
       location: initialData?.location || 'pantry'
     });
     setActiveTab(initialMode);
@@ -267,7 +267,7 @@ const AddItemModal = ({
     setFormData({
       name: suggestion.name,
       quantity: suggestion.quantity || '',
-      expiresAt: suggestion.expiresAt ? new Date(suggestion.expiresAt).toISOString().split('T')[0] : (suggestion.daysUntilExpiry ? daysToExpiryDate(suggestion.daysUntilExpiry).toISOString().split('T')[0] : ''),
+      expiresAt: suggestion.expiresAt ? safeToDateInputValue(suggestion.expiresAt) : (suggestion.daysUntilExpiry ? safeToDateInputValue(daysToExpiryDate(suggestion.daysUntilExpiry)) : ''),
       location: suggestion.location || 'pantry'
     });
     setSuggestionResult(null);

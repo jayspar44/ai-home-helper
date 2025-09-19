@@ -76,9 +76,12 @@ export default function PantryPage() {
         // Convert Firestore timestamps to Date objects
         const processedData = data.map(item => ({
           ...item,
-          createdAt: item.createdAt && item.createdAt._seconds 
+          createdAt: item.createdAt && item.createdAt._seconds
             ? new Date(item.createdAt._seconds * 1000).toISOString()
-            : item.createdAt
+            : item.createdAt,
+          expiresAt: item.expiresAt && item.expiresAt._seconds
+            ? new Date(item.expiresAt._seconds * 1000).toISOString()
+            : item.expiresAt
         }));
         
         setItems(processedData);

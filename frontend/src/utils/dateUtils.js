@@ -3,12 +3,37 @@
  */
 
 /**
+ * Check if a date is valid
+ * @param {any} date - The date to check
+ * @returns {boolean} - True if valid date
+ */
+export const isValidDate = (date) => {
+  if (!date) return false;
+  const d = new Date(date);
+  return d instanceof Date && !isNaN(d.getTime());
+};
+
+/**
+ * Safely convert a date to ISO string format for date inputs
+ * @param {string|Date} date - The date to convert
+ * @returns {string} - ISO date string or empty string if invalid
+ */
+export const safeToDateInputValue = (date) => {
+  if (!date || !isValidDate(date)) return '';
+  try {
+    return new Date(date).toISOString().split('T')[0];
+  } catch (error) {
+    return '';
+  }
+};
+
+/**
  * Calculate remaining days until expiry from an expiry date
  * @param {string|Date} expiresAt - The expiry date
- * @returns {number} - Days remaining (negative if expired)
+ * @returns {number|null} - Days remaining (negative if expired), null if invalid
  */
 export const calculateRemainingDays = (expiresAt) => {
-  if (!expiresAt) return null;
+  if (!expiresAt || !isValidDate(expiresAt)) return null;
 
   const expiryDate = new Date(expiresAt);
   const now = new Date();
@@ -34,6 +59,18 @@ export const getExpiryInfo = (item) => {
   }
 
   const remainingDays = calculateRemainingDays(item.expiresAt);
+
+  // Handle invalid dates
+  if (remainingDays === null) {
+    return {
+      text: 'Invalid expiry date',
+      color: 'var(--text-muted)',
+      icon: null,
+      isExpired: false,
+      isExpiringSoon: false,
+      remainingDays: null
+    };
+  }
 
   if (remainingDays <= 0) {
     return {
