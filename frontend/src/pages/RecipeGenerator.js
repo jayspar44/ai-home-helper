@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
+import { calculateRemainingDays } from '../utils/dateUtils';
 
 // --- Helper Components for Icons ---
 const ChefHatIcon = () => (
@@ -371,8 +372,8 @@ export default function RecipeGenerator() {
                               </h4>
                               {items.map(item => {
                                 const isSelected = selectedPantryItems.some(p => p.id === item.id);
-                                const daysUntilExpiry = item.daysUntilExpiry || 7;
-                                const isExpiringSoon = daysUntilExpiry <= 3;
+                                const remainingDays = item.expiresAt ? calculateRemainingDays(item.expiresAt) : 7;
+                                const isExpiringSoon = remainingDays <= 3;
                                 
                                 return (
                                   <label
@@ -405,7 +406,7 @@ export default function RecipeGenerator() {
                                             backgroundColor: 'var(--color-error-light)',
                                             color: 'var(--color-error)'
                                           }}>
-                                            {daysUntilExpiry}d
+                                            {remainingDays}d
                                           </span>
                                         )}
                                       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreVertical, Edit2, Trash2, Sparkles, Clock, AlertTriangle, X, AlertCircle } from 'lucide-react';
+import { getExpiryInfo, daysToExpiryDate, calculateRemainingDays } from '../utils/dateUtils';
 
 const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement, processingEnhancement = false }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -61,56 +62,19 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
     setShowMenu(!showMenu);
   };
 
-  const getExpiryInfo = (item) => {
-    if (!item.createdAt || item.daysUntilExpiry === null || item.daysUntilExpiry === undefined) {
-      return { 
-        text: 'No expiry date', 
-        color: 'var(--text-muted)',
-        icon: null,
-        isExpired: false,
-        isExpiringSoon: false
-      };
+  // Custom getExpiryInfo for list items (shows short format)
+  const getExpiryInfoForList = (item) => {
+    const baseInfo = getExpiryInfo(item);
+    if (!baseInfo.remainingDays) return baseInfo;
+
+    // Customize text for list display - shorter format
+    if (baseInfo.isExpired) {
+      return { ...baseInfo, text: 'Expired!' };
     }
-    
-    const expiryDate = Date.parse(item.createdAt) + (item.daysUntilExpiry * 24 * 60 * 60 * 1000);
-    const remainingDays = Math.round((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
-    
-    if (remainingDays <= 0) {
-      return { 
-        text: 'Expired!', 
-        color: 'var(--color-error)',
-        icon: AlertTriangle,
-        isExpired: true,
-        isExpiringSoon: false
-      };
-    } else if (remainingDays <= 3) {
-      return { 
-        text: `${remainingDays}d`, 
-        color: 'var(--color-error)',
-        icon: AlertTriangle,
-        isExpired: false,
-        isExpiringSoon: true
-      };
-    } else if (remainingDays <= 7) {
-      return { 
-        text: `${remainingDays}d`, 
-        color: 'var(--color-warning)',
-        icon: Clock,
-        isExpired: false,
-        isExpiringSoon: true
-      };
-    } else {
-      return { 
-        text: `${remainingDays}d`, 
-        color: 'var(--color-success)',
-        icon: null,
-        isExpired: false,
-        isExpiringSoon: false
-      };
-    }
+    return { ...baseInfo, text: `${baseInfo.remainingDays}d` };
   };
 
-  const expiryInfo = getExpiryInfo(item);
+  const expiryInfo = getExpiryInfoForList(item);
   const ExpiryIcon = expiryInfo.icon;
 
   return (
@@ -264,7 +228,7 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
                     "{item.pendingEnhancement.name}"
                   </span>
                   {item.pendingEnhancement.quantity && `, ${item.pendingEnhancement.quantity}`}
-                  {' '}in {item.pendingEnhancement.location}, expires in {item.pendingEnhancement.daysUntilExpiry} days
+                  {' '}in {item.pendingEnhancement.location}, expires in {item.pendingEnhancement.expiresAt ? `${calculateRemainingDays(item.pendingEnhancement.expiresAt)} days` : `${item.pendingEnhancement.daysUntilExpiry} days`}
                 </>
               )}
             </div>
@@ -301,7 +265,7 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
                       name: item.pendingEnhancement.name,
                       quantity: item.pendingEnhancement.quantity || item.quantity,
                       location: item.pendingEnhancement.location,
-                      daysUntilExpiry: item.pendingEnhancement.daysUntilExpiry
+                      expiresAt: item.pendingEnhancement.expiresAt || daysToExpiryDate(item.pendingEnhancement.daysUntilExpiry || 7)
                     })}
                     className="btn-base px-3 py-1 text-sm"
                     style={{ 

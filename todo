@@ -22,10 +22,15 @@ e) auto save recent recipes and allow users to retrieve them
 - better recipe page layout
 
 # Home Admin
-- allow dietary preferences to be added at the user and/or home level, allow home level setting for default number of users
+- allow dietary preferences to be added at the user and/or home level,
+- allow home level setting for default number of users
 
 # User Admin
 - change user logout to separate page from home admin
+- enable password changes
+- enable account deletion
+- enable name changes
+
 
 # General
 - debug api needs to use version.json

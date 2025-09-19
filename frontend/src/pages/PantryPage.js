@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { daysToExpiryDate } from '../utils/dateUtils';
 
 // New Components
 import AddItemSection from '../components/AddItemSection';
@@ -122,7 +123,7 @@ export default function PantryPage() {
     const updatedItem = {
       ...item,
       location: defaults.location,
-      daysUntilExpiry: defaults.daysUntilExpiry
+      expiresAt: defaults.expiresAt || daysToExpiryDate(defaults.daysUntilExpiry || 7)
     };
 
     await handleEditItem(updatedItem, setItems);
@@ -137,7 +138,7 @@ export default function PantryPage() {
       name: enhancement.name,
       quantity: enhancement.quantity,
       location: enhancement.location,
-      daysUntilExpiry: enhancement.daysUntilExpiry,
+      expiresAt: enhancement.expiresAt || daysToExpiryDate(enhancement.daysUntilExpiry || 7),
       pendingEnhancement: null
     };
 
