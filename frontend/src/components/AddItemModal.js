@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Bot, Camera, AlertCircle, Sparkles } from 'lucide-react';
 import AIItemDetectionModal from './AIItemDetectionModal';
+import { daysToExpiryDate, expiryDateToDays, safeToDateInputValue } from '../utils/dateUtils';
 
 const LocationSelect = ({ value, onChange, disabled }) => (
   <select 
@@ -165,7 +166,7 @@ const AddItemModal = ({
   const [formData, setFormData] = useState({
     name: initialData?.name || initialName,
     quantity: initialData?.quantity || '',
-    daysUntilExpiry: initialData?.daysUntilExpiry || '',
+    expiresAt: initialData?.expiresAt ? safeToDateInputValue(initialData.expiresAt) : '',
     location: initialData?.location || 'pantry'
   });
 
@@ -181,7 +182,7 @@ const AddItemModal = ({
     setFormData({
       name: initialData?.name || initialName,
       quantity: initialData?.quantity || '',
-      daysUntilExpiry: initialData?.daysUntilExpiry || '',
+      expiresAt: initialData?.expiresAt ? safeToDateInputValue(initialData.expiresAt) : '',
       location: initialData?.location || 'pantry'
     });
     setActiveTab(initialMode);
@@ -208,7 +209,7 @@ const AddItemModal = ({
     setFormData({
       name: '',
       quantity: '',
-      daysUntilExpiry: '',
+      expiresAt: '',
       location: 'pantry'
     });
     setSuggestionResult(null);
@@ -230,7 +231,7 @@ const AddItemModal = ({
         name: formData.name.trim(),
         location: formData.location,
         ...(formData.quantity && { quantity: formData.quantity }),
-        ...(formData.daysUntilExpiry && { daysUntilExpiry: parseInt(formData.daysUntilExpiry, 10) }),
+        ...(formData.expiresAt && { expiresAt: new Date(formData.expiresAt) }),
       };
 
       await onDirectAdd(itemToAdd);
@@ -266,7 +267,7 @@ const AddItemModal = ({
     setFormData({
       name: suggestion.name,
       quantity: suggestion.quantity || '',
-      daysUntilExpiry: suggestion.daysUntilExpiry || '',
+      expiresAt: suggestion.expiresAt ? safeToDateInputValue(suggestion.expiresAt) : (suggestion.daysUntilExpiry ? safeToDateInputValue(daysToExpiryDate(suggestion.daysUntilExpiry)) : ''),
       location: suggestion.location || 'pantry'
     });
     setSuggestionResult(null);
@@ -401,11 +402,12 @@ const AddItemModal = ({
                         />
                       </div>
                       <div>
-                        <label htmlFor="daysUntilExpiry" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires in (days)</label>
-                        <input 
-                          type="number" 
-                          value={formData.daysUntilExpiry} 
-                          onChange={e => setFormData(prev => ({ ...prev, daysUntilExpiry: e.target.value }))}
+                        <label htmlFor="expiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires on</label>
+                        <input
+                          type="date"
+                          id="expiresAt"
+                          value={formData.expiresAt}
+                          onChange={e => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
                           className="input-base focus-ring w-full" 
                           placeholder="e.g., 7"
                         />
@@ -490,14 +492,14 @@ const AddItemModal = ({
                     </div>
                     
                     <div>
-                      <label htmlFor="daysUntilExpiry" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                        Expires in (days)
+                      <label htmlFor="expiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                        Expires on
                       </label>
-                      <input 
-                        type="number" 
-                        id="daysUntilExpiry" 
-                        value={formData.daysUntilExpiry} 
-                        onChange={e => setFormData(prev => ({ ...prev, daysUntilExpiry: e.target.value }))}
+                      <input
+                        type="date"
+                        id="expiresAt"
+                        value={formData.expiresAt}
+                        onChange={e => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
                         className="input-base focus-ring w-full" 
                         placeholder="e.g., 7"
                       />

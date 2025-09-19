@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { getExpiryStatus } from '../utils/dateUtils';
 
 const usePantryFilters = (items) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -7,18 +8,7 @@ const usePantryFilters = (items) => {
     expirationStatus: 'all' // 'all' | 'fresh' | 'expiring-soon' | 'expired'
   });
 
-  const getExpiryStatus = (item) => {
-    if (!item.createdAt || item.daysUntilExpiry === null || item.daysUntilExpiry === undefined) {
-      return 'unknown';
-    }
-    
-    const expiryDate = Date.parse(item.createdAt) + (item.daysUntilExpiry * 24 * 60 * 60 * 1000);
-    const remainingDays = Math.round((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
-    
-    if (remainingDays <= 0) return 'expired';
-    if (remainingDays <= 7) return 'expiring-soon';
-    return 'fresh';
-  };
+  // getExpiryStatus moved to dateUtils
 
   const filteredItems = useMemo(() => {
     let filtered = items;

@@ -6,6 +6,7 @@
 
 # Pantry
 - refactor database for expiry date, not days to expire
+- bug on AI suggestions where it doesn't display the original value
 - make pantry AI suggestions faster
 - don't allow non-human edible items in the panty (e.g. dog food)
 - refocus the text on the pantry add text box after adding
@@ -22,10 +23,15 @@ e) auto save recent recipes and allow users to retrieve them
 - better recipe page layout
 
 # Home Admin
-- allow dietary preferences to be added at the user and/or home level, allow home level setting for default number of users
+- allow dietary preferences to be added at the user and/or home level,
+- allow home level setting for default number of users
 
 # User Admin
 - change user logout to separate page from home admin
+- enable password changes
+- enable account deletion
+- enable name changes
+
 
 # General
 - debug api needs to use version.json

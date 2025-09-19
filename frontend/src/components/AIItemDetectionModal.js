@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, Camera, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { calculateRemainingDays, daysToExpiryDate, safeToDateInputValue } from '../utils/dateUtils';
 
 const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userToken }) => {
   const [file, setFile] = useState(null);
@@ -350,14 +351,13 @@ const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userTo
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700">
-                              Expires in {item.daysUntilExpiry} days
+                              Expires on ({item.expiresAt ? calculateRemainingDays(item.expiresAt) : 'Unknown'} days)
                             </label>
                             <input
-                              type="number"
-                              value={item.daysUntilExpiry}
-                              onChange={(e) => handleItemChange(index, 'daysUntilExpiry', parseInt(e.target.value))}
+                              type="date"
+                              value={item.expiresAt ? safeToDateInputValue(item.expiresAt) : ''}
+                              onChange={(e) => handleItemChange(index, 'expiresAt', e.target.value ? new Date(e.target.value) : null)}
                               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                              min="0"
                             />
                           </div>
                         </div>

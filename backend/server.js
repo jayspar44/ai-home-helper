@@ -838,15 +838,23 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    // Handle expiry date - prioritize expiresAt, fallback to daysUntilExpiry
+    let calculatedExpiresAt;
+    if (expiresAt) {
+      calculatedExpiresAt = new Date(expiresAt);
+    } else if (daysUntilExpiry !== undefined) {
+      calculatedExpiresAt = new Date(Date.now() + daysUntilExpiry * 24 * 60 * 60 * 1000);
+    }
+
     const newItem = {
       name,
       location,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdBy: userUid,
       // Add new optional fields
       ...(quantity && { quantity }),
-      ...(expiresAt && { expiresAt: new Date(expiresAt) }),
-      ...(daysUntilExpiry !== undefined && { daysUntilExpiry }),
+      ...(calculatedExpiresAt && { expiresAt: calculatedExpiresAt }),
       ...(confidence !== undefined && { confidence }),
       ...(detectedBy && { detectedBy })
     };
@@ -901,14 +909,21 @@ app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
+    // Handle expiry date - prioritize expiresAt, fallback to daysUntilExpiry
+    let calculatedExpiresAt;
+    if (expiresAt) {
+      calculatedExpiresAt = new Date(expiresAt);
+    } else if (daysUntilExpiry !== undefined) {
+      calculatedExpiresAt = new Date(Date.now() + daysUntilExpiry * 24 * 60 * 60 * 1000);
+    }
+
     const updatedFields = {
       name,
       location,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       // Add optional fields
       ...(quantity && { quantity }),
-      ...(expiresAt && { expiresAt: new Date(expiresAt) }),
-      ...(daysUntilExpiry !== undefined && { daysUntilExpiry }),
+      ...(calculatedExpiresAt && { expiresAt: calculatedExpiresAt }),
       ...(confidence !== undefined && { confidence }),
       ...(detectedBy && { detectedBy })
     };
@@ -1082,15 +1097,19 @@ If no food items are detected, return an empty array: []`;
     }
 
     // Validate and format detected items
-    const formattedItems = detectedItems.map(item => ({
-      name: item.name || 'Unknown Item',
-      quantity: item.quantity || '1 item',
-      location: ['pantry', 'fridge', 'freezer'].includes(item.location) ? item.location : 'pantry',
-      expiresAt: new Date(Date.now() + (item.daysUntilExpiry || 7) * 24 * 60 * 60 * 1000),
-      daysUntilExpiry: item.daysUntilExpiry || 7,
-      confidence: typeof item.confidence === 'number' ? item.confidence : 0.7,
-      detectedBy: 'ai'
-    }));
+    const formattedItems = detectedItems.map(item => {
+      const daysUntilExpiry = item.daysUntilExpiry || 7;
+      const expiresAt = new Date(Date.now() + daysUntilExpiry * 24 * 60 * 60 * 1000);
+
+      return {
+        name: item.name || 'Unknown Item',
+        quantity: item.quantity || '1 item',
+        location: ['pantry', 'fridge', 'freezer'].includes(item.location) ? item.location : 'pantry',
+        expiresAt,
+        confidence: typeof item.confidence === 'number' ? item.confidence : 0.7,
+        detectedBy: 'ai'
+      };
+    });
 
     // Clean up uploaded file
     await fs.unlink(filePath);
