@@ -26,7 +26,7 @@ let port = process.env.PORT || 3001;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const fetch = require('node-fetch');  // Add this with other imports at the top
 const multer = require('multer');
-const fs = require('fs').promises;
+const fs = require('fs');
 
 // Production optimizations and middleware
 if (process.env.NODE_ENV === 'production') {
@@ -97,14 +97,14 @@ const checkAuth = async (req, res, next) => {
 
 // Enhanced health check endpoint for Railway and monitoring
 app.get('/api/health', (req, res) => {
-  // Read version from version.json
-  let version = '1.0.0'; // fallback
+  // Read version from root version.json
+  let version = '2.6.0'; // fallback
   try {
     const versionPath = path.join(__dirname, '..', 'version.json');
-    const versionData = require(versionPath);
+    const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
     version = versionData.version;
   } catch (error) {
-    console.warn('Could not read version.json, using fallback version:', error.message);
+    console.warn('Could not read root version.json, using fallback version:', error.message);
   }
 
   const healthCheck = {
@@ -142,7 +142,17 @@ app.get('/api/debug', (req, res) => {
     status: 'debug',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0',
+    // Read version from root version.json
+    version: (() => {
+      try {
+        const versionPath = path.join(__dirname, '..', 'version.json');
+        const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+        return versionData.version;
+      } catch (error) {
+        console.warn('Could not read root version.json in debug endpoint, using fallback version:', error.message);
+        return '2.6.0'; // fallback
+      }
+    })(),
     firebase: {
       adminApps: admin.apps.length,
       serviceAccountConfigured: !!process.env.FIREBASE_SERVICE_ACCOUNT,
@@ -350,11 +360,29 @@ app.delete('/api/homes/:homeId/members/:memberId', checkAuth, async (req, res) =
 app.post('/api/recipes/list', checkAuth, async (req, res) => {
   try {
     const { homeId } = req.body;
-    if (!homeId) return res.status(400).json({ error: "homeId is required." });
+    console.log('🍽️ Recipes List Request:', { homeId, userId: req.user.uid });
+
+    if (!homeId) {
+      console.log('❌ No homeId provided in request body');
+      return res.status(400).json({ error: "homeId is required." });
+    }
+
+    const collectionPath = `homes/${homeId}/recipes`;
+    console.log('📍 Querying Firestore collection:', collectionPath);
+
     const recipesSnapshot = await db.collection('homes').doc(homeId).collection('recipes').get();
+    console.log('📊 Query results:', {
+      isEmpty: recipesSnapshot.empty,
+      size: recipesSnapshot.size,
+      docCount: recipesSnapshot.docs.length
+    });
+
     const recipeList = recipesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json(recipeList);
+    console.log('📦 Returning recipes:', { count: recipeList.length, firstRecipe: recipeList[0]?.title || 'None' });
+
+    res.json({ recipes: recipeList });
   } catch (error) {
+    console.error('❌ Error in recipes/list:', error);
     res.status(500).json({ error: 'Failed to fetch recipes' });
   }
 });
@@ -1132,6 +1160,375 @@ If no food items are detected, return an empty array: []`;
       error: 'Failed to process image', 
       details: error.message 
     });
+  }
+});
+
+// ===== PLANNER ENDPOINTS =====
+
+// Get meal plans for a home within date range
+app.get('/api/planner/:homeId', checkAuth, async (req, res) => {
+  try {
+    const { homeId } = req.params;
+    const { startDate, endDate } = req.query;
+    const userUid = req.user.uid;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Build query
+    let query = db.collection('homes')
+      .doc(homeId)
+      .collection('meal_plans');
+
+    if (startDate) {
+      query = query.where('date', '>=', new Date(startDate));
+    }
+    if (endDate) {
+      query = query.where('date', '<=', new Date(endDate));
+    }
+
+    const mealPlansSnap = await query.orderBy('date', 'asc').get();
+
+    const mealPlans = [];
+    mealPlansSnap.forEach(doc => {
+      const data = doc.data();
+      mealPlans.push({
+        id: doc.id,
+        ...data,
+        date: data.date.toDate().toISOString(),
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
+        actual: data.actual ? {
+          ...data.actual,
+          loggedAt: data.actual.loggedAt?.toDate?.()?.toISOString() || null
+        } : null
+      });
+    });
+
+    res.json(mealPlans);
+  } catch (error) {
+    console.error('Error fetching meal plans:', error);
+    res.status(500).json({ error: 'Failed to fetch meal plans' });
+  }
+});
+
+// Create a new meal plan
+app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
+  try {
+    const { homeId } = req.params;
+    const { date, mealType, planned } = req.body;
+    const userUid = req.user.uid;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Validate meal type
+    if (!['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
+      return res.status(400).json({ error: 'Invalid meal type' });
+    }
+
+    // Check if meal plan already exists for this date/meal type
+    const existingQuery = await db.collection('homes')
+      .doc(homeId)
+      .collection('meal_plans')
+      .where('date', '==', new Date(date))
+      .where('mealType', '==', mealType)
+      .get();
+
+    if (!existingQuery.empty) {
+      return res.status(409).json({ error: 'Meal plan already exists for this date and meal type' });
+    }
+
+    const mealPlan = {
+      date: new Date(date),
+      mealType,
+      planned: planned || null,
+      actual: null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: userUid,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docRef = await db.collection('homes')
+      .doc(homeId)
+      .collection('meal_plans')
+      .add(mealPlan);
+
+    const createdDoc = await docRef.get();
+    const data = createdDoc.data();
+
+    res.status(201).json({
+      id: docRef.id,
+      ...data,
+      date: data.date.toDate().toISOString(),
+      createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null
+    });
+  } catch (error) {
+    console.error('Error creating meal plan:', error);
+    res.status(500).json({ error: 'Failed to create meal plan' });
+  }
+});
+
+// Update a meal plan (for logging actual meals)
+app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
+  try {
+    const { homeId, planId } = req.params;
+    const { planned, actual } = req.body;
+    const userUid = req.user.uid;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Get current meal plan
+    const mealPlanRef = db.collection('homes').doc(homeId).collection('meal_plans').doc(planId);
+    const mealPlanDoc = await mealPlanRef.get();
+
+    if (!mealPlanDoc.exists) {
+      return res.status(404).json({ error: 'Meal plan not found' });
+    }
+
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (planned !== undefined) {
+      updateData.planned = planned;
+    }
+
+    if (actual !== undefined) {
+      updateData.actual = actual ? {
+        ...actual,
+        loggedAt: admin.firestore.FieldValue.serverTimestamp()
+      } : null;
+    }
+
+    await mealPlanRef.update(updateData);
+
+    const updatedDoc = await mealPlanRef.get();
+    const data = updatedDoc.data();
+
+    res.json({
+      id: planId,
+      ...data,
+      date: data.date.toDate().toISOString(),
+      createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
+      actual: data.actual ? {
+        ...data.actual,
+        loggedAt: data.actual.loggedAt?.toDate?.()?.toISOString() || null
+      } : null
+    });
+  } catch (error) {
+    console.error('Error updating meal plan:', error);
+    res.status(500).json({ error: 'Failed to update meal plan' });
+  }
+});
+
+// Delete a meal plan
+app.delete('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
+  try {
+    const { homeId, planId } = req.params;
+    const userUid = req.user.uid;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const mealPlanRef = db.collection('homes').doc(homeId).collection('meal_plans').doc(planId);
+    const mealPlanDoc = await mealPlanRef.get();
+
+    if (!mealPlanDoc.exists) {
+      return res.status(404).json({ error: 'Meal plan not found' });
+    }
+
+    await mealPlanRef.delete();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting meal plan:', error);
+    res.status(500).json({ error: 'Failed to delete meal plan' });
+  }
+});
+
+// Simple meal logging endpoint
+app.post('/api/planner/:homeId/log-meal', checkAuth, async (req, res) => {
+  try {
+    const { homeId } = req.params;
+    const { date, mealType, description, notes } = req.body;
+    const userUid = req.user.uid;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Validate meal type
+    if (!['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
+      return res.status(400).json({ error: 'Invalid meal type' });
+    }
+
+    // Check if meal plan already exists for this date/meal type
+    const existingQuery = await db.collection('homes')
+      .doc(homeId)
+      .collection('meal_plans')
+      .where('date', '==', new Date(date))
+      .where('mealType', '==', mealType)
+      .get();
+
+    if (!existingQuery.empty) {
+      // Update existing meal plan's actual section
+      const existingDoc = existingQuery.docs[0];
+      const planId = existingDoc.id;
+
+      await existingDoc.ref.update({
+        actual: {
+          description,
+          notes: notes || '',
+          loggedAt: admin.firestore.FieldValue.serverTimestamp(),
+          madeAsPlanned: false
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      const updatedDoc = await existingDoc.ref.get();
+      const data = updatedDoc.data();
+
+      return res.json({
+        id: planId,
+        ...data,
+        date: data.date.toDate().toISOString(),
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
+        actual: data.actual ? {
+          ...data.actual,
+          loggedAt: data.actual.loggedAt?.toDate?.()?.toISOString() || null
+        } : null
+      });
+    } else {
+      // Create new meal plan with actual meal logged
+      const mealPlan = {
+        date: new Date(date),
+        mealType,
+        planned: null,
+        actual: {
+          description,
+          notes: notes || '',
+          loggedAt: admin.firestore.FieldValue.serverTimestamp(),
+          madeAsPlanned: false
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: userUid,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      const docRef = await db.collection('homes')
+        .doc(homeId)
+        .collection('meal_plans')
+        .add(mealPlan);
+
+      const createdDoc = await docRef.get();
+      const data = createdDoc.data();
+
+      return res.status(201).json({
+        id: docRef.id,
+        ...data,
+        date: data.date.toDate().toISOString(),
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
+        actual: data.actual ? {
+          ...data.actual,
+          loggedAt: data.actual.loggedAt?.toDate?.()?.toISOString() || null
+        } : null
+      });
+    }
+  } catch (error) {
+    console.error('Error logging meal:', error);
+    res.status(500).json({ error: 'Failed to log meal' });
+  }
+});
+
+// Pantry ingredient deduction endpoint
+app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
+  try {
+    const { homeId } = req.params;
+    const { ingredients, mealPlanId } = req.body;
+    const userUid = req.user.uid;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const batch = db.batch();
+    const consumptionLogs = [];
+
+    for (const ingredient of ingredients) {
+      const { pantryItemId, portion } = ingredient; // portion: 'all' | 'half' | 'quarter' | 'custom'
+
+      if (!pantryItemId) continue;
+
+      // Get current pantry item
+      const itemRef = db.collection('homes').doc(homeId).collection('pantry_items').doc(pantryItemId);
+      const itemDoc = await itemRef.get();
+
+      if (!itemDoc.exists) continue;
+
+      const itemData = itemDoc.data();
+      const currentQuantity = itemData.quantity || '1 item';
+
+      // For now, we'll just log the consumption without calculating exact deduction
+      // This can be enhanced later with quantity parsing logic
+      const consumptionLog = {
+        pantryItemId,
+        originalQuantity: currentQuantity,
+        portion,
+        mealPlanId,
+        consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+        consumedBy: userUid
+      };
+
+      // Add consumption log
+      const logRef = db.collection('homes').doc(homeId).collection('pantry_consumption_log').doc();
+      batch.set(logRef, consumptionLog);
+
+      consumptionLogs.push({
+        id: logRef.id,
+        ...consumptionLog
+      });
+
+      // For 'all' portion, we can delete the item
+      if (portion === 'all') {
+        batch.delete(itemRef);
+      }
+      // For other portions, we'll keep the item for now
+      // In the future, implement quantity reduction logic here
+    }
+
+    await batch.commit();
+
+    res.json({
+      success: true,
+      consumptionLogs: consumptionLogs.map(log => ({
+        ...log,
+        consumedAt: new Date().toISOString() // Approximate timestamp
+      }))
+    });
+  } catch (error) {
+    console.error('Error deducting pantry ingredients:', error);
+    res.status(500).json({ error: 'Failed to deduct ingredients' });
   }
 });
 

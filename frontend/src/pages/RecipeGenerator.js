@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { calculateRemainingDays } from '../utils/dateUtils';
+import RecipeSelector from '../components/RecipeSelector';
+import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
 
 // --- Helper Components for Icons ---
 const ChefHatIcon = () => (
@@ -28,10 +30,11 @@ const SkeletonCard = () => (
   </div>
 );
 const BookmarkIcon = ({ saved }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 transition-all" style={{ color: saved ? 'var(--color-primary)' : 'var(--text-muted)' }}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>;
+const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
 const ChevronDownIcon = () => <svg className="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" /></svg>;
 const SearchIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>;
 
-function RecipeCard({ recipe, onSave, isSaved }) {
+function RecipeCard({ recipe, onSave, isSaved, onSchedule }) {
   if (!recipe) return null;
   return (
     <div className="space-y-6 animate-fade-in relative">
@@ -83,6 +86,20 @@ function RecipeCard({ recipe, onSave, isSaved }) {
         <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Instructions</h3>
         <ol className="space-y-4">{recipe.instructions.map((step, i) => <li key={i} className="flex gap-4"><span className="flex-shrink-0 w-7 h-7 text-white rounded-full flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--color-primary)' }}>{i + 1}</span><span className="pt-0.5" style={{ color: 'var(--text-secondary)' }}>{step}</span></li>)}</ol>
       </div>
+
+      {/* Action Buttons */}
+      {onSchedule && (
+        <div className="pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+          <button
+            onClick={onSchedule}
+            className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors hover:bg-opacity-90"
+            style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+          >
+            <CalendarIcon />
+            Schedule Recipe
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -115,6 +132,12 @@ export default function RecipeGenerator() {
   const [recipeType, setRecipeType] = useState('quick'); // 'quick' or 'sophisticated'
   const [generateMultiple, setGenerateMultiple] = useState(false);
   const [currentRecipeIndex, setCurrentRecipeIndex] = useState(0);
+
+  // Recipe scheduling state
+  const [showRecipeSelector, setShowRecipeSelector] = useState(false);
+  const [recipeToSchedule, setRecipeToSchedule] = useState(null);
+  const [showRecipeSchedulingModal, setShowRecipeSchedulingModal] = useState(false);
+  const [recipeToDirectSchedule, setRecipeToDirectSchedule] = useState(null);
 
   const getAuthHeaders = useCallback(() => ({
     'Content-Type': 'application/json',
@@ -273,6 +296,25 @@ export default function RecipeGenerator() {
   const handleViewRecipe = useCallback((recipeToView) => {
     setGeneratedRecipe(recipeToView);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleScheduleRecipe = useCallback((recipe) => {
+    setRecipeToDirectSchedule(recipe);
+    setShowRecipeSchedulingModal(true);
+  }, []);
+
+  const handleRecipeScheduled = useCallback((scheduledMeal) => {
+    setShowRecipeSelector(false);
+    setRecipeToSchedule(null);
+    // Optionally show success message
+    console.log('Recipe scheduled successfully:', scheduledMeal);
+  }, []);
+
+  const handleDirectRecipeScheduled = useCallback((scheduledMeal) => {
+    setShowRecipeSchedulingModal(false);
+    setRecipeToDirectSchedule(null);
+    // Optionally show success message
+    console.log('Recipe scheduled directly:', scheduledMeal);
   }, []);
 
   const isRecipeSaved = generatedRecipe && savedRecipes.some(r => r.title === generatedRecipe.title);
@@ -582,7 +624,12 @@ export default function RecipeGenerator() {
                       </div>
                     )}
                     
-                    <RecipeCard recipe={generatedRecipe} onSave={() => handleSaveRecipe(generatedRecipe)} isSaved={isRecipeSaved} />
+                    <RecipeCard
+                      recipe={generatedRecipe}
+                      onSave={() => handleSaveRecipe(generatedRecipe)}
+                      isSaved={isRecipeSaved}
+                      onSchedule={() => handleScheduleRecipe(generatedRecipe)}
+                    />
                   </div>
                 )}
             </section>
@@ -606,6 +653,37 @@ export default function RecipeGenerator() {
             ) : (<p className="card p-6" style={{ color: 'var(--text-muted)' }}>You haven't saved any recipes yet.</p>)}
         </section>
       </div>
+
+      {/* Recipe Selector for scheduling */}
+      {recipeToSchedule && (
+        <RecipeSelector
+          isOpen={showRecipeSelector}
+          onClose={() => {
+            setShowRecipeSelector(false);
+            setRecipeToSchedule(null);
+          }}
+          onSchedule={handleRecipeScheduled}
+          recipeToSchedule={recipeToSchedule}
+          getAuthHeaders={getAuthHeaders}
+          activeHomeId={activeHomeId}
+          pantryItems={pantryItems}
+        />
+      )}
+
+      {/* Recipe Scheduling Modal for direct scheduling */}
+      {recipeToDirectSchedule && (
+        <RecipeSchedulingModal
+          isOpen={showRecipeSchedulingModal}
+          onClose={() => {
+            setShowRecipeSchedulingModal(false);
+            setRecipeToDirectSchedule(null);
+          }}
+          onSchedule={handleDirectRecipeScheduled}
+          recipe={recipeToDirectSchedule}
+          getAuthHeaders={getAuthHeaders}
+          activeHomeId={activeHomeId}
+        />
+      )}
     </div>
   );
 }

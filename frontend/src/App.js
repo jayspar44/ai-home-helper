@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import RecipeGenerator from './pages/RecipeGenerator';
 import HomeAdminPage from './pages/HomeAdminPage';
 import PantryPage from './pages/PantryPage';
+import PlannerPage from './pages/PlannerPage';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -291,6 +292,7 @@ export default function App() {
                 <Route path="recipe-generator" element={<RecipeGenerator />} />
                 <Route path="home-admin" element={<HomeAdminPage />} />
                 <Route path="/pantry" element={<PantryPage />} />
+                <Route path="/planner" element={<PlannerPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

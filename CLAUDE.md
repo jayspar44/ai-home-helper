@@ -6,7 +6,8 @@
 
 ### Key Features
 - **AI Recipe Generator**: Create personalized recipes based on available pantry ingredients using Google Gemini AI
-- **Intelligent Pantry Management**: Track items across pantry, fridge, and freezer with AI-assisted photo recognition
+- **Intelligent Pantry Management**: Track items across pantry, fridge, and freezer with AI-assisted photo recognition and expiry date tracking
+- **Meal Planner**: Schedule recipes, log meals, and plan weekly menus with calendar view and pantry integration
 - **Multi-User Home Management**: Invite family members with role-based access (admin/member)
 - **Responsive Design**: Mobile-first design that works across all devices
 
@@ -93,6 +94,7 @@ The app will be available at:
 - `homes/` - Home documents with member roles
 - `homes/{homeId}/pantry_items/` - Pantry inventory per home
 - `homes/{homeId}/recipes/` - Saved recipes per home
+- `homes/{homeId}/meal_plans/` - Scheduled meals and meal logging per home
 
 #### Key Data Models
 ```javascript
@@ -115,10 +117,30 @@ The app will be available at:
   name: "Milk",
   location: "fridge", // pantry|fridge|freezer
   quantity: "1 gallon",
-  daysUntilExpiry: 7,
-  expiresAt: Date,
+  daysUntilExpiry: 7, // Deprecated: use expiresAt
+  expiresAt: Timestamp, // Firestore timestamp for expiry date
   createdBy: "userId",
   confidence: 0.9 // AI detection confidence
+}
+
+// Meal plan document
+{
+  date: Timestamp, // ISO date for the meal
+  mealType: "dinner", // breakfast|lunch|dinner|snacks
+  planned: { // For scheduled recipes
+    recipeId: "recipe123",
+    recipeName: "Chicken Stir Fry",
+    ingredients: [...],
+    servings: 4,
+    cookingTime: "30 mins",
+    description: "Quick and healthy dinner"
+  },
+  logged: { // For manual meal logging
+    description: "Pizza night",
+    notes: "Ordered from downtown"
+  },
+  createdBy: "userId",
+  createdAt: Timestamp
 }
 ```
 
@@ -141,34 +163,29 @@ npm run build             # Production build
 
 # Version Management
 npm run version:get        # Get current version
-npm run version:bump       # Bump version with description
-npm run version:analyze    # Analyze change description for bump type
 ```
 
 ### Claude Code Version Management Protocol
 
-**IMPORTANT**: When Claude Code makes changes to the codebase, it should ALWAYS run the version updater before suggesting commits. This ensures proper semantic versioning and maintains an accurate changelog.
+**When to Update Version**: Claude Code should automatically propose version updates after completing coding tasks or when explicitly requested by the user.
 
-**Required Steps for Claude Code:**
-1. After completing any changes to the codebase, analyze what was modified
-2. Run: `node scripts/version-manager.js bump "description of changes made"`
-3. The system will automatically:
-   - Determine if changes are patch/minor/major
-   - Update version.json with timestamp and changelog
-   - Sync version across all package.json files
-   - Generate appropriate semantic version bump
+**Automated Version Update Process**:
+1. **Analyze changes made**: Review what was modified in the codebase
+2. **Classify change type**:
+   - **PATCH** (x.x.X): Bug fixes, small UI improvements, code cleanup
+   - **MINOR** (x.X.x): New features, significant enhancements, new functionality
+   - **MAJOR** (X.x.x): Breaking changes, API changes, major architectural updates
+3. **Propose version update**: Suggest the new version number with clear reasoning
+4. **User confirmation**: Present the proposed version for user approval
+5. **Automatic implementation**: If user agrees, automatically:
+   - Update version.json with new version, timestamp, and changelog entry
+   - Sync version across frontend/package.json and backend/package.json files
+   - Use single version.json in root as source of truth for entire application
 
-**Examples:**
-```bash
-# For UI/styling changes, bug fixes
-node scripts/version-manager.js bump "Fix layout issues and update dark theme colors"
-
-# For new features
-node scripts/version-manager.js bump "Add new recipe sharing feature with social integration"
-
-# For breaking changes
-node scripts/version-manager.js bump "Remove deprecated API endpoints and update authentication system"
-```
+**Examples of Version Classifications**:
+- Bug fixes, alignment issues, error handling → **PATCH**
+- New components, feature additions, workflow improvements → **MINOR**
+- Breaking API changes, major refactors, removed functionality → **MAJOR**
 
 ### API Endpoints
 
@@ -192,6 +209,17 @@ node scripts/version-manager.js bump "Remove deprecated API endpoints and update
 - `POST /api/generate-recipe` - Generate recipes from ingredients
 - `POST /api/recipes/save` - Save recipe to home
 - `POST /api/recipes/list` - Get saved recipes
+
+#### Meal Planning
+- `GET /api/planner/:homeId` - Get meal plans for date range
+- `POST /api/planner/:homeId` - Schedule a recipe or create meal plan
+- `PUT /api/planner/:homeId/:planId` - Update existing meal plan
+- `DELETE /api/planner/:homeId/:planId` - Delete meal plan
+- `POST /api/planner/:homeId/log-meal` - Log a manual meal entry
+
+#### System
+- `GET /api/health` - Health check with version info
+- `GET /api/debug` - Debug information for troubleshooting
 
 ## 🚀 Railway Deployment
 
@@ -238,6 +266,17 @@ CI=false
 
 ## 📝 Development Notes
 
+### General Development Information
+- **Backend server restart**: Always restart the backend dev server after making changes to backend code (Node.js doesn't auto-reload like frontend)
+- **Todo tracking**: Project todos are stored in `/todo` file in the root directory
+- **Recent changes**: Check `version.json` changelog for high level information about recent updates and changes
+- **Documentation maintenance**: Proactively update CLAUDE.md for significant changes like:
+  - New database tables or collections
+  - New API endpoints or major API changes
+  - Architecture modifications
+  - Security updates or authentication changes
+  - New major features or workflows
+
 ### Code Style
 - Use functional React components with hooks
 - Follow existing CSS custom property patterns
@@ -257,21 +296,11 @@ CI=false
 
 ## 🔄 Recent Updates & TODO
 
-### Current TODO Items (from `/todo` file)
-1. Refactor database for expiry date, not days to expire
-2. Change user logout to separate page from home admin
-3. Allow dietary preferences at user/home level
-4. Improve recipe prompt handling and diversity
-5. Ensure reliable expiry date setting with AI suggestions
-6. Make AI suggestions faster
-7. Prevent non-food items in pantry
-8. Sort out dark scheme colors
-9. Better recipe page layout
-10. Review storing additional pantry item metadata
 
 ### Version Information
-- Current version: 1.0.0
-- Last major update: September 2024
+- Current version: 2.6.1 (see version.json for detailed changelog)
+- Last major update: September 2025 (Meal Planner feature)
 - Node.js: 18+
 - React: 18.3.1
 - Firebase: 9.17.2
+- Version management: Single source of truth at `/version.json`
