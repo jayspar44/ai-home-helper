@@ -1,13 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
+import { ChefHat, Calendar, Search, ChevronDown } from 'lucide-react';
 import { calculateRemainingDays } from '../utils/dateUtils';
 import RecipeSelector from '../components/RecipeSelector';
 import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
 
-// --- Helper Components for Icons ---
-const ChefHatIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12" style={{ color: 'var(--color-primary)' }}><path d="M19.8 11.7a3.2 3.2 0 0 0-2.2-5.2A3.2 3.2 0 0 0 15.4 9a3.2 3.2 0 0 0-5.6 0 3.2 3.2 0 0 0-2.2-2.5 3.2 3.2 0 0 0-2.2 5.2c0 1.2.8 2.3 2 2.3h8.8c1.2 0 2-1.1 2-2.3Z"/><path d="M8.6 14h6.8c1.2 0 2-1.1 2-2.3V11h-11v.7c0 1.2.8 2.3 2 2.3Z"/><path d="M12 14v7.5"/><path d="M12 21.5h-4a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h4"/><path d="M12 21.5h4a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-4"/></svg>
-);
 const LoadingSpinner = () => <div className="w-6 h-6 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--border-light)', borderTopColor: 'var(--color-primary)' }}></div>;
 const SkeletonCard = () => (
   <div className="space-y-6 p-6">
@@ -30,9 +27,6 @@ const SkeletonCard = () => (
   </div>
 );
 const BookmarkIcon = ({ saved }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 transition-all" style={{ color: saved ? 'var(--color-primary)' : 'var(--text-muted)' }}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>;
-const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
-const ChevronDownIcon = () => <svg className="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" /></svg>;
-const SearchIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>;
 
 function RecipeCard({ recipe, onSave, isSaved, onSchedule }) {
   if (!recipe) return null;
@@ -95,7 +89,7 @@ function RecipeCard({ recipe, onSave, isSaved, onSchedule }) {
             className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors hover:bg-opacity-90"
             style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
           >
-            <CalendarIcon />
+            <Calendar className="w-4 h-4" />
             Schedule Recipe
           </button>
         </div>
@@ -346,13 +340,15 @@ export default function RecipeGenerator() {
   return (
     <div className="section-padding">
       <div className="container-mobile lg:max-w-none lg:px-8">
-        <header className="animate-fade-in mb-8 lg:mb-12">
-            <div className="text-center">
-                <div className="flex items-center justify-center gap-4 mb-4"><ChefHatIcon /></div>
-                <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>AI Recipe Generator</h1>
-                <p className="text-lg" style={{ color: 'var(--text-muted)' }}>Turn your ingredients into delicious meals.</p>
-            </div>
-        </header>
+        {/* Page Header */}
+        <div className="animate-fade-in mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            🍽️ Recipe Generator
+          </h1>
+          <p style={{ color: 'var(--text-muted)' }}>
+            Turn your ingredients into delicious meals with AI assistance
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <section className="card p-6 space-y-6 lg:col-span-1">
@@ -364,7 +360,7 @@ export default function RecipeGenerator() {
                   >
                     <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>🥫 Pantry Items</h2>
                     <div className={`transition-transform ${isPantryExpanded ? 'rotate-180' : ''}`} style={{ color: 'var(--text-secondary)' }}>
-                      <ChevronDownIcon />
+                      <ChevronDown className="w-5 h-5" />
                     </div>
                   </button>
                   
@@ -373,7 +369,7 @@ export default function RecipeGenerator() {
                       {/* Search Bar */}
                       <div className="relative">
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                          <SearchIcon />
+                          <Search className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                         </div>
                         <input
                           type="text"
