@@ -7,6 +7,8 @@ import PlannerRecipeCard from '../components/PlannerRecipeCard';
 
 // Meal slot component
 const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   const mealIcons = {
     breakfast: '🍳',
     lunch: '🥗',
@@ -21,129 +23,164 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
     snacks: 'Snacks'
   };
 
+  // Determine meal state
   const hasPlanned = mealData?.planned?.recipeName || mealData?.planned?.description;
   const hasActual = mealData?.actual?.description;
+  const isCompleted = hasPlanned && hasActual &&
+    mealData.actual.description === (mealData.planned.recipeName || mealData.planned.description);
+
+  // Get meal display text
+  const getMealDisplayText = () => {
+    if (isCompleted || hasActual) {
+      return mealData.actual.description;
+    }
+    if (hasPlanned) {
+      return mealData.planned.recipeName || mealData.planned.description;
+    }
+    return null;
+  };
+
+  const mealText = getMealDisplayText();
+
+  // Determine visual state classes
+  const getStatusStyles = () => {
+    if (isCompleted) {
+      return {
+        borderLeft: '4px solid var(--color-success)',
+        backgroundColor: 'var(--color-success-light, #f0f9f0)'
+      };
+    }
+    if (hasPlanned) {
+      return {
+        borderLeft: '4px solid var(--color-primary)',
+        backgroundColor: 'var(--color-primary-light, #f0f7ff)'
+      };
+    }
+    return {};
+  };
+
+  const statusStyles = getStatusStyles();
+
+  const handleMealClick = () => {
+    if (mealText) {
+      onEdit(mealData, hasActual ? 'actual' : 'planned');
+    } else {
+      onAdd(day, mealType);
+    }
+  };
+
+  const handleCompleteClick = (e) => {
+    e.stopPropagation();
+    onEdit(mealData, 'actual');
+  };
 
   return (
-    <div className="meal-slot border-b" style={{ borderColor: 'var(--border-light)', padding: '12px 16px' }}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{mealIcons[mealType]}</span>
-          <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
-            {mealLabels[mealType]}
-          </span>
-        </div>
-        <button
-          onClick={() => onAdd(day, mealType)}
-          className="p-1 rounded-md hover:bg-opacity-80 transition-colors"
-          style={{ backgroundColor: 'var(--bg-tertiary)' }}
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Planned section */}
-      {hasPlanned && (
-        <div className="mb-3">
-          <div className="text-xs font-bold mb-2" style={{ color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
-            PLANNED
-          </div>
-
-          {mealData.planned.recipeId || mealData.planned.ingredients ? (
-            <PlannerRecipeCard
-              recipe={mealData.planned}
-              plannedData={mealData.planned}
-              isCompact={true}
-              onClick={() => onEdit(mealData, 'planned')}
-              showIngredientStatus={false}
-            />
-          ) : (
-            <div onClick={() => onEdit(mealData, 'planned')}>
-              <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                {mealData.planned.recipeName || mealData.planned.description || 'Custom Meal'}
+    <div
+      className="meal-slot group relative py-3 px-4 transition-all duration-200 cursor-pointer border-b last:border-b-0 hover:bg-opacity-50"
+      style={{
+        borderColor: 'var(--border-light)',
+        ...statusStyles,
+        backgroundColor: isHovered ? statusStyles.backgroundColor || 'var(--bg-tertiary)' : statusStyles.backgroundColor || 'transparent'
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={handleMealClick}
+    >
+      {/* Main content row */}
+      <div className="flex items-center justify-between min-h-[24px]">
+        {/* Left: Icon and meal info */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="text-base">{mealIcons[mealType]}</span>
+          <div className="flex-1 min-w-0">
+            {mealText ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                  {mealText}
+                </span>
+                {isCompleted && (
+                  <span className="text-sm" style={{ color: 'var(--color-success)' }}>✓</span>
+                )}
               </div>
-              {hasActual && mealData.actual.description === (mealData.planned.recipeName || mealData.planned.description) && (
-                <div className="flex items-center mt-1 gap-1" style={{ color: 'var(--color-success)' }}>
-                  <span className="text-xs">✓</span>
-                  <span className="text-xs">As planned</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Actual section */}
-      {hasActual ? (
-        <div>
-          <div className="text-xs font-bold mb-2" style={{ color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
-            ACTUAL
+            ) : (
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                {mealLabels[mealType]}
+              </span>
+            )}
           </div>
+        </div>
 
-          {/* Check if it was made as planned */}
-          {hasPlanned && mealData.actual.description === (mealData.planned.recipeName || mealData.planned.description) ? (
-            <div
-              className="inline-block px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
+        {/* Right: Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Complete button for planned meals - desktop hover only */}
+          {hasPlanned && !isCompleted && (
+            <button
+              onClick={handleCompleteClick}
+              className={`hidden lg:flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-all ${
+                isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundColor: 'var(--color-success)',
+                color: 'white',
+                transform: isHovered ? 'scale(1)' : 'scale(0.8)'
+              }}
+              title="Mark as complete"
+            >
+              ✓
+            </button>
+          )}
+
+          {/* Complete button for mobile - always visible for planned meals */}
+          {hasPlanned && !isCompleted && (
+            <button
+              onClick={handleCompleteClick}
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium"
               style={{
                 backgroundColor: 'var(--color-success)',
                 color: 'white'
               }}
-              onClick={() => onEdit(mealData, 'actual')}
             >
-              Made as planned
-            </div>
-          ) : (
-            <div
-              className="cursor-pointer"
-              onClick={() => onEdit(mealData, 'actual')}
+              ✓
+            </button>
+          )}
+
+          {/* Add button for empty slots - desktop hover only */}
+          {!mealText && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(day, mealType);
+              }}
+              className={`hidden lg:flex items-center justify-center w-6 h-6 rounded-full transition-all ${
+                isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundColor: 'var(--text-muted)',
+                color: 'white',
+                transform: isHovered ? 'scale(1)' : 'scale(0.8)'
+              }}
             >
-              <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                {mealData.actual.description}
-              </div>
-              {mealData.actual.loggedAt && (
-                <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                  Logged {new Date(mealData.actual.loggedAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
-              )}
-            </div>
+              <Plus className="w-3 h-3" />
+            </button>
+          )}
+
+          {/* Add button for mobile - always visible for empty slots */}
+          {!mealText && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(day, mealType);
+              }}
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-full"
+              style={{
+                backgroundColor: 'var(--text-muted)',
+                color: 'white'
+              }}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           )}
         </div>
-      ) : hasPlanned && (
-        <div>
-          <div className="text-xs font-bold mb-2" style={{ color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
-            ACTUAL
-          </div>
-          <button
-            onClick={() => onEdit(mealData, 'actual')}
-            className="text-sm px-3 py-1 rounded-full border-2 border-dashed transition-colors hover:bg-opacity-10"
-            style={{
-              borderColor: 'var(--color-primary)',
-              color: 'var(--color-primary)',
-              backgroundColor: 'transparent'
-            }}
-          >
-            Made as planned?
-          </button>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!hasPlanned && !hasActual && (
-        <button
-          onClick={() => onAdd(day, mealType)}
-          className="w-full p-3 rounded-lg border-2 border-dashed text-sm transition-colors hover:bg-opacity-50"
-          style={{
-            borderColor: 'var(--border-medium)',
-            color: 'var(--text-muted)',
-            backgroundColor: 'transparent'
-          }}
-        >
-          Add {mealLabels[mealType].toLowerCase()}
-        </button>
-      )}
+      </div>
     </div>
   );
 };
@@ -164,31 +201,36 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
   };
 
   return (
-    <div className="day-card bg-card rounded-lg shadow-sm mb-4" style={{ backgroundColor: 'var(--bg-card)' }}>
-      {/* Day header */}
+    <div className="day-card bg-white rounded-lg border mb-4 overflow-hidden" style={{
+      backgroundColor: 'var(--bg-card)',
+      borderColor: 'var(--border-light)',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+    }}>
+      {/* Day header - simplified */}
       <div
-        className="day-header p-4 border-b"
-        style={{ borderColor: 'var(--border-light)' }}
+        className="day-header px-4 py-3 border-b"
+        style={{
+          borderColor: 'var(--border-light)',
+          backgroundColor: isToday ? 'var(--color-primary-light, #f0f7ff)' : 'transparent'
+        }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={`w-12 h-12 rounded-full flex flex-col items-center justify-center text-sm font-bold ${
-                isToday ? 'text-white' : ''
-              }`}
+              className="w-10 h-10 rounded-full flex flex-col items-center justify-center text-xs font-bold"
               style={{
-                backgroundColor: isToday ? 'var(--color-primary)' : 'var(--bg-tertiary)',
+                backgroundColor: isToday ? 'var(--color-primary)' : 'var(--bg-secondary)',
                 color: isToday ? 'white' : 'var(--text-primary)'
               }}
             >
-              <span className="text-xs">{dayName}</span>
-              <span>{dayNumber}</span>
+              <span className="text-xs leading-none">{dayName}</span>
+              <span className="text-sm leading-none">{dayNumber}</span>
             </div>
             <div>
-              <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
                 {day.toLocaleDateString([], { weekday: 'long' })}
               </div>
-              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                 {monthName} {dayNumber}
               </div>
             </div>
@@ -204,7 +246,7 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
         </div>
       </div>
 
-      {/* Meal slots */}
+      {/* Meal slots - no padding container */}
       <div>
         {['breakfast', 'lunch', 'dinner', 'snacks'].map(mealType => (
           <MealSlot

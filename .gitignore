@@ -60,3 +60,7 @@ firestore-debug.log
 
 # Local development
 .eslintcache
+
+# Scratchpad files for development workflow
+developer-scratchpad.md
+reviewer-scratchpad.md
