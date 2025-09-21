@@ -150,7 +150,7 @@ export default function RecipeGenerator() {
             });
             if (!response.ok) throw new Error('Failed to fetch saved recipes.');
             const data = await response.json();
-            setSavedRecipes(data);
+            setSavedRecipes(data.recipes || []);
         } catch (err) {
             setError('Could not load your saved recipes.');
         }

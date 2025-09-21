@@ -252,6 +252,10 @@ export default function UnifiedMealModal({
 
   if (!isOpen) return null;
 
+  // Check if this meal came from a recipe
+  const isFromRecipe = meal?.planned?.recipeName || meal?.planned?.recipeId;
+  const isManualMeal = !isFromRecipe && (meal?.planned?.source === 'manual' || meal?.actual?.description);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div
@@ -302,9 +306,36 @@ export default function UnifiedMealModal({
 
           {/* Meal Description */}
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              {modalMode === 'planned' ? 'Or enter what you actually ate:' : 'What are you eating?'}
-            </label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {modalMode === 'planned' ? 'Or enter what you actually ate:' : 'What are you eating?'}
+              </label>
+              {/* Recipe indicator badge */}
+              {isFromRecipe && (
+                <div
+                  className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
+                  style={{
+                    backgroundColor: 'var(--color-primary)',
+                    color: 'white'
+                  }}
+                >
+                  <BookOpen className="w-3 h-3" />
+                  Recipe
+                </div>
+              )}
+              {/* Manual meal indicator badge */}
+              {isManualMeal && (
+                <div
+                  className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  ✏️ Manual
+                </div>
+              )}
+            </div>
             <div className="space-y-2">
               <textarea
                 value={description}

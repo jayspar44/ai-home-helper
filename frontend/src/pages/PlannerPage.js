@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react';
 import UnifiedMealModal from '../components/UnifiedMealModal';
 import PlannerRecipeCard from '../components/PlannerRecipeCard';
 
@@ -14,7 +14,7 @@ const formatDateForAPI = (date) => {
 
 
 // Meal slot component
-const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
+const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const mealIcons = {
@@ -93,7 +93,12 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
     }
   };
 
-  // Removed handleCompleteClick - unified modal handles completion
+  const handleCompleteClick = (e) => {
+    e.stopPropagation();
+    if (mealData && onComplete) {
+      onComplete(mealData);
+    }
+  };
 
   return (
     <div
@@ -165,6 +170,39 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
               <Plus className="w-4 h-4" />
             </button>
           )}
+
+          {/* Complete button for planned meals - desktop hover only */}
+          {mealState === 'planned' && (
+            <button
+              onClick={handleCompleteClick}
+              className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-full transition-all ${
+                isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundColor: 'var(--color-success)',
+                color: 'white',
+                transform: isHovered ? 'scale(1)' : 'scale(0.8)'
+              }}
+              title="Mark as completed"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Complete button for mobile - always visible for planned meals */}
+          {mealState === 'planned' && (
+            <button
+              onClick={handleCompleteClick}
+              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full"
+              style={{
+                backgroundColor: 'var(--color-success)',
+                color: 'white'
+              }}
+              title="Mark as completed"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -172,7 +210,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
 };
 
 // Day card component
-const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
+const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal, onCompleteMeal }) => {
   const isToday = new Date().toDateString() === day.toDateString();
   const dayName = day.toLocaleDateString([], { weekday: 'short' });
   const dayNumber = day.getDate();
@@ -244,6 +282,7 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
             mealData={getMealData(mealType)}
             onAdd={onAddMeal}
             onEdit={onEditMeal}
+            onComplete={onCompleteMeal}
           />
         ))}
       </div>
@@ -394,6 +433,48 @@ export default function PlannerPage() {
     setShowUnifiedMealModal(true);
   };
 
+  const handleCompleteMeal = async (mealData) => {
+    if (!mealData || !mealData.id) return;
+
+    try {
+      const updatedMeal = {
+        ...mealData,
+        completed: true,
+        completedDate: formatDateForAPI(new Date()) // Date-only completion tracking
+      };
+
+      const response = await fetch(`/api/planner/${activeHomeId}/${mealData.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updatedMeal)
+      });
+
+      if (response.ok) {
+        const savedMeal = await response.json();
+        // Update meal plans with the completed meal
+        setMealPlans(prevPlans => {
+          const updatedPlans = [...prevPlans];
+          const existingIndex = updatedPlans.findIndex(plan => plan.id === savedMeal.id);
+
+          if (existingIndex >= 0) {
+            // Keep date as string and ensure consistent format
+            const mealWithDateString = {
+              ...savedMeal,
+              date: typeof savedMeal.date === 'string' ? savedMeal.date.split('T')[0] : formatDateForAPI(savedMeal.date)
+            };
+            updatedPlans[existingIndex] = mealWithDateString;
+          }
+
+          return updatedPlans;
+        });
+      } else {
+        console.error('Failed to complete meal:', response.status);
+      }
+    } catch (err) {
+      console.error('Error completing meal:', err);
+    }
+  };
+
   const handleMealSaved = (savedMeal) => {
     if (!savedMeal) {
       // Handle deletion case (savedMeal is null) - remove meal from state immediately
@@ -542,6 +623,7 @@ export default function PlannerPage() {
               mealPlans={mealPlans}
               onAddMeal={handleAddMeal}
               onEditMeal={handleEditMeal}
+              onCompleteMeal={handleCompleteMeal}
             />
           ))}
         </div>
@@ -557,6 +639,7 @@ export default function PlannerPage() {
                   mealPlans={mealPlans}
                   onAddMeal={handleAddMeal}
                   onEditMeal={handleEditMeal}
+                  onCompleteMeal={handleCompleteMeal}
                 />
               ))}
             </div>
@@ -568,6 +651,7 @@ export default function PlannerPage() {
                   mealPlans={mealPlans}
                   onAddMeal={handleAddMeal}
                   onEditMeal={handleEditMeal}
+                  onCompleteMeal={handleCompleteMeal}
                 />
               ))}
             </div>

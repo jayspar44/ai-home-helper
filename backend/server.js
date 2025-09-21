@@ -1222,31 +1222,55 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
     const { date, mealType, planned } = req.body;
     const userUid = req.user.uid;
 
+    console.log('📅 Planner POST Request:', {
+      homeId,
+      date,
+      mealType,
+      planned: planned ? { recipeName: planned.recipeName, recipeId: planned.recipeId } : null,
+      userUid
+    });
+
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
     if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      console.log('❌ Authorization failed: User not member of home');
       return res.status(403).json({ error: 'Not authorized' });
     }
 
     // Validate meal type
     if (!['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
+      console.log('❌ Invalid meal type:', mealType);
       return res.status(400).json({ error: 'Invalid meal type' });
     }
 
     // Check if meal plan already exists for this date/meal type
+    const queryDate = new Date(date);
+    console.log('🔍 Checking for existing meal plan:', { date, queryDate, mealType });
+
     const existingQuery = await db.collection('homes')
       .doc(homeId)
       .collection('meal_plans')
-      .where('date', '==', new Date(date))
+      .where('date', '==', queryDate)
       .where('mealType', '==', mealType)
       .get();
 
+    console.log('📊 Existing query results:', {
+      isEmpty: existingQuery.empty,
+      size: existingQuery.size,
+      docs: existingQuery.docs.map(doc => ({
+        id: doc.id,
+        date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
+        mealType: doc.data().mealType
+      }))
+    });
+
     if (!existingQuery.empty) {
+      console.log('⚠️ Conflict: Meal plan already exists');
       return res.status(409).json({ error: 'Meal plan already exists for this date and meal type' });
     }
 
     const mealPlan = {
-      date: new Date(date),
+      date: queryDate,
       mealType,
       planned: planned || null,
       actual: null,
@@ -1254,6 +1278,12 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       createdBy: userUid,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
+
+    console.log('💾 Creating meal plan:', {
+      date: queryDate,
+      mealType,
+      plannedRecipeName: planned?.recipeName
+    });
 
     const docRef = await db.collection('homes')
       .doc(homeId)
@@ -1263,15 +1293,22 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
     const createdDoc = await docRef.get();
     const data = createdDoc.data();
 
-    res.status(201).json({
+    const response = {
       id: docRef.id,
       ...data,
       date: data.date.toDate().toISOString(),
       createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null
+    };
+
+    console.log('✅ Meal plan created successfully:', {
+      id: docRef.id,
+      recipeName: data.planned?.recipeName
     });
+
+    res.status(201).json(response);
   } catch (error) {
-    console.error('Error creating meal plan:', error);
+    console.error('❌ Error creating meal plan:', error);
     res.status(500).json({ error: 'Failed to create meal plan' });
   }
 });

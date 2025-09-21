@@ -25,6 +25,7 @@ e) auto save recent recipes and allow users to retrieve them
 - ensure there's always an expiry date (currently not working reliably with AI suggestions)
 - better recipe page layout
 - integrate with shopping (future feature)
+- schedule recipe needs to be better - can't tell if you're overwriting an existing meal.
 
 # Planner
 - Cleaner, simpler, way of doing planned and actual meals. Ideally we would keep the planned meal so we can see if the user ate what was planned but this is a nice to have
