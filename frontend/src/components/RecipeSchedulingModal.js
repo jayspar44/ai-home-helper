@@ -29,7 +29,13 @@ export default function RecipeSchedulingModal({
   // Initialize form when modal opens
   useEffect(() => {
     if (isOpen && recipe) {
-      setSchedulingDate(new Date().toISOString().split('T')[0]);
+      const formatDateForInput = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      setSchedulingDate(formatDateForInput(new Date()));
       setSchedulingMealType('breakfast');
       setServings(recipe.servings ? String(recipe.servings) : '4');
       setError('');
@@ -53,7 +59,7 @@ export default function RecipeSchedulingModal({
       };
 
       const mealPlan = {
-        date: new Date(schedulingDate).toISOString(),
+        date: schedulingDate, // Date-only format, no timezone conversion
         mealType: schedulingMealType,
         planned: plannedData
       };

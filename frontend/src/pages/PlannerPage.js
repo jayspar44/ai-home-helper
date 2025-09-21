@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import QuickMealModal from '../components/QuickMealModal';
+import UnifiedMealModal from '../components/UnifiedMealModal';
 import PlannerRecipeCard from '../components/PlannerRecipeCard';
+
+// Date formatting utility - date-only format to avoid timezone conversion
+const formatDateForAPI = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 
 // Meal slot component
@@ -23,43 +31,59 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
     snacks: 'Snacks'
   };
 
-  // Determine meal state
+  // Clear 3-state system: empty → planned → completed
+  const getMealState = (mealData) => {
+    if (!mealData) return 'empty';
+    if (mealData.completed === true) return 'completed';
+    if (mealData.planned) return 'planned';
+    return 'empty';
+  };
+
+  const mealState = getMealState(mealData);
+
+  // Legacy support - keep these for backward compatibility during transition
   const hasPlanned = mealData?.planned?.recipeName || mealData?.planned?.description;
   const hasActual = mealData?.actual?.description;
-  const isCompleted = hasPlanned && hasActual &&
-    mealData.actual.description === (mealData.planned.recipeName || mealData.planned.description);
+  const isCompleted = mealState === 'completed';
 
-  // Get meal display text
+  // Get meal display text based on state - prioritize recipe names
   const getMealDisplayText = () => {
-    if (isCompleted || hasActual) {
-      return mealData.actual.description;
+    if (mealState === 'completed') {
+      // Show what was actually eaten (prioritize actual, fallback to planned)
+      return mealData.actual?.recipeName ||
+             mealData.actual?.description ||
+             mealData.planned?.recipeName ||
+             mealData.planned?.description;
     }
-    if (hasPlanned) {
-      return mealData.planned.recipeName || mealData.planned.description;
+    if (mealState === 'planned') {
+      // Show what's planned (prioritize recipe names)
+      return mealData.planned?.recipeName || mealData.planned?.description;
     }
-    return null;
+    return null; // empty state
   };
 
   const mealText = getMealDisplayText();
 
-  // Determine visual state classes
-  const getStatusStyles = () => {
-    if (isCompleted) {
-      return {
-        borderLeft: '4px solid var(--color-success)',
-        backgroundColor: 'var(--color-success-light, #f0f9f0)'
-      };
+  // Visual styling based on clear 3-state system
+  const getStatusStyles = (state) => {
+    switch (state) {
+      case 'completed':
+        return {
+          borderLeft: '4px solid var(--color-success)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)'
+        };
+      case 'planned':
+        return {
+          borderLeft: '4px solid var(--color-primary)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)'
+        };
+      case 'empty':
+      default:
+        return {};
     }
-    if (hasPlanned) {
-      return {
-        borderLeft: '4px solid var(--color-primary)',
-        backgroundColor: 'var(--color-primary-light, #f0f7ff)'
-      };
-    }
-    return {};
   };
 
-  const statusStyles = getStatusStyles();
+  const statusStyles = getStatusStyles(mealState);
 
   const handleMealClick = () => {
     if (mealText) {
@@ -69,16 +93,13 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
     }
   };
 
-  const handleCompleteClick = (e) => {
-    e.stopPropagation();
-    onEdit(mealData, 'actual');
-  };
+  // Removed handleCompleteClick - unified modal handles completion
 
   return (
     <div
       className="meal-slot group relative py-3 px-4 transition-all duration-200 cursor-pointer border-b last:border-b-0 hover:bg-opacity-50"
       style={{
-        borderColor: 'var(--border-light)',
+        borderBottomColor: 'var(--border-light)', // Use specific border property to avoid conflict
         ...statusStyles,
         backgroundColor: isHovered ? statusStyles.backgroundColor || 'var(--bg-tertiary)' : statusStyles.backgroundColor || 'transparent'
       }}
@@ -89,17 +110,14 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
       {/* Main content row */}
       <div className="flex items-center justify-between min-h-[24px]">
         {/* Left: Icon and meal info */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="text-base">{mealIcons[mealType]}</span>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <span className="text-lg mt-0.5 flex-shrink-0">{mealIcons[mealType]}</span>
           <div className="flex-1 min-w-0">
             {mealText ? (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                   {mealText}
                 </span>
-                {isCompleted && (
-                  <span className="text-sm" style={{ color: 'var(--color-success)' }}>✓</span>
-                )}
               </div>
             ) : (
               <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -109,40 +127,8 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
           </div>
         </div>
 
-        {/* Right: Action buttons */}
-        <div className="flex items-center gap-2">
-          {/* Complete button for planned meals - desktop hover only */}
-          {hasPlanned && !isCompleted && (
-            <button
-              onClick={handleCompleteClick}
-              className={`hidden lg:flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-all ${
-                isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                backgroundColor: 'var(--color-success)',
-                color: 'white',
-                transform: isHovered ? 'scale(1)' : 'scale(0.8)'
-              }}
-              title="Mark as complete"
-            >
-              ✓
-            </button>
-          )}
-
-          {/* Complete button for mobile - always visible for planned meals */}
-          {hasPlanned && !isCompleted && (
-            <button
-              onClick={handleCompleteClick}
-              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium"
-              style={{
-                backgroundColor: 'var(--color-success)',
-                color: 'white'
-              }}
-            >
-              ✓
-            </button>
-          )}
-
+        {/* Right: Action buttons - simplified for unified modal */}
+        <div className="flex items-start gap-2 mt-1">
           {/* Add button for empty slots - desktop hover only */}
           {!mealText && (
             <button
@@ -150,7 +136,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
                 e.stopPropagation();
                 onAdd(day, mealType);
               }}
-              className={`hidden lg:flex items-center justify-center w-6 h-6 rounded-full transition-all ${
+              className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-full transition-all ${
                 isHovered ? 'opacity-100' : 'opacity-0'
               }`}
               style={{
@@ -159,7 +145,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
                 transform: isHovered ? 'scale(1)' : 'scale(0.8)'
               }}
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           )}
 
@@ -170,7 +156,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit }) => {
                 e.stopPropagation();
                 onAdd(day, mealType);
               }}
-              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-full"
+              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full"
               style={{
                 backgroundColor: 'var(--text-muted)',
                 color: 'white'
@@ -194,9 +180,11 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
 
   const getMealData = (mealType) => {
     return mealPlans.find(plan => {
-      const planDate = plan.date instanceof Date ? plan.date : new Date(plan.date);
-      return planDate.toDateString() === day.toDateString() &&
-        plan.mealType === mealType;
+      // Compare date strings directly (both should now be in YYYY-MM-DD format)
+      const planDateString = plan.date; // Already processed to date-only format
+      const dayString = formatDateForAPI(day);
+
+      return planDateString === dayString && plan.mealType === mealType;
     });
   };
 
@@ -208,16 +196,16 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
     }}>
       {/* Day header - simplified */}
       <div
-        className="day-header px-4 py-3 border-b"
+        className="day-header px-3 sm:px-4 py-3 border-b"
         style={{
           borderColor: 'var(--border-light)',
           backgroundColor: isToday ? 'var(--color-primary-light, #f0f7ff)' : 'transparent'
         }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div
-              className="w-10 h-10 rounded-full flex flex-col items-center justify-center text-xs font-bold"
+              className="w-10 h-10 rounded-full flex flex-col items-center justify-center text-xs font-bold flex-shrink-0"
               style={{
                 backgroundColor: isToday ? 'var(--color-primary)' : 'var(--bg-secondary)',
                 color: isToday ? 'white' : 'var(--text-primary)'
@@ -226,8 +214,8 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
               <span className="text-xs leading-none">{dayName}</span>
               <span className="text-sm leading-none">{dayNumber}</span>
             </div>
-            <div>
-              <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                 {day.toLocaleDateString([], { weekday: 'long' })}
               </div>
               <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -237,7 +225,7 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
           </div>
           {isToday && (
             <div
-              className="px-2 py-1 rounded-full text-xs font-medium"
+              className="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0"
               style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
             >
               Today
@@ -250,7 +238,7 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal }) => {
       <div>
         {['breakfast', 'lunch', 'dinner', 'snacks'].map(mealType => (
           <MealSlot
-            key={mealType}
+            key={`${formatDateForAPI(day)}-${mealType}`}
             day={day}
             mealType={mealType}
             mealData={getMealData(mealType)}
@@ -273,7 +261,7 @@ export default function PlannerPage() {
   const [pantryItems, setPantryItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showQuickMealModal, setShowQuickMealModal] = useState(false);
+  const [showUnifiedMealModal, setShowUnifiedMealModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [editingMeal, setEditingMeal] = useState(null);
@@ -294,6 +282,8 @@ export default function PlannerPage() {
     day.setDate(currentWeekStart.getDate() + i);
     return day;
   }) : [];
+
+  // Week days are generated correctly for the current week
 
   // Navigation functions
   const goToPreviousWeek = () => {
@@ -324,7 +314,7 @@ export default function PlannerPage() {
       endDate.setDate(currentWeekStart.getDate() + 6);
 
       const response = await fetch(
-        `/api/planner/${activeHomeId}?startDate=${currentWeekStart.toISOString()}&endDate=${endDate.toISOString()}`,
+        `/api/planner/${activeHomeId}?startDate=${formatDateForAPI(currentWeekStart)}&endDate=${formatDateForAPI(endDate)}`,
         {
           headers: getAuthHeaders()
         }
@@ -332,11 +322,13 @@ export default function PlannerPage() {
 
       if (response.ok) {
         const data = await response.json();
-        // Convert date strings back to Date objects
+
+        // Fix: Extract date-only string from ISO timestamps to match day comparison format
         const plansWithDates = data.map(plan => ({
           ...plan,
-          date: new Date(plan.date)
+          date: typeof plan.date === 'string' ? plan.date.split('T')[0] : formatDateForAPI(new Date(plan.date))
         }));
+
         setMealPlans(plansWithDates);
         setError('');
       } else {
@@ -391,34 +383,60 @@ export default function PlannerPage() {
     setSelectedDate(day);
     setSelectedMealType(mealType);
     setEditingMeal(null);
-    setShowQuickMealModal(true);
+    setShowUnifiedMealModal(true);
   };
 
   const handleEditMeal = (mealData, section) => {
     setEditingMeal(mealData);
-    setSelectedDate(new Date(mealData.date));
+    // Pass date as string to avoid timezone conversion
+    setSelectedDate(mealData.date);
     setSelectedMealType(mealData.mealType);
-    setShowQuickMealModal(true);
+    setShowUnifiedMealModal(true);
   };
 
   const handleMealSaved = (savedMeal) => {
+    if (!savedMeal) {
+      // Handle deletion case (savedMeal is null) - remove meal from state immediately
+      if (editingMeal && editingMeal.id) {
+        setMealPlans(prevPlans => prevPlans.filter(plan => plan.id !== editingMeal.id));
+      }
+      // Clear selections after deletion
+      setSelectedDate(null);
+      setSelectedMealType(null);
+      setEditingMeal(null);
+      return;
+    }
+
     // Update meal plans with the saved meal
     setMealPlans(prevPlans => {
       const updatedPlans = [...prevPlans];
-      const existingIndex = updatedPlans.findIndex(plan => plan.id === savedMeal.id);
 
-      // Ensure the saved meal has a proper Date object
-      const mealWithDateObject = {
+      // For new meals, savedMeal.id might not exist yet, so we also check by date/mealType
+      let existingIndex = -1;
+      if (savedMeal.id) {
+        existingIndex = updatedPlans.findIndex(plan => plan.id === savedMeal.id);
+      }
+
+      // If no ID match found, check by date/mealType combination for new meals
+      if (existingIndex === -1) {
+        const savedMealDate = typeof savedMeal.date === 'string' ? savedMeal.date.split('T')[0] : formatDateForAPI(savedMeal.date);
+        existingIndex = updatedPlans.findIndex(plan =>
+          plan.date === savedMealDate && plan.mealType === savedMeal.mealType
+        );
+      }
+
+      // Keep date as string and ensure consistent format (same as API processing)
+      const mealWithDateString = {
         ...savedMeal,
-        date: savedMeal.date instanceof Date ? savedMeal.date : new Date(savedMeal.date)
+        date: typeof savedMeal.date === 'string' ? savedMeal.date.split('T')[0] : formatDateForAPI(savedMeal.date)
       };
 
       if (existingIndex >= 0) {
         // Update existing meal plan
-        updatedPlans[existingIndex] = mealWithDateObject;
+        updatedPlans[existingIndex] = mealWithDateString;
       } else {
         // Add new meal plan
-        updatedPlans.push(mealWithDateObject);
+        updatedPlans.push(mealWithDateString);
       }
 
       return updatedPlans;
@@ -443,7 +461,7 @@ export default function PlannerPage() {
     setSelectedDate(now);
     setSelectedMealType(suggestedMealType);
     setEditingMeal(null);
-    setShowQuickMealModal(true);
+    setShowUnifiedMealModal(true);
   };
 
   // Loading state
@@ -528,18 +546,31 @@ export default function PlannerPage() {
           ))}
         </div>
 
-        {/* Desktop: Grid layout (TODO: Implement 2-week view) */}
+        {/* Desktop: Split week across 2 rows for better space utilization */}
         <div className="hidden lg:block">
-          <div className="grid grid-cols-7 gap-4">
-            {weekDays.map(day => (
-              <DayCard
-                key={day.toDateString()}
-                day={day}
-                mealPlans={mealPlans}
-                onAddMeal={handleAddMeal}
-                onEditMeal={handleEditMeal}
-              />
-            ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-4 gap-4">
+              {weekDays.slice(0, 4).map(day => (
+                <DayCard
+                  key={day.toDateString()}
+                  day={day}
+                  mealPlans={mealPlans}
+                  onAddMeal={handleAddMeal}
+                  onEditMeal={handleEditMeal}
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {weekDays.slice(4, 7).map(day => (
+                <DayCard
+                  key={day.toDateString()}
+                  day={day}
+                  mealPlans={mealPlans}
+                  onAddMeal={handleAddMeal}
+                  onEditMeal={handleEditMeal}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -555,19 +586,19 @@ export default function PlannerPage() {
         </button>
       </div>
 
-      {/* Quick Meal Modal */}
-      <QuickMealModal
-        isOpen={showQuickMealModal}
+      {/* Unified Meal Modal */}
+      <UnifiedMealModal
+        isOpen={showUnifiedMealModal}
         onClose={() => {
-          setShowQuickMealModal(false);
+          setShowUnifiedMealModal(false);
           setSelectedDate(null);
           setSelectedMealType(null);
           setEditingMeal(null);
         }}
         onSave={handleMealSaved}
+        meal={editingMeal}
         selectedDate={selectedDate}
         selectedMealType={selectedMealType}
-        initialData={editingMeal}
         getAuthHeaders={getAuthHeaders}
         activeHomeId={activeHomeId}
         pantryItems={pantryItems}

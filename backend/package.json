@@ -1,6 +1,6 @@
 {
   "name": "home-helper-backend",
-  "version": "2.6.1",
+  "version": "2.8.0",
   "description": "Backend API for Home Helper app",
   "main": "server.js",
   "scripts": {

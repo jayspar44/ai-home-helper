@@ -86,7 +86,17 @@ export default function RecipeSelector({
     console.log('🎪 Modal useEffect triggered', { isOpen });
     if (isOpen) {
       console.log('🎪 Modal opened - initializing form');
-      setSchedulingDate(selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+      const formatDateForInput = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      setSchedulingDate(
+        selectedDate
+          ? (typeof selectedDate === 'string' ? selectedDate : formatDateForInput(selectedDate))
+          : formatDateForInput(new Date())
+      );
       setSchedulingMealType(selectedMealType || 'breakfast');
       setSelectedRecipe(null);
       setServings('');
@@ -150,7 +160,7 @@ export default function RecipeSelector({
       };
 
       const mealPlan = {
-        date: new Date(schedulingDate).toISOString(),
+        date: schedulingDate, // Date-only format, no timezone conversion
         mealType: schedulingMealType,
         planned: plannedData
       };
