@@ -22,7 +22,7 @@ const getMealState = (meal) => {
 const getModalMode = (mealState) => {
   switch (mealState) {
     case 'empty': return 'add';
-    case 'planned': return 'edit-plan';
+    case 'planned': return 'complete'; // Changed from 'edit-plan' - completion-first approach
     case 'completed': return 'view-completed';
     default: return 'add';
   }
@@ -48,6 +48,11 @@ export default function UnifiedMealModal({
   const [error, setError] = useState('');
   const [showRecipeSelector, setShowRecipeSelector] = useState(false);
 
+  // Completion workflow state
+  const [completionStage, setCompletionStage] = useState('intent'); // 'intent', 'custom-meal', 'edit-mode'
+  const [customMealDescription, setCustomMealDescription] = useState('');
+  const [customMealNotes, setCustomMealNotes] = useState('');
+
   // Meal type options
   const mealTypeOptions = [
     { value: 'breakfast', label: 'Breakfast', icon: '🍳' },
@@ -62,6 +67,16 @@ export default function UnifiedMealModal({
       const mealState = getMealState(meal);
       const mode = getModalMode(mealState);
       setModalMode(mode);
+
+      // Always reset completion workflow state to prevent contamination
+      setCompletionStage('intent');
+      setCustomMealDescription('');
+      setCustomMealNotes('');
+
+      // Set completion mode if needed
+      if (mode === 'complete') {
+        setCompletionStage('intent'); // Ensure clean start for completion flow
+      }
 
       if (meal) {
         // Editing existing meal - prioritize recipe names over descriptions
@@ -245,9 +260,143 @@ export default function UnifiedMealModal({
 
   // Handle recipe selection
   const handleRecipeSelected = (recipe) => {
-    setDescription(recipe.title);
+    if (completionStage === 'custom-meal') {
+      // In completion flow - set custom meal description
+      setCustomMealDescription(recipe.title);
+    } else {
+      // In normal flow - set main description
+      setDescription(recipe.title);
+    }
     setShowRecipeSelector(false);
     // Could set additional recipe data here for planned meals
+  };
+
+  // Completion workflow handlers
+  const handleCompleteAsPlanned = async () => {
+    if (!meal) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const completionData = {
+        ...meal,
+        completed: true,
+        completedDate: formatDateForInput(new Date()),
+        completionType: 'as-planned',
+        actual: {
+          recipeName: meal.planned?.recipeName,
+          description: meal.planned?.description || meal.planned?.recipeName
+        }
+      };
+
+      const response = await fetch(`/api/planner/${activeHomeId}/${meal.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(completionData)
+      });
+
+      if (response.ok) {
+        const savedMeal = await response.json();
+        onSave(savedMeal);
+        onClose();
+      } else {
+        setError('Failed to complete meal');
+      }
+    } catch (err) {
+      setError('Failed to complete meal');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteCustom = () => {
+    setCompletionStage('custom-meal');
+  };
+
+  const handleSwitchToEdit = () => {
+    setModalMode('edit-plan');
+    setCompletionStage('edit-mode');
+    // Initialize description for edit mode
+    const displayText = meal.planned?.recipeName || meal.planned?.description || '';
+    setDescription(displayText);
+  };
+
+  // Revert to planned state function
+  const handleRevertToPlanned = async () => {
+    if (!meal) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const revertData = {
+        ...meal,
+        completed: false,
+        completedDate: null,
+        completionType: null,
+        actual: null
+      };
+
+      const response = await fetch(`/api/planner/${activeHomeId}/${meal.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(revertData)
+      });
+
+      if (response.ok) {
+        const savedMeal = await response.json();
+        onSave(savedMeal);
+        onClose();
+      } else {
+        setError('Failed to revert meal to planned state');
+      }
+    } catch (err) {
+      setError('Failed to revert meal to planned state');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCustomCompletion = async () => {
+    if (!customMealDescription.trim()) {
+      setError('Please enter what you actually ate');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const completionData = {
+        ...meal,
+        completed: true,
+        completedDate: formatDateForInput(new Date()),
+        completionType: 'modified',
+        actual: {
+          description: customMealDescription.trim(),
+          notes: customMealNotes.trim() || undefined
+        }
+      };
+
+      const response = await fetch(`/api/planner/${activeHomeId}/${meal.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(completionData)
+      });
+
+      if (response.ok) {
+        const savedMeal = await response.json();
+        onSave(savedMeal);
+        onClose();
+      } else {
+        setError('Failed to complete meal');
+      }
+    } catch (err) {
+      setError('Failed to complete meal');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -287,29 +436,159 @@ export default function UnifiedMealModal({
             </div>
           )}
 
-          {/* Quick Complete Option for Planned Meals */}
-          {modalMode === 'planned' && (
-            <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-secondary)' }}>
-              <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Did you eat this as planned?
-              </p>
-              <button
-                onClick={handleQuickComplete}
-                disabled={isLoading}
-                className="w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
-              >
-                ✅ Yes, I ate this
-              </button>
-            </div>
+          {/* Complete Modal Workflow */}
+          {modalMode === 'complete' && (
+            <>
+              {completionStage === 'intent' && (
+                <div className="space-y-4">
+                  {/* Planned meal display */}
+                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-secondary)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        Planned: {meal?.planned?.recipeName || meal?.planned?.description}
+                      </span>
+                      {/* Recipe badge if from recipe */}
+                      {meal?.planned?.recipeId && (
+                        <div
+                          className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
+                          style={{
+                            backgroundColor: 'var(--color-primary)',
+                            color: 'white'
+                          }}
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          Recipe
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Completion options */}
+                  <div>
+                    <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                      Did you eat this as planned?
+                    </p>
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleCompleteAsPlanned}
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                        style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                      >
+                        ✓ Yes, I ate this
+                      </button>
+                      <button
+                        onClick={handleCompleteCustom}
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                        style={{ backgroundColor: 'var(--color-warning, #f59e0b)', color: 'white' }}
+                      >
+                        ✗ No, I ate something else
+                      </button>
+                      <button
+                        onClick={handleSwitchToEdit}
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                        style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-light)' }}
+                      >
+                        📝 Edit plan instead
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {completionStage === 'custom-meal' && (
+                <div className="space-y-4">
+                  {/* Show original plan */}
+                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-secondary)' }}>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      Originally planned: {meal?.planned?.recipeName || meal?.planned?.description}
+                    </span>
+                  </div>
+
+                  {/* Custom meal entry */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                      What did you actually eat?
+                    </label>
+                    <textarea
+                      value={customMealDescription}
+                      onChange={(e) => setCustomMealDescription(e.target.value)}
+                      placeholder="Enter what you actually ate..."
+                      rows={2}
+                      className="w-full p-3 rounded-lg border resize-none"
+                      style={{
+                        borderColor: 'var(--border-light)',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)'
+                      }}
+                    />
+
+                    {/* Recipe selector button */}
+                    <button
+                      onClick={() => setShowRecipeSelector(true)}
+                      className="flex items-center gap-2 px-3 py-2 mt-2 text-sm rounded-lg border transition-colors"
+                      style={{
+                        borderColor: 'var(--border-light)',
+                        color: 'var(--color-primary)',
+                        backgroundColor: 'transparent'
+                      }}
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      Choose from Recipe
+                    </button>
+                  </div>
+
+                  {/* Optional notes */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Notes (optional)
+                    </label>
+                    <textarea
+                      value={customMealNotes}
+                      onChange={(e) => setCustomMealNotes(e.target.value)}
+                      placeholder="Any additional notes..."
+                      rows={1}
+                      className="w-full p-3 rounded-lg border resize-none"
+                      style={{
+                        borderColor: 'var(--border-light)',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)'
+                      }}
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setCompletionStage('intent')}
+                      className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors"
+                      style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleCustomCompletion}
+                      disabled={isLoading || !customMealDescription.trim()}
+                      className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+                      style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                    >
+                      {isLoading ? 'Saving...' : 'Complete with Changes'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Meal Description */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                {modalMode === 'planned' ? 'Or enter what you actually ate:' : 'What are you eating?'}
-              </label>
+          {/* Meal Description - Only show for non-complete modes */}
+          {modalMode !== 'complete' && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {modalMode === 'planned' ? 'Or enter what you actually ate:' : modalMode === 'view-completed' ? 'What did you eat?' : 'What are you eating?'}
+                </label>
               {/* Recipe indicator badge */}
               {isFromRecipe && (
                 <div
@@ -365,9 +644,11 @@ export default function UnifiedMealModal({
                 </button>
               )}
             </div>
-          </div>
+            </div>
+          )}
 
-          {/* Date and Meal Type */}
+          {/* Date and Meal Type - Only show for non-complete modes */}
+          {modalMode !== 'complete' && (
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -407,25 +688,75 @@ export default function UnifiedMealModal({
               </select>
             </div>
           </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-          <div className="flex gap-2">
-            {meal && (
-              <button
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="p-2 rounded-lg transition-colors"
-                style={{ color: 'var(--color-error)' }}
-                title="Delete meal"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+        {/* Footer - Only show for non-complete modes */}
+        {modalMode !== 'complete' && (
+          <div className="flex items-center justify-between p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="flex gap-2">
+              {meal && modalMode !== 'complete' && (
+                <button
+                  onClick={handleDelete}
+                  disabled={isLoading}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--color-error)' }}
+                  title="Delete meal"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              {modalMode === 'view-completed' && (
+                <button
+                  onClick={handleRevertToPlanned}
+                  disabled={isLoading}
+                  className="px-3 py-1 text-sm rounded-lg transition-colors"
+                  style={{
+                    color: 'var(--color-warning, #f59e0b)',
+                    border: '1px solid var(--color-warning, #f59e0b)',
+                    backgroundColor: 'transparent'
+                  }}
+                  title="Revert to planned state"
+                >
+                  ↶ Mark as Planned
+                </button>
+              )}
+            </div>
 
-          <div className="flex gap-3">
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg font-medium transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Cancel
+              </button>
+              {modalMode === 'edit-plan' && (
+                <button
+                  onClick={handleQuickComplete}
+                  disabled={isLoading}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                  style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                >
+                  ✓ Complete
+                </button>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={isLoading}
+                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+              >
+                <Save className="w-4 h-4" />
+                {isLoading ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Complete modal footer - just cancel */}
+        {modalMode === 'complete' && completionStage === 'intent' && (
+          <div className="flex items-center justify-center p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-lg font-medium transition-colors"
@@ -433,27 +764,8 @@ export default function UnifiedMealModal({
             >
               Cancel
             </button>
-            {modalMode === 'edit-plan' && (
-              <button
-                onClick={handleQuickComplete}
-                disabled={isLoading}
-                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
-              >
-                ✓ Complete
-              </button>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={isLoading}
-              className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-              style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
-            >
-              <Save className="w-4 h-4" />
-              {isLoading ? 'Saving...' : 'Save'}
-            </button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Recipe Selector Modal */}

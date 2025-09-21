@@ -28,7 +28,8 @@ e) auto save recent recipes and allow users to retrieve them
 - schedule recipe needs to be better - can't tell if you're overwriting an existing meal.
 
 # Planner
-- Cleaner, simpler, way of doing planned and actual meals. Ideally we would keep the planned meal so we can see if the user ate what was planned but this is a nice to have
+- Ability to generate recipes from planner
+- Ability to generate a full week
 - AI parsing of manually logged meals
 - Camera based meal logging
 - 1-click plan the week based on the pantry and recipe generator
@@ -38,6 +39,7 @@ e) auto save recent recipes and allow users to retrieve them
 - Recipe scheduling → Automatically deduct pantry items when marked complete
 - Meal planning analytics → Track what was planned vs actual consumption patterns
 - Inventory forecasting → Predict pantry needs based on planned meals 
+- Add a "switch" to be in edit mode which defaults to the edit modal instead of the 3-way option
 
 # Home Admin
 - allow dietary preferences to be added at the user and/or home level,

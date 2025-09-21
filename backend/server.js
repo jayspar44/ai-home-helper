@@ -1317,7 +1317,7 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
 app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
   try {
     const { homeId, planId } = req.params;
-    const { planned, actual } = req.body;
+    const { planned, actual, completed, completedDate, completionType } = req.body;
     const userUid = req.user.uid;
 
     // Verify user belongs to home
@@ -1347,6 +1347,19 @@ app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
         ...actual,
         loggedAt: admin.firestore.FieldValue.serverTimestamp()
       } : null;
+    }
+
+    // Handle completion fields
+    if (completed !== undefined) {
+      updateData.completed = completed;
+    }
+
+    if (completedDate !== undefined) {
+      updateData.completedDate = completedDate;
+    }
+
+    if (completionType !== undefined) {
+      updateData.completionType = completionType;
     }
 
     await mealPlanRef.update(updateData);

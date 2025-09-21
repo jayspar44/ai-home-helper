@@ -440,7 +440,12 @@ export default function PlannerPage() {
       const updatedMeal = {
         ...mealData,
         completed: true,
-        completedDate: formatDateForAPI(new Date()) // Date-only completion tracking
+        completedDate: formatDateForAPI(new Date()),
+        completionType: 'as-planned',
+        actual: {
+          recipeName: mealData.planned?.recipeName,
+          description: mealData.planned?.description || mealData.planned?.recipeName
+        }
       };
 
       const response = await fetch(`/api/planner/${activeHomeId}/${mealData.id}`, {
