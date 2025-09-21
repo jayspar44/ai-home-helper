@@ -6,34 +6,47 @@
 
 ### Key Features
 - **AI Recipe Generator**: Create personalized recipes with Google Gemini 2.5 Flash, featuring multiple recipe generation, sophistication levels, and smart pantry integration with expiry prioritization
-- **Intelligent Pantry Management**: Advanced AI-powered system with photo recognition, smart item suggestions, location/expiry defaults, and consumption tracking
-- **Meal Planner**: Comprehensive meal planning with recipe scheduling, manual meal logging, pantry ingredient deduction, and consumption analytics
+- **Intelligent Pantry Management**: Advanced AI-powered system with photo recognition, smart item suggestions, location/expiry defaults, and consumption tracking with timestamp-based expiry system
+- **Unified Meal Planner**: Comprehensive 3-state meal planning system (empty→planned→completed) with recipe scheduling, manual meal logging, pantry ingredient deduction, and timezone-independent date handling
 - **Multi-User Home Management**: Invite family members with role-based access (admin/member)
-- **Responsive Design**: Mobile-first design that works across all devices
+- **Responsive Design**: Mobile-first design that works across all devices with enhanced UX improvements
 
 ## 🏗️ Architecture
 
 ### Tech Stack
-- **Frontend**: React 18 + Create React App, CSS custom properties, responsive design
-- **Backend**: Node.js + Express.js with Firebase Admin SDK
+- **Frontend**: React 18.3.1 + Create React App, CSS custom properties, responsive design, Lucide React icons
+- **Backend**: Node.js + Express.js with Firebase Admin SDK, Multer for file uploads
 - **Database**: Firebase Firestore (multi-tenant with homes/users collections)
 - **Authentication**: Firebase Authentication
-- **AI Services**: Google Gemini 2.5 Flash API for advanced recipe generation, intelligent pantry item detection, smart suggestions, and image analysis
-- **Deployment**: Railway (with nixpacks)
+- **AI Services**: Google Gemini 2.5 Flash API (@google/generative-ai v0.17.1) for advanced recipe generation, intelligent pantry item detection, smart suggestions, and image analysis
+- **Deployment**: Railway (with nixpacks) and production optimizations
+- **Development**: ESLint 9.36.0, Concurrently for multi-process development, Nodemon for backend hot-reload
 
 ### Directory Structure
 ```
-├── frontend/          # React application
+├── frontend/          # React application (22 components, 5 pages)
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── pages/        # Page components
-│   │   ├── contexts/     # React contexts
+│   │   ├── components/    # React components (22 files)
+│   │   │   ├── pantry/   # Pantry-specific components
+│   │   │   ├── UnifiedMealModal.js  # 3-state meal system modal
+│   │   │   ├── RecipeSelector.js    # Recipe selection component
+│   │   │   └── SharedLayout.js      # Main app layout
+│   │   ├── pages/        # Page components (5 files)
+│   │   │   ├── PlannerPage.js      # Meal planning interface
+│   │   │   ├── RecipeGenerator.js  # AI recipe generation
+│   │   │   └── PantryPage.js       # Pantry management
+│   │   ├── contexts/     # React contexts (ToastContext)
 │   │   ├── hooks/        # Custom hooks
+│   │   ├── utils/        # Utility functions (date handling)
 │   │   └── firebase.js   # Firebase config
 │   └── public/
 ├── backend/           # Node.js API server
-│   ├── server.js         # Main server file with comprehensive AI endpoints
+│   ├── server.js         # Main server (1620 lines) with comprehensive AI endpoints
 │   └── uploads/         # Temporary file uploads for AI image processing
+├── scripts/           # Development scripts
+│   └── version-manager.js # Automated version management
+├── version.json       # Single source of truth for versioning
+├── eslint.config.mjs  # Modern ESLint configuration
 └── nixpacks.toml     # Railway deployment config
 ```
 
@@ -113,35 +126,41 @@ The app will be available at:
   members: { "userId1": "admin", "userId2": "member" }
 }
 
-// Pantry item
+// Pantry item (enhanced with timestamp-based expiry system)
 {
   name: "Milk",
   location: "fridge", // pantry|fridge|freezer
   quantity: "1 gallon",
-  daysUntilExpiry: 7, // Deprecated: use expiresAt
-  expiresAt: Timestamp, // Firestore timestamp for expiry date
+  expiresAt: Timestamp, // Primary: Firestore timestamp for expiry date
+  daysUntilExpiry: 7, // Deprecated but maintained for backward compatibility
+  createdAt: Timestamp,
+  updatedAt: Timestamp,
   createdBy: "userId",
-  confidence: 0.9 // AI detection confidence
+  confidence: 0.9, // AI detection confidence (0.0-1.0)
+  detectedBy: "ai" | "manual" // Source of item detection
 }
 
-// Meal plan document
+// Meal plan document (3-state system: empty→planned→completed)
 {
-  date: Timestamp, // ISO date for the meal
+  date: Timestamp, // Timezone-independent date storage
   mealType: "dinner", // breakfast|lunch|dinner|snacks
   planned: { // For scheduled recipes
     recipeId: "recipe123",
-    recipeName: "Chicken Stir Fry",
+    recipeName: "Chicken Stir Fry", // Prioritized display name
     ingredients: [...],
     servings: 4,
     cookingTime: "30 mins",
     description: "Quick and healthy dinner"
   },
-  logged: { // For manual meal logging
+  actual: { // For completed meals (replaces "logged")
     description: "Pizza night",
-    notes: "Ordered from downtown"
+    notes: "Ordered from downtown",
+    loggedAt: Timestamp,
+    madeAsPlanned: false // Whether planned recipe was followed
   },
   createdBy: "userId",
-  createdAt: Timestamp
+  createdAt: Timestamp,
+  updatedAt: Timestamp
 }
 
 // Enhanced recipe document (from AI generation)
@@ -331,23 +350,28 @@ CI=false
 ## 🔄 Recent Updates & TODO
 
 ### Current Major Features
+- **Unified 3-State Meal System**: Complete meal state management with empty→planned→completed workflow, recipe name prioritization, and simplified modal interactions
 - **Enhanced AI Integration**: Upgraded to Gemini 2.5 Flash with sophisticated prompting for recipe generation, pantry suggestions, and image analysis
-- **Consumption Tracking System**: Comprehensive ingredient deduction and usage logging when meals are prepared
-- **Smart Pantry Management**: AI-powered item suggestions, location/expiry defaults, and confidence-based validation
+- **Timestamp-Based Pantry System**: Replaced legacy daysUntilExpiry with expiresAt timestamps, comprehensive date handling utilities, and backward compatibility
+- **Timezone-Independent Date Handling**: Critical bug fixes for meal planning with date-only system eliminating UTC conversion issues
+- **Smart Pantry Management**: AI-powered item suggestions, location/expiry defaults, and confidence-based validation with photo recognition
 - **Advanced Recipe Generation**: Multi-recipe generation, complexity levels (quick vs sophisticated), and pantry integration with expiry prioritization
-- **Comprehensive Meal Planner**: Full CRUD operations for meal planning with calendar view and pantry integration
+- **Consumption Tracking System**: Comprehensive ingredient deduction and usage logging when meals are prepared
 
 ### Recent Technical Improvements
-- **File Upload System**: Multer integration for AI image processing with automatic cleanup
-- **Enhanced Error Handling**: Comprehensive error responses and logging throughout the API
-- **Performance Optimizations**: Smart caching, batch operations, and optimized database queries
-- **Security Enhancements**: Improved authentication middleware and request validation
-- **Monitoring & Debugging**: Enhanced health checks, debug endpoints, and comprehensive logging
+- **Modern ESLint Configuration**: Upgraded to ESLint 9.36.0 with flat config system and comprehensive linting rules
+- **Unified Version Management**: Single source of truth at `/version.json` with automated protocol and cross-package synchronization
+- **File Upload System**: Multer integration for AI image processing with automatic cleanup and 10MB file limits
+- **Enhanced Error Handling**: Comprehensive error responses and logging throughout the API with production security
+- **Production Optimizations**: Railway deployment with trust proxy, graceful shutdown handlers, and health/readiness probes
+- **Security Enhancements**: Improved authentication middleware, CORS configuration, and request validation
+- **Monitoring & Debugging**: Enhanced health checks, debug endpoints, and comprehensive logging with service status reporting
 
 ### Version Information
-- Current version: 2.6.1 (see version.json for detailed changelog)
-- Last major update: September 2025 (Meal Planner feature)
+- Current version: 2.8.0 (see version.json for detailed changelog)
+- Last major update: September 21, 2025 (Unified 3-State Meal System)
 - Node.js: 18+
 - React: 18.3.1
-- Firebase: 9.17.2
-- Version management: Single source of truth at `/version.json`
+- Firebase: 9.17.2 (frontend) / 11.5.0 (backend admin)
+- Google Generative AI: 0.17.1
+- Version management: Single source of truth at `/version.json` with automated protocol
