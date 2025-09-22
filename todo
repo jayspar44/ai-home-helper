@@ -1,6 +1,5 @@
 # New features
 - work out plan to diminish pantry items as they are used in recipes or otherwise
-- meal planner
 - smart shopper
 - calorie / nutrient counter
 
@@ -29,7 +28,7 @@ e) auto save recent recipes and allow users to retrieve them
 
 # Planner
 - Ability to generate recipes from planner
-- Ability to generate a full week
+- Ability to generate a full week of recipes from planner and shopping
 - AI parsing of manually logged meals
 - Camera based meal logging
 - 1-click plan the week based on the pantry and recipe generator
