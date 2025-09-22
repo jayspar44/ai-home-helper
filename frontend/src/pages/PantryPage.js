@@ -9,6 +9,7 @@ import PantryToolbar from '../components/PantryToolbar';
 import UnifiedListView from '../components/UnifiedListView';
 import FilterModal from '../components/FilterModal';
 import EditItemModal from '../components/EditItemModal';
+import JSONExportModal from '../components/JSONExportModal';
 
 // Custom Hooks
 import usePantryFilters from '../hooks/usePantryFilters';
@@ -29,6 +30,7 @@ export default function PantryPage() {
   // Modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [showJSONExportModal, setShowJSONExportModal] = useState(false);
 
   // Auth headers callback
   const getAuthHeaders = useCallback(() => ({
@@ -171,9 +173,13 @@ export default function PantryPage() {
   };
 
   const handleCreateRecipe = () => {
-    navigate('/recipe-generator', { 
+    navigate('/recipe-generator', {
       state: { ingredients: items.map(item => item.name) }
     });
+  };
+
+  const handleExportJSON = () => {
+    setShowJSONExportModal(true);
   };
 
   if (!context) {
@@ -223,6 +229,7 @@ export default function PantryPage() {
             onOpenFilter={() => setShowFilterModal(true)}
             activeFiltersCount={activeFiltersCount}
             onCreateRecipe={handleCreateRecipe}
+            onExportJSON={handleExportJSON}
             totalItems={totalItems}
           />
 
@@ -289,6 +296,12 @@ export default function PantryPage() {
           onClose={() => setEditingItem(null)}
           onSave={handleSaveEdit}
           onDelete={handleDelete}
+        />
+
+        <JSONExportModal
+          isOpen={showJSONExportModal}
+          onClose={() => setShowJSONExportModal(false)}
+          items={items}
         />
       </div>
     </div>

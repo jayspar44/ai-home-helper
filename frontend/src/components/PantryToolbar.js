@@ -1,14 +1,15 @@
 import React from 'react';
-import { Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { Search, Filter, LayoutGrid, List, Download } from 'lucide-react';
 
-const PantryToolbar = ({ 
-  searchQuery, 
-  onSearchChange, 
-  viewMode, 
-  onViewModeChange, 
+const PantryToolbar = ({
+  searchQuery,
+  onSearchChange,
+  viewMode,
+  onViewModeChange,
   onOpenFilter,
   activeFiltersCount,
   onCreateRecipe,
+  onExportJSON,
   totalItems
 }) => {
   return (
@@ -79,20 +80,39 @@ const PantryToolbar = ({
           </button>
         </div>
 
-        {/* Create Recipe Button */}
-        <button
-          onClick={onCreateRecipe}
-          disabled={totalItems === 0}
-          className="btn-base px-4 py-2 text-sm font-medium transition-all disabled:opacity-50"
-          style={{ 
-            background: totalItems > 0 ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)' : 'var(--bg-tertiary)',
-            color: totalItems > 0 ? 'white' : 'var(--text-muted)',
-            border: 'none'
-          }}
-          title={totalItems === 0 ? 'Add some items to create recipes' : `Create recipe with ${totalItems} items`}
-        >
-          ✨ Recipe ({totalItems})
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* JSON Export Button */}
+          <button
+            onClick={onExportJSON}
+            disabled={totalItems === 0}
+            className="p-2 rounded-lg transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--bg-tertiary)',
+              color: totalItems > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
+              border: '1px solid var(--border-light)'
+            }}
+            title={totalItems === 0 ? 'Add some items to export data' : `Export ${totalItems} items as JSON`}
+            aria-label="Export pantry data as JSON"
+          >
+            <Download className="icon-small" />
+          </button>
+
+          {/* Create Recipe Button */}
+          <button
+            onClick={onCreateRecipe}
+            disabled={totalItems === 0}
+            className="btn-base px-4 py-2 text-sm font-medium transition-all disabled:opacity-50"
+            style={{
+              background: totalItems > 0 ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)' : 'var(--bg-tertiary)',
+              color: totalItems > 0 ? 'white' : 'var(--text-muted)',
+              border: 'none'
+            }}
+            title={totalItems === 0 ? 'Add some items to create recipes' : `Create recipe with ${totalItems} items`}
+          >
+            ✨ Recipe ({totalItems})
+          </button>
+        </div>
       </div>
     </div>
   );
