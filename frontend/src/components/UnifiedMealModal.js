@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, X, Save, BookOpen, Trash2 } from 'lucide-react';
 import RecipeSelector from './RecipeSelector';
 
@@ -28,7 +28,7 @@ const getModalMode = (mealState) => {
   }
 };
 
-export default function UnifiedMealModal({
+function UnifiedMealModal({
   isOpen,
   onClose,
   onSave,
@@ -53,20 +53,39 @@ export default function UnifiedMealModal({
   const [customMealDescription, setCustomMealDescription] = useState('');
   const [customMealNotes, setCustomMealNotes] = useState('');
 
-  // Meal type options
-  const mealTypeOptions = [
+  // Meal type options - memoized to prevent recreation on every render
+  const mealTypeOptions = useMemo(() => [
     { value: 'breakfast', label: 'Breakfast', icon: '🍳' },
     { value: 'lunch', label: 'Lunch', icon: '🥗' },
     { value: 'dinner', label: 'Dinner', icon: '🍽️' },
     { value: 'snacks', label: 'Snacks', icon: '🍿' }
-  ];
+  ], []);
+
+  // ESC key handler for modal dismissal
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
+  // Memoize meal state and modal mode for performance
+  const mealState = useMemo(() => getMealState(meal), [meal]);
+  const currentModalMode = useMemo(() => getModalMode(mealState), [mealState]);
 
   // Initialize modal based on meal data
   useEffect(() => {
     if (isOpen) {
-      const mealState = getMealState(meal);
-      const mode = getModalMode(mealState);
-      setModalMode(mode);
+      setModalMode(currentModalMode);
 
       // Always reset completion workflow state to prevent contamination
       setCompletionStage('intent');
@@ -74,7 +93,7 @@ export default function UnifiedMealModal({
       setCustomMealNotes('');
 
       // Set completion mode if needed
-      if (mode === 'complete') {
+      if (currentModalMode === 'complete') {
         setCompletionStage('intent'); // Ensure clean start for completion flow
       }
 
@@ -98,12 +117,19 @@ export default function UnifiedMealModal({
       setError('');
       setShowRecipeSelector(false);
     }
-  }, [isOpen, meal, selectedDate, selectedMealType]);
+  }, [isOpen, meal, selectedDate, selectedMealType, currentModalMode]);
 
-  // Get modal title based on mode
-  const getModalTitle = () => {
-    // Use timezone-neutral date parsing by adding noon time
-    const dayName = new Date(date + 'T12:00:00').toLocaleDateString([], { weekday: 'long' });
+  // Memoize modal title computation for performance
+  const modalTitle = useMemo(() => {
+    // Safe timezone-neutral date parsing
+    let dayName = 'Unknown Day';
+    try {
+      if (date) {
+        dayName = new Date(date + 'T12:00:00').toLocaleDateString([], { weekday: 'long' });
+      }
+    } catch (error) {
+      console.warn('Invalid date for modal title:', date, error);
+    }
     const mealLabel = mealTypeOptions.find(opt => opt.value === mealType)?.label || mealType;
 
     switch (modalMode) {
@@ -116,7 +142,7 @@ export default function UnifiedMealModal({
       default:
         return `${dayName} ${mealLabel}`;
     }
-  };
+  }, [date, mealType, modalMode, mealTypeOptions, meal]);
 
   // Quick complete function
   const handleQuickComplete = async () => {
@@ -406,27 +432,38 @@ export default function UnifiedMealModal({
   const isManualMeal = !isFromRecipe && (meal?.planned?.source === 'manual' || meal?.actual?.description);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      aria-describedby="modal-description"
+    >
       <div
         className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: 'var(--bg-card)' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {getModalTitle()}
+          <h2
+            id="modal-title"
+            className="text-lg font-semibold"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {modalTitle}
           </h2>
           <button
             onClick={onClose}
             className="p-1 rounded-full hover:bg-opacity-10 transition-colors"
             style={{ color: 'var(--text-secondary)', ':hover': { backgroundColor: 'var(--text-secondary)' } }}
+            aria-label="Close modal"
           >
-            <X className="w-5 h-5" />
+            <X className="icon-medium" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-4 space-y-4">
+        <div id="modal-description" className="p-4 space-y-4">
           {error && (
             <div
               className="p-3 rounded-lg text-sm"
@@ -456,7 +493,7 @@ export default function UnifiedMealModal({
                             color: 'white'
                           }}
                         >
-                          <BookOpen className="w-3 h-3" />
+                          <BookOpen className="icon-small" />
                           Recipe
                         </div>
                       )}
@@ -474,6 +511,7 @@ export default function UnifiedMealModal({
                         disabled={isLoading}
                         className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                        aria-label="Mark meal as completed - ate as planned"
                       >
                         ✓ Yes, I ate this
                       </button>
@@ -482,6 +520,7 @@ export default function UnifiedMealModal({
                         disabled={isLoading}
                         className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         style={{ backgroundColor: 'var(--color-warning, #f59e0b)', color: 'white' }}
+                        aria-label="Complete with different meal - ate something else"
                       >
                         ✗ No, I ate something else
                       </button>
@@ -490,6 +529,7 @@ export default function UnifiedMealModal({
                         disabled={isLoading}
                         className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-light)' }}
+                        aria-label="Edit planned meal instead"
                       >
                         📝 Edit plan instead
                       </button>
@@ -523,6 +563,7 @@ export default function UnifiedMealModal({
                         backgroundColor: 'var(--bg-primary)',
                         color: 'var(--text-primary)'
                       }}
+                      aria-label="Description of what you actually ate"
                     />
 
                     {/* Recipe selector button */}
@@ -534,8 +575,9 @@ export default function UnifiedMealModal({
                         color: 'var(--color-primary)',
                         backgroundColor: 'transparent'
                       }}
+                      aria-label="Choose from recipe library"
                     >
-                      <BookOpen className="w-4 h-4" />
+                      <BookOpen className="icon-small" />
                       Choose from Recipe
                     </button>
                   </div>
@@ -556,6 +598,7 @@ export default function UnifiedMealModal({
                         backgroundColor: 'var(--bg-primary)',
                         color: 'var(--text-primary)'
                       }}
+                      aria-label="Optional notes about your meal"
                     />
                   </div>
 
@@ -565,6 +608,7 @@ export default function UnifiedMealModal({
                       onClick={() => setCompletionStage('intent')}
                       className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors"
                       style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                      aria-label="Go back to completion options"
                     >
                       Back
                     </button>
@@ -573,6 +617,7 @@ export default function UnifiedMealModal({
                       disabled={isLoading || !customMealDescription.trim()}
                       className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
                       style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                      aria-label="Save custom meal completion"
                     >
                       {isLoading ? 'Saving...' : 'Complete with Changes'}
                     </button>
@@ -627,6 +672,7 @@ export default function UnifiedMealModal({
                   backgroundColor: 'var(--bg-primary)',
                   color: 'var(--text-primary)'
                 }}
+                aria-label="Meal description"
               />
 
               {modalMode === 'add' && (
@@ -638,6 +684,7 @@ export default function UnifiedMealModal({
                     color: 'var(--color-primary)',
                     backgroundColor: 'transparent'
                   }}
+                  aria-label="Choose recipe from library"
                 >
                   <BookOpen className="w-4 h-4" />
                   Choose from Recipe
@@ -664,6 +711,7 @@ export default function UnifiedMealModal({
                   backgroundColor: 'var(--bg-primary)',
                   color: 'var(--text-primary)'
                 }}
+                aria-label="Select date for meal"
               />
             </div>
             <div>
@@ -679,6 +727,7 @@ export default function UnifiedMealModal({
                   backgroundColor: 'var(--bg-primary)',
                   color: 'var(--text-primary)'
                 }}
+                aria-label="Select meal type"
               >
                 {mealTypeOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -702,8 +751,9 @@ export default function UnifiedMealModal({
                   className="p-2 rounded-lg transition-colors"
                   style={{ color: 'var(--color-error)' }}
                   title="Delete meal"
+                  aria-label="Delete this meal"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="icon-small" />
                 </button>
               )}
               {modalMode === 'view-completed' && (
@@ -717,6 +767,7 @@ export default function UnifiedMealModal({
                     backgroundColor: 'transparent'
                   }}
                   title="Revert to planned state"
+                  aria-label="Revert meal to planned state"
                 >
                   ↶ Mark as Planned
                 </button>
@@ -728,6 +779,7 @@ export default function UnifiedMealModal({
                 onClick={onClose}
                 className="px-4 py-2 rounded-lg font-medium transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
+                aria-label="Cancel and close modal"
               >
                 Cancel
               </button>
@@ -737,6 +789,7 @@ export default function UnifiedMealModal({
                   disabled={isLoading}
                   className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                   style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                  aria-label="Complete meal as planned"
                 >
                   ✓ Complete
                 </button>
@@ -746,8 +799,9 @@ export default function UnifiedMealModal({
                 disabled={isLoading}
                 className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                 style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                aria-label="Save meal changes"
               >
-                <Save className="w-4 h-4" />
+                <Save className="icon-small" />
                 {isLoading ? 'Saving...' : 'Save'}
               </button>
             </div>
@@ -761,6 +815,7 @@ export default function UnifiedMealModal({
               onClick={onClose}
               className="px-4 py-2 rounded-lg font-medium transition-colors"
               style={{ color: 'var(--text-secondary)' }}
+              aria-label="Cancel and close modal"
             >
               Cancel
             </button>
@@ -785,3 +840,16 @@ export default function UnifiedMealModal({
     </div>
   );
 }
+
+// Memoize the component for performance optimization
+export default React.memo(UnifiedMealModal, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.isOpen === nextProps.isOpen &&
+    prevProps.meal?.id === nextProps.meal?.id &&
+    prevProps.selectedDate === nextProps.selectedDate &&
+    prevProps.selectedMealType === nextProps.selectedMealType &&
+    prevProps.activeHomeId === nextProps.activeHomeId &&
+    prevProps.pantryItems?.length === nextProps.pantryItems?.length
+  );
+});

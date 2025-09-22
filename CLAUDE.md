@@ -44,6 +44,10 @@ npm run build              # Build frontend only
 npm run install-all        # Install all dependencies
 ```
 
+## Logging Access
+- **Development**: View logs in terminal where `npm run dev:local` runs
+- **Production**: Access via Railway dashboard → Services → ai-home-helper → Logs tab
+
 ## Database Schema
 ```javascript
 // User: { name, email, primaryHomeId, homes: {"homeId": "role"} }
@@ -54,7 +58,7 @@ npm run install-all        # Install all dependencies
 ```
 
 ## Claude Code Version Management Protocol
-Version is managed via version.json and mirrored in the front and backend package.json files.
+Version is managed via version.json and mirrored in the root, frontend and backend package.json files. After each set of code changes Claude should evaluate if we need to do a version bump and if it does propose the update to the user. Only apply the version bump if the user agrees.
 
 **When to Update Version**: Automatically propose version updates after completing coding tasks or when explicitly requested.
 

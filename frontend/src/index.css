@@ -88,6 +88,14 @@
   --transition-slow: 300ms ease;
   --transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   
+  /* ===== COMPONENT DIMENSIONS ===== */
+  --button-size-small: 2rem;        /* w-8 h-8 = 32px */
+  --button-size-medium: 2.25rem;    /* w-9 h-9 = 36px */
+  --button-size-large: 3.5rem;      /* w-14 h-14 = 56px (FAB) */
+  --icon-size-small: 1rem;          /* w-4 h-4 = 16px */
+  --icon-size-medium: 1.25rem;      /* w-5 h-5 = 20px */
+  --icon-size-large: 1.5rem;        /* w-6 h-6 = 24px */
+
   /* ===== LAYOUT DIMENSIONS ===== */
   --container-mobile: 100%;
   --sidebar-width: 280px;
@@ -581,4 +589,40 @@ input, textarea, select {
 ::selection {
   background-color: var(--color-primary-light);
   color: var(--color-gray-900);
+}
+
+/* ========================================
+   BUTTON UTILITIES
+   ======================================== */
+
+/* ===== ICON BUTTON UTILITIES ===== */
+.btn-icon-desktop {
+  width: var(--button-size-small);
+  height: var(--button-size-small);
+}
+
+.btn-icon-mobile {
+  width: var(--button-size-medium);
+  height: var(--button-size-medium);
+}
+
+.btn-icon-fab {
+  width: var(--button-size-large);
+  height: var(--button-size-large);
+}
+
+/* ===== ICON SIZE UTILITIES ===== */
+.icon-small {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+}
+
+.icon-medium {
+  width: var(--icon-size-medium);
+  height: var(--icon-size-medium);
+}
+
+.icon-large {
+  width: var(--icon-size-large);
+  height: var(--icon-size-large);
 }

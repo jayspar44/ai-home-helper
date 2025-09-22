@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, Check, HelpCircle, MoreVertical } from 'lucide-react';
 import UnifiedMealModal from '../components/UnifiedMealModal';
@@ -131,7 +131,18 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
       onClick={handleMealClick}
+      tabIndex={0}
+      role="button"
+      aria-label={`${mealLabels[mealType]}${mealText ? `: ${mealText}` : ''} - Click to ${mealText ? 'edit' : 'add'} meal`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleMealClick();
+        }
+      }}
     >
       {/* Main content row */}
       <div className="flex items-center justify-between min-h-[24px]">
@@ -162,7 +173,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
                 e.stopPropagation();
                 onAdd(day, mealType);
               }}
-              className={`hidden lg:flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+              className={`hidden lg:flex items-center justify-center btn-icon-desktop rounded-full transition-all ${
                 isHovered ? 'opacity-100' : 'opacity-0'
               }`}
               style={{
@@ -170,8 +181,9 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
                 color: 'white',
                 transform: isHovered ? 'scale(1)' : 'scale(0.8)'
               }}
+              aria-label={`Add ${mealLabels[mealType]}`}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="icon-small" />
             </button>
           )}
 
@@ -182,13 +194,14 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
                 e.stopPropagation();
                 onAdd(day, mealType);
               }}
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full"
+              className="lg:hidden flex items-center justify-center btn-icon-mobile rounded-full"
               style={{
                 backgroundColor: 'var(--text-muted)',
                 color: 'white'
               }}
+              aria-label={`Add ${mealLabels[mealType]}`}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="icon-small" />
             </button>
           )}
 
@@ -202,29 +215,31 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
                 {/* Primary: Quick complete */}
                 <button
                   onClick={handleCompleteClick}
-                  className="flex items-center justify-center w-8 h-8 rounded-full transition-all"
+                  className="flex items-center justify-center btn-icon-desktop rounded-full transition-all"
                   style={{
                     backgroundColor: 'var(--color-success)',
                     color: 'white',
                     transform: isHovered ? 'scale(1)' : 'scale(0.8)'
                   }}
                   title="Mark as completed (ate as planned)"
+                  aria-label="Mark as completed - ate as planned"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="icon-small" />
                 </button>
 
                 {/* Secondary: Open completion modal */}
                 <button
                   onClick={handleThreeDotClick}
-                  className="flex items-center justify-center w-8 h-8 rounded-full transition-all"
+                  className="flex items-center justify-center btn-icon-desktop rounded-full transition-all"
                   style={{
                     backgroundColor: 'var(--text-muted)',
                     color: 'white',
                     transform: isHovered ? 'scale(1)' : 'scale(0.8)'
                   }}
                   title="More completion options"
+                  aria-label="More completion options"
                 >
-                  <MoreVertical className="w-4 h-4" />
+                  <MoreVertical className="icon-small" />
                 </button>
               </div>
 
@@ -233,27 +248,29 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
                 {/* Primary: Quick complete */}
                 <button
                   onClick={handleCompleteClick}
-                  className="flex items-center justify-center w-9 h-9 rounded-full"
+                  className="flex items-center justify-center btn-icon-mobile rounded-full"
                   style={{
                     backgroundColor: 'var(--color-success)',
                     color: 'white'
                   }}
                   title="Mark as completed"
+                  aria-label="Mark as completed - ate as planned"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="icon-small" />
                 </button>
 
                 {/* Secondary: Open completion modal */}
                 <button
                   onClick={handleThreeDotClick}
-                  className="flex items-center justify-center w-9 h-9 rounded-full"
+                  className="flex items-center justify-center btn-icon-mobile rounded-full"
                   style={{
                     backgroundColor: 'var(--text-muted)',
                     color: 'white'
                   }}
                   title="More completion options"
+                  aria-label="More completion options"
                 >
-                  <MoreVertical className="w-4 h-4" />
+                  <MoreVertical className="icon-small" />
                 </button>
               </div>
             </>
@@ -266,7 +283,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustom
 
 // Day card component
 const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal, onCompleteMeal, onCustomCompleteMeal, onQuickEditMeal }) => {
-  const isToday = new Date().toDateString() === day.toDateString();
+  const isToday = useMemo(() => new Date().toDateString() === day.toDateString(), [day]);
   const dayName = day.toLocaleDateString([], { weekday: 'short' });
   const dayNumber = day.getDate();
   const monthName = day.toLocaleDateString([], { month: 'short' });
@@ -629,7 +646,7 @@ export default function PlannerPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <div className="text-center">
           <div className="mb-4">
-            <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: 'var(--color-primary)' }}></div>
+            <div className="btn-icon-desktop border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: 'var(--color-primary)' }}></div>
           </div>
           <p style={{ color: 'var(--text-secondary)' }}>Loading meal plans...</p>
         </div>
@@ -658,8 +675,9 @@ export default function PlannerPage() {
                 onClick={goToPreviousWeek}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors card-interactive"
                 style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                aria-label="Go to previous week"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="icon-medium" />
                 <span className="font-medium">Previous</span>
               </button>
 
@@ -676,9 +694,10 @@ export default function PlannerPage() {
                 onClick={goToNextWeek}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors card-interactive"
                 style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                aria-label="Go to next week"
               >
                 <span className="font-medium">Next</span>
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="icon-medium" />
               </button>
             </div>
           )}
@@ -746,11 +765,12 @@ export default function PlannerPage() {
 
         {/* Floating Action Button (Mobile) */}
         <button
-          className="lg:hidden fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95"
+          className="lg:hidden fixed bottom-20 right-4 btn-icon-fab rounded-full shadow-lg flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95"
           style={{ backgroundColor: 'var(--color-primary)' }}
           onClick={handleQuickAddFAB}
+          aria-label="Add new meal"
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="icon-large" />
         </button>
       </div>
 
