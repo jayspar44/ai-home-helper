@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Check, HelpCircle, MoreVertical } from 'lucide-react';
 import UnifiedMealModal from '../components/UnifiedMealModal';
 import PlannerRecipeCard from '../components/PlannerRecipeCard';
 
@@ -14,7 +14,7 @@ const formatDateForAPI = (date) => {
 
 
 // Meal slot component
-const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
+const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete, onCustomComplete, onQuickEdit }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const mealIcons = {
@@ -100,6 +100,27 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
     }
   };
 
+  const handleCustomCompleteClick = (e) => {
+    e.stopPropagation();
+    if (mealData && onCustomComplete) {
+      onCustomComplete(mealData);
+    }
+  };
+
+  const handleQuickEditClick = (e) => {
+    e.stopPropagation();
+    if (mealData && onQuickEdit) {
+      onQuickEdit(mealData);
+    }
+  };
+
+  const handleThreeDotClick = (e) => {
+    e.stopPropagation();
+    if (mealData && onCustomComplete) {
+      onCustomComplete(mealData); // Opens modal in completion mode
+    }
+  };
+
   return (
     <div
       className="meal-slot group relative py-3 px-4 transition-all duration-200 cursor-pointer border-b last:border-b-0 hover:bg-opacity-50"
@@ -141,7 +162,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
                 e.stopPropagation();
                 onAdd(day, mealType);
               }}
-              className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-full transition-all ${
+              className={`hidden lg:flex items-center justify-center w-8 h-8 rounded-full transition-all ${
                 isHovered ? 'opacity-100' : 'opacity-0'
               }`}
               style={{
@@ -150,7 +171,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
                 transform: isHovered ? 'scale(1)' : 'scale(0.8)'
               }}
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
             </button>
           )}
 
@@ -171,37 +192,71 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
             </button>
           )}
 
-          {/* Complete button for planned meals - desktop hover only */}
+          {/* Action buttons for planned meals */}
           {mealState === 'planned' && (
-            <button
-              onClick={handleCompleteClick}
-              className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-full transition-all ${
+            <>
+              {/* Desktop actions - hover to show */}
+              <div className={`hidden lg:flex items-center gap-2 transition-all ${
                 isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                backgroundColor: 'var(--color-success)',
-                color: 'white',
-                transform: isHovered ? 'scale(1)' : 'scale(0.8)'
-              }}
-              title="Mark as completed"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-          )}
+              }`}>
+                {/* Primary: Quick complete */}
+                <button
+                  onClick={handleCompleteClick}
+                  className="flex items-center justify-center w-8 h-8 rounded-full transition-all"
+                  style={{
+                    backgroundColor: 'var(--color-success)',
+                    color: 'white',
+                    transform: isHovered ? 'scale(1)' : 'scale(0.8)'
+                  }}
+                  title="Mark as completed (ate as planned)"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
 
-          {/* Complete button for mobile - always visible for planned meals */}
-          {mealState === 'planned' && (
-            <button
-              onClick={handleCompleteClick}
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full"
-              style={{
-                backgroundColor: 'var(--color-success)',
-                color: 'white'
-              }}
-              title="Mark as completed"
-            >
-              <Check className="w-4 h-4" />
-            </button>
+                {/* Secondary: Open completion modal */}
+                <button
+                  onClick={handleThreeDotClick}
+                  className="flex items-center justify-center w-8 h-8 rounded-full transition-all"
+                  style={{
+                    backgroundColor: 'var(--text-muted)',
+                    color: 'white',
+                    transform: isHovered ? 'scale(1)' : 'scale(0.8)'
+                  }}
+                  title="More completion options"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Mobile actions - always visible */}
+              <div className="lg:hidden flex items-center gap-2">
+                {/* Primary: Quick complete */}
+                <button
+                  onClick={handleCompleteClick}
+                  className="flex items-center justify-center w-9 h-9 rounded-full"
+                  style={{
+                    backgroundColor: 'var(--color-success)',
+                    color: 'white'
+                  }}
+                  title="Mark as completed"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+
+                {/* Secondary: Open completion modal */}
+                <button
+                  onClick={handleThreeDotClick}
+                  className="flex items-center justify-center w-9 h-9 rounded-full"
+                  style={{
+                    backgroundColor: 'var(--text-muted)',
+                    color: 'white'
+                  }}
+                  title="More completion options"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -210,7 +265,7 @@ const MealSlot = ({ day, mealType, mealData, onAdd, onEdit, onComplete }) => {
 };
 
 // Day card component
-const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal, onCompleteMeal }) => {
+const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal, onCompleteMeal, onCustomCompleteMeal, onQuickEditMeal }) => {
   const isToday = new Date().toDateString() === day.toDateString();
   const dayName = day.toLocaleDateString([], { weekday: 'short' });
   const dayNumber = day.getDate();
@@ -283,6 +338,8 @@ const DayCard = ({ day, mealPlans, onAddMeal, onEditMeal, onCompleteMeal }) => {
             onAdd={onAddMeal}
             onEdit={onEditMeal}
             onComplete={onCompleteMeal}
+            onCustomComplete={onCustomCompleteMeal}
+            onQuickEdit={onQuickEditMeal}
           />
         ))}
       </div>
@@ -480,6 +537,22 @@ export default function PlannerPage() {
     }
   };
 
+  const handleCustomCompleteMeal = (mealData) => {
+    setEditingMeal(mealData);
+    setSelectedDate(mealData.date);
+    setSelectedMealType(mealData.mealType);
+    setShowUnifiedMealModal(true);
+    // The modal will open in complete mode and the user can choose "ate something else"
+  };
+
+  const handleQuickEditMeal = (mealData) => {
+    setEditingMeal(mealData);
+    setSelectedDate(mealData.date);
+    setSelectedMealType(mealData.mealType);
+    setShowUnifiedMealModal(true);
+    // The modal will open in complete mode, but user can choose "edit plan instead"
+  };
+
   const handleMealSaved = (savedMeal) => {
     if (!savedMeal) {
       // Handle deletion case (savedMeal is null) - remove meal from state immediately
@@ -629,6 +702,8 @@ export default function PlannerPage() {
               onAddMeal={handleAddMeal}
               onEditMeal={handleEditMeal}
               onCompleteMeal={handleCompleteMeal}
+              onCustomCompleteMeal={handleCustomCompleteMeal}
+              onQuickEditMeal={handleQuickEditMeal}
             />
           ))}
         </div>
@@ -645,6 +720,8 @@ export default function PlannerPage() {
                   onAddMeal={handleAddMeal}
                   onEditMeal={handleEditMeal}
                   onCompleteMeal={handleCompleteMeal}
+                  onCustomCompleteMeal={handleCustomCompleteMeal}
+                  onQuickEditMeal={handleQuickEditMeal}
                 />
               ))}
             </div>
@@ -657,6 +734,8 @@ export default function PlannerPage() {
                   onAddMeal={handleAddMeal}
                   onEditMeal={handleEditMeal}
                   onCompleteMeal={handleCompleteMeal}
+                  onCustomCompleteMeal={handleCustomCompleteMeal}
+                  onQuickEditMeal={handleQuickEditMeal}
                 />
               ))}
             </div>

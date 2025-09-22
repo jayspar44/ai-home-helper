@@ -1,6 +1,6 @@
 {
-  "version": "2.9.0",
-  "lastUpdated": "2025-09-21T20:30:00.000Z",
+  "version": "2.9.1",
+  "lastUpdated": "2025-09-21T21:00:00.000Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -105,6 +105,11 @@
     "2.9.0": {
       "description": "Complete-First Modal System: Revolutionary UX transformation from edit-first to completion-first interaction pattern for planned meals, multi-stage completion workflow (completion intent → custom meal entry), integrated recipe selector in completion flow, enhanced quick complete functionality with proper completion data structure, comprehensive Phase 1 implementation of three-state meal planner target system, and full end-to-end testing verification.",
       "timestamp": "2025-09-21T20:30:00.000Z",
+      "date": "September 21, 2025"
+    },
+    "2.9.1": {
+      "description": "Fix button consistency: Standardize all action button sizes to w-8 h-8 (desktop) and w-9 h-9 (mobile) with w-4 h-4 icons. Updated + button from w-7 h-7 to match checkmark and three-dot button dimensions for perfect visual alignment.",
+      "timestamp": "2025-09-21T21:00:00.000Z",
       "date": "September 21, 2025"
     }
   }
