@@ -4,13 +4,10 @@ import { X, Copy, Download, Check } from 'lucide-react';
 const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
   const [jsonData, setJsonData] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Generate JSON data when modal opens or items change
   useEffect(() => {
     if (isOpen && items.length > 0) {
-      setIsLoading(true);
-
       // Process items for export
       const exportData = {
         exportedAt: new Date().toISOString(),
@@ -32,7 +29,6 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
       // Pretty print JSON with 2-space indentation
       const formattedJson = JSON.stringify(exportData, null, 2);
       setJsonData(formattedJson);
-      setIsLoading(false);
     }
   }, [isOpen, items]);
 
@@ -91,7 +87,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
@@ -136,7 +132,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
             {/* Copy Button */}
             <button
               onClick={handleCopyToClipboard}
-              disabled={isLoading || !jsonData}
+              disabled={!jsonData}
               className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               style={{
                 backgroundColor: copySuccess ? 'var(--color-success)' : 'var(--color-primary)',
@@ -160,29 +156,19 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
 
           {/* JSON Display */}
           <div className="flex-1 border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-light)' }}>
-            {isLoading ? (
-              <div className="h-full flex items-center justify-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                <div className="text-center">
-                  <div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full mx-auto mb-2"
-                       style={{ borderColor: 'var(--color-primary)' }}></div>
-                  <p style={{ color: 'var(--text-secondary)' }}>Generating JSON...</p>
-                </div>
-              </div>
-            ) : (
-              <textarea
-                value={jsonData}
-                readOnly
-                className="w-full h-full p-4 font-mono text-sm border-none outline-none resize-none"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-                  lineHeight: '1.5'
-                }}
-                placeholder="JSON will appear here..."
-                aria-label="Exported JSON data"
-              />
-            )}
+            <textarea
+              value={jsonData}
+              readOnly
+              className="w-full h-full p-4 font-mono text-sm border-none outline-none resize-none"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                lineHeight: '1.5'
+              }}
+              placeholder="JSON will appear here..."
+              aria-label="Exported JSON data"
+            />
           </div>
         </div>
 

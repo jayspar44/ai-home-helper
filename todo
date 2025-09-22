@@ -13,6 +13,7 @@
 - refocus the text on the pantry add text box after adding
 - review whether to store addition info about pantry items e.g. protein vs veg, calorie info, etc
 - camera based adding (not just photo based, live camera feed)
+- UI clean up (recipe button text/icon in search bar)
 
 # Recipe Generator
 - fix the recipe prompt to 
@@ -22,6 +23,8 @@ c) deal with low number of items (use more)
 d) do a better job of presenting the info
 e) auto save recent recipes and allow users to retrieve them
 - ensure there's always an expiry date (currently not working reliably with AI suggestions)
+- make the save button more prominent
+- automatically save the last N recipes
 - better recipe page layout
 - integrate with shopping (future feature)
 - schedule recipe needs to be better - can't tell if you're overwriting an existing meal.

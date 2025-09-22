@@ -1,6 +1,6 @@
 {
-  "version": "2.11.0",
-  "lastUpdated": "2025-09-21T22:30:00.000Z",
+  "version": "2.11.1",
+  "lastUpdated": "2025-09-21T22:45:00.000Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -120,6 +120,11 @@
     "2.11.0": {
       "description": "Add JSON Export Feature: New pantry data export functionality with comprehensive JSON structure generation, copy-to-clipboard integration, modal-based user interface, and complete metadata including item details, timestamps, and export source identification.",
       "timestamp": "2025-09-21T22:30:00.000Z",
+      "date": "September 21, 2025"
+    },
+    "2.11.1": {
+      "description": "Code quality improvements from PR#18 review: Remove unnecessary loading state from JSON export modal, fix useEffect dependency issue with handleClose callback, and simplify redundant ternary condition in PantryToolbar styling.",
+      "timestamp": "2025-09-21T22:45:00.000Z",
       "date": "September 21, 2025"
     }
   }

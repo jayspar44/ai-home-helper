@@ -88,7 +88,7 @@ const PantryToolbar = ({
             disabled={totalItems === 0}
             className="p-2 rounded-lg transition-colors disabled:opacity-50"
             style={{
-              backgroundColor: totalItems > 0 ? 'var(--bg-tertiary)' : 'var(--bg-tertiary)',
+              backgroundColor: 'var(--bg-tertiary)',
               color: totalItems > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
               border: '1px solid var(--border-light)'
             }}
