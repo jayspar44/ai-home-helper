@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Copy, Download, Check } from 'lucide-react';
 
 const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
@@ -66,11 +66,11 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
   };
 
   // Reset state when modal closes
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setCopySuccess(false);
     setJsonData('');
     onClose();
-  };
+  }, [onClose]);
 
   // ESC key handler
   useEffect(() => {
