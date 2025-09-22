@@ -8,6 +8,7 @@ const cors = require('cors');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const admin = require('firebase-admin');
+const logger = require('./utils/logger');
 
 // --- Firebase Admin SDK Initialization ---
 try {
@@ -1222,31 +1223,55 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
     const { date, mealType, planned } = req.body;
     const userUid = req.user.uid;
 
+    logger.debug('Planner POST Request', {
+      homeId,
+      date,
+      mealType,
+      planned: planned ? { recipeName: planned.recipeName, recipeId: planned.recipeId } : null,
+      userUid
+    });
+
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
     if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      logger.warn('Authorization failed: User not member of home', { userUid, homeId });
       return res.status(403).json({ error: 'Not authorized' });
     }
 
     // Validate meal type
     if (!['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
+      logger.warn('Invalid meal type provided', { mealType, userUid });
       return res.status(400).json({ error: 'Invalid meal type' });
     }
 
     // Check if meal plan already exists for this date/meal type
+    const queryDate = new Date(date);
+    logger.debug('Checking for existing meal plan', { date, queryDate, mealType });
+
     const existingQuery = await db.collection('homes')
       .doc(homeId)
       .collection('meal_plans')
-      .where('date', '==', new Date(date))
+      .where('date', '==', queryDate)
       .where('mealType', '==', mealType)
       .get();
 
+    logger.debug('Existing query results', {
+      isEmpty: existingQuery.empty,
+      size: existingQuery.size,
+      docs: existingQuery.docs.map(doc => ({
+        id: doc.id,
+        date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
+        mealType: doc.data().mealType
+      }))
+    });
+
     if (!existingQuery.empty) {
+      logger.warn('Conflict: Meal plan already exists', { homeId, date, mealType });
       return res.status(409).json({ error: 'Meal plan already exists for this date and meal type' });
     }
 
     const mealPlan = {
-      date: new Date(date),
+      date: queryDate,
       mealType,
       planned: planned || null,
       actual: null,
@@ -1254,6 +1279,12 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       createdBy: userUid,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
+
+    logger.debug('Creating meal plan', {
+      date: queryDate,
+      mealType,
+      plannedRecipeName: planned?.recipeName
+    });
 
     const docRef = await db.collection('homes')
       .doc(homeId)
@@ -1263,15 +1294,22 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
     const createdDoc = await docRef.get();
     const data = createdDoc.data();
 
-    res.status(201).json({
+    const response = {
       id: docRef.id,
       ...data,
       date: data.date.toDate().toISOString(),
       createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null
+    };
+
+    logger.success('Meal plan created successfully', {
+      id: docRef.id,
+      recipeName: data.planned?.recipeName
     });
+
+    res.status(201).json(response);
   } catch (error) {
-    console.error('Error creating meal plan:', error);
+    logger.error('Error creating meal plan', error);
     res.status(500).json({ error: 'Failed to create meal plan' });
   }
 });
@@ -1280,7 +1318,7 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
 app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
   try {
     const { homeId, planId } = req.params;
-    const { planned, actual } = req.body;
+    const { planned, actual, completed, completedDate, completionType } = req.body;
     const userUid = req.user.uid;
 
     // Verify user belongs to home
@@ -1310,6 +1348,19 @@ app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
         ...actual,
         loggedAt: admin.firestore.FieldValue.serverTimestamp()
       } : null;
+    }
+
+    // Handle completion fields
+    if (completed !== undefined) {
+      updateData.completed = completed;
+    }
+
+    if (completedDate !== undefined) {
+      updateData.completedDate = completedDate;
+    }
+
+    if (completionType !== undefined) {
+      updateData.completionType = completionType;
     }
 
     await mealPlanRef.update(updateData);
