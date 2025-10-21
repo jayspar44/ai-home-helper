@@ -17,7 +17,17 @@
     "version:get": "node scripts/version-manager.js get",
     "version:bump": "node scripts/version-manager.js bump",
     "version:analyze": "node scripts/version-manager.js analyze",
-    "postinstall": "echo 'Setup complete! Run npm run dev:local to start development servers.'"
+    "postinstall": "echo 'Setup complete! Run npm run dev:local to start development servers.'",
+    "gcp:deploy:dev": "node scripts/gcp-deploy.js dev",
+    "gcp:deploy:prod": "node scripts/gcp-deploy.js prod",
+    "gcp:deploy:dev:secrets": "node scripts/gcp-deploy.js dev",
+    "gcp:deploy:prod:secrets": "node scripts/gcp-deploy.js prod",
+    "gcp:logs:dev": "gcloud app logs tail -s dev",
+    "gcp:logs:prod": "gcloud app logs tail -s default",
+    "gcp:instances:list": "gcloud app instances list",
+    "gcp:instances:count": "gcloud app instances list --format='table(service,version,id)' | tail -n +2 | wc -l",
+    "gcp:setup:secrets": "node scripts/gcp-setup-secrets.js",
+    "gcp:check:ready": "node scripts/gcp-check-deployment.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.120",
