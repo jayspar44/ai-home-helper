@@ -4,12 +4,12 @@
  * GCP Deployment Helper Script (Cloud Build Method)
  *
  * This script:
- * 1. Generates app.yaml from template (replacing PROJECT_ID and injecting secrets)
- * 2. Fetches secrets from GCP Secret Manager (for verification)
- * 3. Triggers Cloud Build deployment (cloudbuild.yaml)
+ * 1. Generates app.yaml from template (replacing PROJECT_ID only)
+ * 2. Triggers Cloud Build deployment (cloudbuild.yaml)
  *    - Cloud Build installs dependencies
  *    - Cloud Build builds frontend with REACT_APP_FIREBASE_CONFIG from Secret Manager
  *    - Cloud Build deploys to App Engine
+ * 3. Backend fetches secrets from Secret Manager at runtime (secure!)
  * 4. Handles both dev and prod environments
  *
  * Usage:
@@ -58,13 +58,12 @@ function warning(message) {
 }
 
 /**
- * Generate app.yaml from template by replacing placeholders
+ * Generate app.yaml from template by replacing PROJECT_ID placeholder
  * @param {string} templateFile - Template file path (e.g., 'app.yaml.template')
  * @param {string} outputFile - Output file path (e.g., 'app.yaml')
  * @param {string} projectId - GCP project ID to inject
- * @param {Object} secrets - Secret values to inject {SECRET_NAME: value}
  */
-function generateConfig(templateFile, outputFile, projectId, secrets = {}) {
+function generateConfig(templateFile, outputFile, projectId) {
   const templatePath = path.join(process.cwd(), templateFile);
   const outputPath = path.join(process.cwd(), outputFile);
 
@@ -82,23 +81,9 @@ function generateConfig(templateFile, outputFile, projectId, secrets = {}) {
   }
 
   // Replace PROJECT_ID with actual project ID
-  let generated = content.replace(/PROJECT_ID/g, projectId);
+  const generated = content.replace(/PROJECT_ID/g, projectId);
 
-  // Replace secret placeholders with actual values
-  // Escape special characters for YAML (newlines, quotes, etc.)
-  for (const [secretName, secretValue] of Object.entries(secrets)) {
-    const placeholder = `SECRET_${secretName}`;
-    // Escape newlines and quotes for YAML
-    const escapedValue = secretValue
-      .replace(/\\/g, '\\\\')      // Escape backslashes
-      .replace(/"/g, '\\"')         // Escape quotes
-      .replace(/\n/g, '\\n')        // Escape newlines
-      .replace(/\r/g, '\\r');       // Escape carriage returns
-
-    generated = generated.replace(new RegExp(placeholder, 'g'), escapedValue);
-  }
-
-  // Write generated config
+  // Write generated config (NO SECRETS - backend loads them at runtime!)
   try {
     fs.writeFileSync(outputPath, generated, 'utf-8');
   } catch (err) {
@@ -169,47 +154,16 @@ if (!projectId) {
   }
 }
 
-// Step 2.5: Fetch secrets from Secret Manager
-log(`\n🔐 Fetching secrets from Secret Manager...`, 'bright');
-
-const secrets = [
-  'FIREBASE_SERVICE_ACCOUNT',
-  'GEMINI_API_KEY',
-  'FRONTEND_URL'
-];
-
-const secretValues = {};
-
-for (const secretName of secrets) {
-  try {
-    info(`  Fetching ${secretName}...`);
-    const secretValue = execSync(
-      `gcloud secrets versions access latest --secret="${secretName}" --project="${projectId}"`,
-      { encoding: 'utf-8' }
-    ).trim();
-
-    if (!secretValue) {
-      error(`  ${secretName} is empty or not found`);
-    }
-
-    secretValues[secretName] = secretValue;
-    success(`  ✓ ${secretName} fetched (${secretValue.length} characters)`);
-  } catch (err) {
-    error(`Failed to fetch ${secretName}.\n` +
-          `Make sure the secret exists and you have permission to access it.\n` +
-          `Run: gcloud secrets describe ${secretName} --project=${projectId}`);
-  }
-}
-
-success(`All ${secrets.length} secrets fetched successfully\n`);
-
-// Step 3: Generate app.yaml from template with secrets injected
-log(`📝 Generating configuration from template...`, 'bright');
+// Step 2.5: Generate app.yaml from template (PROJECT_ID only, NO SECRETS!)
+log(`\n📝 Generating configuration from template...`, 'bright');
 const templateFile = isDev ? 'app-dev.yaml.template' : 'app.yaml.template';
 info(`Reading template: ${templateFile}`);
-info(`Injecting project ID and ${Object.keys(secretValues).length} secrets...`);
-generateConfig(templateFile, appYaml, projectId, secretValues);
-success(`Generated ${appYaml} with project ID and secrets injected\n`);
+info(`Injecting project ID: ${projectId}`);
+generateConfig(templateFile, appYaml, projectId);
+success(`Generated ${appYaml} with project ID\n`);
+
+info('🔐 NOTE: Secrets are NOT in app.yaml (secure!)');
+info('   Backend fetches them from Secret Manager at runtime\n');
 
 
 
@@ -235,7 +189,11 @@ info('Cloud Build will:');
 info('  1. Install all dependencies (root, frontend, backend)');
 info('  2. Build frontend with REACT_APP_FIREBASE_CONFIG from Secret Manager');
 info('  3. Deploy to App Engine');
-info('Secrets are injected from Secret Manager during build and runtime');
+info('');
+info('Secret handling:');
+info('  • Frontend: REACT_APP_FIREBASE_CONFIG injected at build time');
+info('  • Backend: Fetches secrets from Secret Manager at runtime (secure!)');
+info('');
 info('This may take 5-15 minutes...\n');
 
 const buildCommand = `gcloud builds submit ` +

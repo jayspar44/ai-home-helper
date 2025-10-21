@@ -31,30 +31,29 @@ resources:
 entrypoint: node backend/server.js
 
 # ============================================================
-# Environment Variables & Secret Manager Integration
+# Environment Variables
 # ============================================================
 # TEMPLATE FILE: This file contains PROJECT_ID placeholder
 # Deployment scripts auto-generate app-dev.yaml by replacing PROJECT_ID
 #
+# SECURITY: NO secrets in this file!
+# Backend fetches secrets directly from Secret Manager at runtime
 # Development uses the SAME secrets as production (from Secret Manager)
-# Secrets are injected at runtime from GCP Secret Manager
 # Prerequisites:
 # - All secrets exist in Secret Manager
-# - App Engine service account has secretAccessor role (already granted)
+# - App Engine service account has secretAccessor role
 # ============================================================
 
 env_variables:
   NODE_ENV: development  # Development mode (more verbose logging)
   PORT: 8080
-  # Backend secrets - VALUES will be injected by deployment script from Secret Manager
-  # Placeholders below are replaced during deployment
-  FIREBASE_SERVICE_ACCOUNT: "SECRET_FIREBASE_SERVICE_ACCOUNT"
-  GEMINI_API_KEY: "SECRET_GEMINI_API_KEY"
-  FRONTEND_URL: "SECRET_FRONTEND_URL"
 
-# Note: REACT_APP_FIREBASE_CONFIG is a BUILD-TIME secret
-# It's injected during `npm run build` via cloudbuild.yaml
-# It does NOT need to be set here (already compiled into frontend bundle)
+# Backend secrets (FIREBASE_SERVICE_ACCOUNT, GEMINI_API_KEY, FRONTEND_URL)
+# are loaded at runtime from Secret Manager by backend/utils/secrets.js
+#
+# Frontend secret (REACT_APP_FIREBASE_CONFIG) is a BUILD-TIME secret
+# injected during `npm run build` via cloudbuild.yaml
+# (already compiled into frontend bundle)
 
 # ============================================================
 # Static File Handlers (Frontend)

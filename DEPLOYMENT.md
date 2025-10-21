@@ -34,10 +34,17 @@ This guide covers deploying Roscoe AI Home Helper to Google Cloud Platform (GCP)
 
 **CRITICAL:** Secrets are stored in ONE place only - GCP Secret Manager
 
-1. **Templates** (`app.yaml.template`, `app-dev.yaml.template`) - Committed to git with `PROJECT_ID` placeholder
-2. **Generated configs** (`app.yaml`, `app-dev.yaml`) - Auto-generated during deployment, git-ignored
-3. **Secrets** - Injected from Secret Manager at runtime by App Engine
+**NEW SECURE APPROACH:**
+1. **Templates** (`app.yaml.template`, `app-dev.yaml.template`) - Committed to git with only `PROJECT_ID` placeholder (NO secrets!)
+2. **Generated configs** (`app.yaml`, `app-dev.yaml`) - Auto-generated during deployment with project ID only (NO secrets!)
+3. **Runtime Secret Loading** - Backend fetches secrets directly from Secret Manager at startup
 4. **Project ID** - Stored locally in `.env.gcp` (git-ignored)
+
+**Security Benefits:**
+- ✅ Zero secrets in configuration files
+- ✅ Zero secrets in Cloud Build workspace
+- ✅ Secrets only accessed at runtime by authorized service account
+- ✅ No risk of accidental secret exposure in logs or git
 
 **You never need to edit `app.yaml` or `app-dev.yaml` manually!** They're auto-generated from templates.
 
@@ -283,11 +290,13 @@ npm run gcp:deploy:dev
 
 **What happens automatically:**
 1. 📝 Reads project ID from `.env.gcp` (or gcloud config)
-2. 🔨 Generates `app-dev.yaml` from `app-dev.yaml.template`
-3. ✅ Verifies all 3 backend secrets exist in Secret Manager
-4. 🏗️ Builds frontend (if needed)
-5. 🚀 Deploys to App Engine dev service (secrets injected from Secret Manager at runtime)
-6. 🔒 **NOT promoted** to default (safe testing)
+2. 🔨 Generates `app-dev.yaml` from `app-dev.yaml.template` (project ID only, NO secrets!)
+3. ☁️ Triggers Cloud Build deployment
+4. 🏗️ Cloud Build installs dependencies and builds frontend
+5. 🔐 Cloud Build injects REACT_APP_FIREBASE_CONFIG at build time
+6. 🚀 Deploys to App Engine dev service
+7. 🔐 Backend fetches runtime secrets from Secret Manager at startup
+8. 🔒 **NOT promoted** to default (safe testing)
 
 **Alternative (same behavior, different name):**
 
@@ -309,11 +318,13 @@ npm run gcp:deploy:prod
 
 **What happens automatically:**
 1. 📝 Reads project ID from `.env.gcp` (or gcloud config)
-2. 🔨 Generates `app.yaml` from `app.yaml.template`
-3. ✅ Verifies all 3 backend secrets exist in Secret Manager
-4. 🏗️ Builds frontend (if needed)
-5. 🚀 Deploys to App Engine default service (secrets injected from Secret Manager at runtime)
-6. ⭐ **Promoted** to default (becomes primary URL)
+2. 🔨 Generates `app.yaml` from `app.yaml.template` (project ID only, NO secrets!)
+3. ☁️ Triggers Cloud Build deployment
+4. 🏗️ Cloud Build installs dependencies and builds frontend
+5. 🔐 Cloud Build injects REACT_APP_FIREBASE_CONFIG at build time
+6. 🚀 Deploys to App Engine default service
+7. 🔐 Backend fetches runtime secrets from Secret Manager at startup
+8. ⭐ **Promoted** to default (becomes primary URL)
 
 **Alternative (same behavior, different name):**
 
@@ -669,13 +680,16 @@ Node.js Backend (Express)
 ### Secret Injection Points
 
 1. **Build Time (Frontend):**
-   - `REACT_APP_FIREBASE_CONFIG` → Injected during `npm run build`
-   - Baked into React bundle
+   - `REACT_APP_FIREBASE_CONFIG` → Injected during `npm run build` via Cloud Build
+   - Baked into React bundle at build time
+   - Fetched from Secret Manager by Cloud Build
 
 2. **Runtime (Backend):**
-   - `FIREBASE_SERVICE_ACCOUNT` → Available as `process.env.FIREBASE_SERVICE_ACCOUNT`
-   - `GEMINI_API_KEY` → Available as `process.env.GEMINI_API_KEY`
-   - `FRONTEND_URL` → Available as `process.env.FRONTEND_URL`
+   - `FIREBASE_SERVICE_ACCOUNT` → Fetched from Secret Manager at server startup
+   - `GEMINI_API_KEY` → Fetched from Secret Manager at server startup
+   - `FRONTEND_URL` → Fetched from Secret Manager at server startup
+   - Loaded by `backend/utils/secrets.js` using Secret Manager API
+   - **NOT stored in app.yaml or environment variables!**
 
 ---
 

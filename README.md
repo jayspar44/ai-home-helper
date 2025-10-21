@@ -52,9 +52,17 @@ Roscoe is a modern web application designed to streamline household management b
 ### **Backend** (`/backend`)
 - **Runtime**: Node.js with Express.js framework
 - **Authentication**: Firebase Admin SDK for secure user verification
-- **Database**: Integration with external APIs for user and home management
-- **AI Services**: OpenAI integration for recipe generation and item recognition
+- **Database**: Firebase Firestore for multi-tenant data storage
+- **AI Services**: Google Gemini 2.5 Flash for recipe generation and item recognition
 - **API Design**: RESTful endpoints with proper error handling
+- **Secret Management**: Runtime secret loading from GCP Secret Manager
+
+### **Infrastructure & Deployment**
+- **Production**: Google Cloud Platform App Engine (auto-scaling, free tier optimized)
+- **CI/CD**: Cloud Build with automated deployments
+- **Secrets**: GCP Secret Manager for secure credential storage
+- **Local Development**: Full-stack development on localhost
+- **Monitoring**: GCP Cloud Logging with structured logs
 
 ### **Key Components**
 
@@ -96,8 +104,9 @@ Roscoe is a modern web application designed to streamline household management b
 ### **Backend Technologies**
 - **Node.js**: JavaScript runtime for server-side logic
 - **Express.js**: Minimal web framework for API endpoints
-- **Firebase Admin**: Server-side Firebase integration
-- **OpenAI API**: AI-powered recipe and item recognition
+- **Firebase Admin**: Server-side Firebase integration and Firestore database
+- **Google Gemini 2.5 Flash**: AI-powered recipe generation and item recognition
+- **GCP Secret Manager**: Secure runtime secret loading
 - **CORS**: Cross-origin resource sharing configuration
 
 ### **Development Tools**
@@ -131,8 +140,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Gemini**: For powering our AI recipe generation and item recognition
-- **Firebase**: For authentication and backend services
+- **Google Gemini**: For powering our AI recipe generation and item recognition
+- **Google Cloud Platform**: For scalable, secure infrastructure and Secret Manager
+- **Firebase**: For authentication and Firestore database services
 - **Lucide**: For beautiful, consistent icons
 - **React Community**: For the amazing ecosystem and tools
 
