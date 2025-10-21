@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(npm audit:*)",
+      "Bash(npm run build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
