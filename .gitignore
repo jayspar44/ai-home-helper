@@ -10,6 +10,12 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.gcp
+
+# Generated App Engine configs (auto-generated from templates)
+# Templates (*.template files) are committed, generated files are not
+app.yaml
+app-dev.yaml
 
 # Production builds
 /build
@@ -33,6 +39,9 @@ coverage/
 *.swp
 *.swo
 *~
+
+# Claude Code settings (user-specific)
+.claude/settings.local.json
 
 # OS generated files
 .DS_Store

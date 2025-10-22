@@ -1,0 +1,143 @@
+# App Engine Configuration - DEVELOPMENT
+# Roscoe AI Home Helper - Free Tier Optimized with Auto-Scaling to Zero
+
+runtime: nodejs20
+service: dev  # Development service (separate from production)
+instance_class: F1  # Smallest instance (256MB RAM) - Free tier eligible
+
+# ============================================================
+# CRITICAL: FREE TIER PROTECTION - Auto-Scale to Zero
+# ============================================================
+# When idle: 0 instances = $0 cost
+# When active: Max 1 instance
+# Total across dev + prod: Max 2 instances when both active
+# Cold start: ~10-30 seconds (acceptable trade-off for free tier)
+# ============================================================
+automatic_scaling:
+  min_instances: 0              # MANDATORY: Scale to ZERO when no traffic
+  max_instances: 1              # MANDATORY: Never exceed 1 instance
+  min_idle_instances: 0         # Force scale to zero when idle
+  max_idle_instances: 0         # No instances kept warm
+  target_cpu_utilization: 0.65  # Scale up at 65% CPU
+  target_throughput_utilization: 0.65
+
+# Resource limits (F1 instance constraints)
+resources:
+  cpu: 1
+  memory_gb: 0.256  # F1 max memory
+  disk_size_gb: 10  # Small deployment size
+
+# Application entry point
+entrypoint: node backend/server.js
+
+# ============================================================
+# Environment Variables
+# ============================================================
+# TEMPLATE FILE: This file contains PROJECT_ID placeholder
+# Deployment scripts auto-generate app-dev.yaml by replacing PROJECT_ID
+#
+# SECURITY: NO secrets in this file!
+# Backend fetches secrets directly from Secret Manager at runtime
+# Development uses the SAME secrets as production (from Secret Manager)
+# Prerequisites:
+# - All secrets exist in Secret Manager
+# - App Engine service account has secretAccessor role
+# ============================================================
+
+env_variables:
+  NODE_ENV: development  # Development mode (more verbose logging)
+  PORT: 8080
+
+# Backend secrets (FIREBASE_SERVICE_ACCOUNT, GEMINI_API_KEY, FRONTEND_URL)
+# are loaded at runtime from Secret Manager by backend/utils/secrets.js
+#
+# Frontend secret (REACT_APP_FIREBASE_CONFIG) is a BUILD-TIME secret
+# injected during `npm run build` via cloudbuild.yaml
+# (already compiled into frontend bundle)
+
+# ============================================================
+# Static File Handlers (Frontend)
+# ============================================================
+# Serve React build files with shorter cache for development
+handlers:
+  # Static assets with shorter cache (1 hour for dev)
+  - url: /static
+    static_dir: frontend/build/static
+    secure: always
+    expiration: "1h"
+    http_headers:
+      Cache-Control: "public, max-age=3600"
+
+  # Static files (JS, CSS, images, fonts)
+  - url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif))$
+    static_files: frontend/build/\1
+    upload: frontend/build/.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif)$
+    secure: always
+    expiration: "1h"
+    http_headers:
+      Cache-Control: "public, max-age=3600"
+
+  # API routes (dynamic)
+  - url: /api/.*
+    script: auto
+    secure: always
+
+  # Catch-all for React Router (SPA)
+  - url: /.*
+    static_files: frontend/build/index.html
+    upload: frontend/build/index.html
+    secure: always
+    expiration: "0"
+    http_headers:
+      Cache-Control: "no-cache, no-store, must-revalidate"
+    redirect_http_response_code: 301
+
+# ============================================================
+# Health Checks
+# ============================================================
+# App Engine uses these to determine instance health
+readiness_check:
+  path: "/api/ready"
+  check_interval_sec: 10
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  app_start_timeout_sec: 300
+
+liveness_check:
+  path: "/api/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  initial_delay_sec: 300
+
+# ============================================================
+# Network Configuration
+# ============================================================
+network:
+  # Session affinity for better performance
+  session_affinity: true
+
+# ============================================================
+# Development Notes
+# ============================================================
+# Deploy with: gcloud app deploy app-dev.yaml --project=YOUR_PROJECT_ID --no-promote
+# Access at: https://dev-dot-YOUR_PROJECT_ID.uc.r.appspot.com
+# View logs: gcloud app logs tail -s dev --project=YOUR_PROJECT_ID
+# Monitor instances: gcloud app instances list --service=dev --project=YOUR_PROJECT_ID
+#
+# The --no-promote flag ensures dev doesn't become the default service
+#
+# Expected behavior:
+# - Idle state: 0 instances running = $0/hour
+# - First request: Cold start (~10-30s to spin up instance)
+# - Active state: 1 instance handling requests
+# - After ~15min idle: Scales back to 0
+# - More verbose logging than production (NODE_ENV=development)
+#
+# Free Tier Consideration:
+# - Dev + Prod = Max 2 instances total when both active
+# - Still well within 28 instance hours/day free tier
+# - When both idle: 0 instances = $0/hour
+# ============================================================

@@ -1,0 +1,180 @@
+# .gcloudignore - Optimized for minimal App Engine deployment size
+# This file works like .gitignore but for gcloud deployments
+# Smaller deployments = faster deploys and less storage cost
+
+# ============================================================
+# Version Control
+# ============================================================
+.git/
+.gitignore
+.github/
+
+# ============================================================
+# Node Modules (will be reinstalled on deployment)
+# ============================================================
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# ============================================================
+# Source Files
+# ============================================================
+# IMPORTANT: Keep source files for App Engine build process
+# When using `gcloud app deploy`, App Engine runs the build script
+# which needs frontend/src/ and frontend/public/ to build the React app
+# frontend/src/
+# frontend/public/
+
+# Exclude frontend config files (not needed after build)
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/.eslintcache
+frontend/tsconfig.json
+frontend/jsconfig.json
+
+# ============================================================
+# Environment & Configuration Files
+# ============================================================
+# Local environment files (secrets should be in Secret Manager)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+backend/.env.local
+frontend/.env.template
+
+# ============================================================
+# Development Files
+# ============================================================
+# Testing
+**/__tests__/
+**/__mocks__/
+**/*.test.js
+**/*.test.jsx
+**/*.spec.js
+**/*.spec.jsx
+coverage/
+.nyc_output/
+jest.config.js
+
+# Linting
+.eslintrc
+.eslintrc.js
+.eslintrc.json
+.eslintignore
+eslint.config.mjs
+.prettierrc
+.prettierignore
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+*~
+.DS_Store
+Thumbs.db
+*.code-workspace
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# ============================================================
+# Build & Cache Directories
+# ============================================================
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+dist/
+tmp/
+temp/
+
+# ============================================================
+# Documentation (not needed in production)
+# ============================================================
+*.md
+!DEPLOYMENT.md  # Keep deployment docs for reference
+docs/
+documentation/
+
+# ============================================================
+# Scripts (not needed in production runtime)
+# ============================================================
+scripts/
+
+# ============================================================
+# CI/CD Files
+# ============================================================
+.travis.yml
+.gitlab-ci.yml
+.circleci/
+azure-pipelines.yml
+Jenkinsfile
+
+# ============================================================
+# Deployment Files (don't need these in the deployed app)
+# ============================================================
+cloudbuild.yaml
+app-dev.yaml  # Don't include when deploying prod
+# Note: app.yaml and app-dev.yaml are deployment configs, not runtime files
+# They're used by gcloud deploy but don't need to be in the deployed instance
+
+# ============================================================
+# Misc
+# ============================================================
+*.pid
+*.seed
+*.pid.lock
+.npm/
+.yarn/
+.pnp.*
+
+# ============================================================
+# OS Files
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# Temporary Files
+# ============================================================
+*.tmp
+*.temp
+*~
+
+# ============================================================
+# IMPORTANT: What to INCLUDE
+# ============================================================
+# These files/folders ARE needed and should NOT be ignored:
+# - backend/ (all runtime code)
+# - frontend/build/ (compiled React app)
+# - package.json (root, for dependency info)
+# - version.json (app version)
+# - node_modules/ will be installed fresh on App Engine
+
+# Deployment size optimization notes:
+# - Source maps: Can be excluded if not debugging in prod (add frontend/build/**/*.map)
+# - Test files: Already excluded
+# - Development dependencies: Not installed in production (--only=production)
+# - Frontend source: INCLUDED (needed for App Engine build process)
+# ============================================================
