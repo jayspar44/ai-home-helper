@@ -14,12 +14,16 @@ const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const secretsCache = {};
 
 /**
- * Detect if running in GCP App Engine
+ * Detect if running in GCP (App Engine, Cloud Run, Cloud Functions)
  * @returns {boolean} True if running in GCP
  */
 function isGCP() {
-  return process.env.NODE_ENV === 'production' &&
-         (process.env.GAE_ENV || process.env.K_SERVICE || process.env.FUNCTION_TARGET);
+  // Check for GCP-specific environment variables (set automatically by GCP)
+  // GAE_ENV is set by App Engine (both prod and dev services)
+  // K_SERVICE is set by Cloud Run
+  // FUNCTION_TARGET is set by Cloud Functions
+  // These are NEVER set in local development
+  return !!(process.env.GAE_ENV || process.env.K_SERVICE || process.env.FUNCTION_TARGET);
 }
 
 /**

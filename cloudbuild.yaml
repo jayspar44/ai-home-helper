@@ -58,7 +58,7 @@ steps:
       - |
         if [ "${_ENV}" = "dev" ]; then
           echo "Deploying to DEV environment..."
-          gcloud app deploy app-dev.yaml --quiet --no-promote
+          gcloud app deploy app-dev.yaml --quiet
         else
           echo "Deploying to PROD environment..."
           gcloud app deploy app.yaml --quiet
