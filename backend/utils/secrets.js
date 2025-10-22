@@ -31,12 +31,8 @@ function isGCP() {
  * @returns {string} Project ID
  */
 function getProjectId() {
-  // Try environment variable first (set in app.yaml)
-  if (process.env.GCP_PROJECT_ID) {
-    return process.env.GCP_PROJECT_ID;
-  }
-
-  // Fallback: Try to extract from GAE_APPLICATION (format: s~project-id or e~project-id)
+  // Extract from GAE_APPLICATION (format: s~project-id or e~project-id)
+  // This is automatically set by App Engine
   if (process.env.GAE_APPLICATION) {
     const parts = process.env.GAE_APPLICATION.split('~');
     if (parts.length > 1) {
@@ -44,7 +40,7 @@ function getProjectId() {
     }
   }
 
-  throw new Error('Could not determine GCP project ID. Set GCP_PROJECT_ID environment variable.');
+  throw new Error('Could not determine GCP project ID. GAE_APPLICATION environment variable not found or invalid format.');
 }
 
 /**
@@ -129,5 +125,6 @@ async function loadAllSecrets() {
 
 module.exports = {
   loadAllSecrets,
-  isGCP
+  isGCP,
+  getProjectId
 };

@@ -1,7 +1,7 @@
 # GCP Deployment Guide - Roscoe AI Home Helper
 
-**Last Updated:** 2025-10-20
-**Version:** 2.11.2
+**Last Updated:** 2025-10-21
+**Version:** 2.12.2
 
 ## Table of Contents
 
@@ -741,6 +741,6 @@ gcloud app services list            # List all services
 
 ---
 
-**Last Updated:** 2025-10-20
-**Version:** 2.11.2
+**Last Updated:** 2025-10-21
+**Version:** 2.12.2
 **Maintained by:** Roscoe Development Team
