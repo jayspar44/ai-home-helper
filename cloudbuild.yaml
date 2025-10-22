@@ -72,7 +72,7 @@ steps:
 availableSecrets:
   secretManager:
     # Frontend secret (build-time) - injected during npm run build
-    - versionName: 'projects/gen-lang-client-0138041294/secrets/REACT_APP_FIREBASE_CONFIG/versions/latest'
+    - versionName: 'projects/$PROJECT_ID/secrets/REACT_APP_FIREBASE_CONFIG/versions/latest'
       env: 'REACT_APP_FIREBASE_CONFIG'
 
     # Backend secrets (runtime) - injected via app.yaml at runtime

@@ -9,7 +9,7 @@ const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const admin = require('firebase-admin');
 const logger = require('./utils/logger');
-const { loadAllSecrets, isGCP } = require('./utils/secrets');
+const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -59,29 +59,7 @@ if (process.env.NODE_ENV === 'production') {
   app.disable('x-powered-by');
 }
 
-// CORS configuration with environment-specific settings
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? (origin, callback) => {
-        // Allow GCP App Engine, Railway, and localhost
-        if (!origin ||
-            origin.includes('.appspot.com') ||      // GCP App Engine
-            origin.includes('.railway.app') ||       // Railway
-            origin.startsWith('http://localhost') ||
-            origin.startsWith('http://127.0.0.1') ||
-            origin.startsWith('https://localhost') ||
-            origin.startsWith('https://127.0.0.1')) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      }
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
+// CORS will be configured after initialization (see startServer function)
 
 // Request parsing middleware
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
@@ -843,7 +821,7 @@ app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -887,7 +865,7 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -947,7 +925,7 @@ app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1006,7 +984,7 @@ app.delete('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1072,7 +1050,7 @@ app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), 
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1630,6 +1608,45 @@ const startServer = async () => {
   try {
     // Initialize services first (load secrets, connect to Firebase, etc.)
     await initializeServices();
+
+    // Configure CORS with dynamic allowed origins
+    console.log('🌐 Configuring CORS...');
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'https://localhost:3000',
+      'https://127.0.0.1:3000'
+    ];
+
+    // Add GCP URLs if running on GCP (covers both prod and dev services)
+    if (isGCP()) {
+      try {
+        const projectId = getProjectId();
+        allowedOrigins.push(
+          `https://${projectId}.uc.r.appspot.com`,           // Production (default service)
+          `https://dev-dot-${projectId}.uc.r.appspot.com`    // Dev service
+        );
+        console.log(`✅ CORS configured for GCP project: ${projectId}`);
+      } catch (error) {
+        console.warn('⚠️  Could not determine project ID for CORS:', error.message);
+      }
+    }
+
+    const corsOptions = {
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`🚫 CORS blocked origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+      optionsSuccessStatus: 200
+    };
+
+    app.use(cors(corsOptions));
+    console.log(`✅ CORS enabled for ${allowedOrigins.length} origins\n`);
 
     // Serve static files AFTER all API routes
     app.use(express.static(path.join(__dirname, '../frontend/build')));
