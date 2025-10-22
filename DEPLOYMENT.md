@@ -1,7 +1,6 @@
 # GCP Deployment Guide - Roscoe AI Home Helper
 
 **Last Updated:** 2025-10-21
-**Version:** 2.12.2
 
 ## Table of Contents
 
