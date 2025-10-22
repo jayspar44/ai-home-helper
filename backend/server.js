@@ -9,25 +9,46 @@ const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const admin = require('firebase-admin');
 const logger = require('./utils/logger');
+const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 
-// --- Firebase Admin SDK Initialization ---
-try {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-  console.log("Firebase Admin SDK initialized successfully.");
-} catch (error) {
-  console.error("Failed to initialize Firebase Admin SDK:", error.message);
-}
-
-const db = admin.firestore();
+// --- Global Variables (initialized after secrets load) ---
+let db;
+let genAI;
+let secrets;
 const app = express();
 let port = process.env.PORT || 3001;
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const fetch = require('node-fetch');  // Add this with other imports at the top
+const fetch = require('node-fetch');
 const multer = require('multer');
 const fs = require('fs');
+
+// --- Async Initialization ---
+async function initializeServices() {
+  console.log('\n🚀 Initializing Home Helper Backend...\n');
+
+  try {
+    // Load secrets (from Secret Manager in GCP, from .env locally)
+    secrets = await loadAllSecrets();
+
+    // Initialize Firebase Admin SDK
+    console.log('🔥 Initializing Firebase Admin SDK...');
+    const serviceAccount = JSON.parse(secrets.firebaseServiceAccount);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    db = admin.firestore();
+    console.log('✅ Firebase Admin SDK initialized successfully\n');
+
+    // Initialize Gemini AI
+    console.log('🤖 Initializing Gemini AI...');
+    genAI = new GoogleGenerativeAI(secrets.geminiApiKey);
+    console.log('✅ Gemini AI initialized successfully\n');
+
+  } catch (error) {
+    console.error('❌ Failed to initialize services:', error.message);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
+  }
+}
 
 // Production optimizations and middleware
 if (process.env.NODE_ENV === 'production') {
@@ -38,26 +59,7 @@ if (process.env.NODE_ENV === 'production') {
   app.disable('x-powered-by');
 }
 
-// CORS configuration with environment-specific settings
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? (origin, callback) => {
-        // Allow any Railway subdomain or localhost for development
-        if (!origin ||
-            origin.includes('.railway.app') ||
-            origin.startsWith('http://localhost') ||
-            origin.startsWith('http://127.0.0.1')) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      }
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
+// CORS will be configured after initialization (see startServer function)
 
 // Request parsing middleware
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
@@ -116,22 +118,22 @@ app.get('/api/health', (req, res) => {
     version: version,
     services: {
       firebase: admin.apps.length > 0 ? 'connected' : 'disconnected',
-      gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not configured'
+      gemini: genAI ? 'configured' : 'not configured'
     }
   };
 
   res.status(200).json(healthCheck);
 });
 
-// Readiness probe for Railway
+// Readiness probe for App Engine and Railway
 app.get('/api/ready', (req, res) => {
   // Check if critical services are ready
   if (admin.apps.length === 0) {
     return res.status(503).json({ status: 'Service Unavailable', reason: 'Firebase not initialized' });
   }
 
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(503).json({ status: 'Service Unavailable', reason: 'Gemini API not configured' });
+  if (!genAI) {
+    return res.status(503).json({ status: 'Service Unavailable', reason: 'Gemini AI not configured' });
   }
 
   res.status(200).json({ status: 'Ready' });
@@ -156,12 +158,12 @@ app.get('/api/debug', (req, res) => {
     })(),
     firebase: {
       adminApps: admin.apps.length,
-      serviceAccountConfigured: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+      serviceAccountConfigured: !!secrets?.firebaseServiceAccount,
       serviceAccountValid: false
     },
     gemini: {
-      configured: !!process.env.GEMINI_API_KEY,
-      keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0
+      configured: !!genAI,
+      keyLength: secrets?.geminiApiKey ? secrets.geminiApiKey.length : 0
     },
     server: {
       port: process.env.PORT || 3001,
@@ -170,9 +172,9 @@ app.get('/api/debug', (req, res) => {
   };
 
   // Test Firebase service account JSON parsing
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  if (secrets?.firebaseServiceAccount) {
     try {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      const serviceAccount = JSON.parse(secrets.firebaseServiceAccount);
       debugInfo.firebase.serviceAccountValid = !!(serviceAccount.project_id && serviceAccount.private_key);
       debugInfo.firebase.projectId = serviceAccount.project_id;
     } catch (error) {
@@ -819,7 +821,7 @@ app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -863,7 +865,7 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -923,7 +925,7 @@ app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -982,7 +984,7 @@ app.delete('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1048,7 +1050,7 @@ app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), 
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
-    if (!homeDoc.exists || !homeDoc.data().members[userUid] === undefined) {
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1604,6 +1606,48 @@ app.use('/api/*', (req, res) => {
 // --- Serve React App ---
 const startServer = async () => {
   try {
+    // Initialize services first (load secrets, connect to Firebase, etc.)
+    await initializeServices();
+
+    // Configure CORS with dynamic allowed origins
+    console.log('🌐 Configuring CORS...');
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'https://localhost:3000',
+      'https://127.0.0.1:3000'
+    ];
+
+    // Add GCP URLs if running on GCP (covers both prod and dev services)
+    if (isGCP()) {
+      try {
+        const projectId = getProjectId();
+        allowedOrigins.push(
+          `https://${projectId}.uc.r.appspot.com`,           // Production (default service)
+          `https://dev-dot-${projectId}.uc.r.appspot.com`    // Dev service
+        );
+        console.log(`✅ CORS configured for GCP project: ${projectId}`);
+      } catch (error) {
+        console.warn('⚠️  Could not determine project ID for CORS:', error.message);
+      }
+    }
+
+    const corsOptions = {
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`🚫 CORS blocked origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+      optionsSuccessStatus: 200
+    };
+
+    app.use(cors(corsOptions));
+    console.log(`✅ CORS enabled for ${allowedOrigins.length} origins\n`);
+
     // Serve static files AFTER all API routes
     app.use(express.static(path.join(__dirname, '../frontend/build')));
 
@@ -1614,10 +1658,11 @@ const startServer = async () => {
 
     // Try to start server with port handling
     const server = app.listen(port, () => {
-      console.log(`🚀 Home Helper API running on port ${port}`);
+      console.log(`\n🚀 Home Helper API running on port ${port}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔥 Firebase Admin: ${admin.apps.length > 0 ? 'Connected' : 'Disconnected'}`);
-      console.log(`🤖 Gemini AI: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
+      console.log(`🤖 Gemini AI: ${genAI ? 'Configured' : 'Not configured'}`);
+      console.log(`🔐 Secrets loaded from: ${isGCP() ? 'Secret Manager' : 'local .env'}\n`);
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.log(`Port ${port} is busy, trying a new one...`);

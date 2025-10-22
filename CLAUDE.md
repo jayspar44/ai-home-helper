@@ -15,10 +15,11 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 - **AI**: Google Gemini 2.5 Flash API (@google/generative-ai v0.17.1)
 - **Development**: ESLint 9.36.0, Concurrently, Nodemon
 
-- **Environments**: 
-- Development is run on a local server and accessible on port 3000 (frontend) and 3001 (backend). 
-- Production and more advanced is handled in Railway.app.
-- Github for code repo.
+- **Deployment**:
+  - **Local Development**: Runs on localhost:3000 (frontend) and localhost:3001 (backend)
+  - **Production**: GCP App Engine (secure runtime secret loading from Secret Manager)
+  - **Version Control**: GitHub
+  - **CI/CD**: Cloud Build with automated deployments
 
 ## Project Structure
 ```
@@ -45,8 +46,8 @@ npm run install-all        # Install all dependencies
 ```
 
 ## Logging Access
-- **Development**: View logs in terminal where `npm run dev:local` runs
-- **Production**: Access via Railway dashboard → Services → ai-home-helper → Logs tab
+- **Local Development**: View logs in terminal where `npm run dev:local` runs
+- **GCP Production**: Run `npm run gcp:logs:prod` or view in GCP Console → App Engine → Logs
 
 ## Database Schema
 ```javascript
