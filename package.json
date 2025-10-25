@@ -1,6 +1,6 @@
 {
   "name": "home-helper",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "description": "Home Helper app with Vercel serverless backend",
   "main": "api/index.js",
   "scripts": {
@@ -26,6 +26,7 @@
     "gcp:instances:list": "gcloud app instances list",
     "gcp:instances:count": "gcloud app instances list --format='table(service,version,id)' | tail -n +2 | wc -l",
     "gcp:setup:secrets": "node scripts/gcp-setup-secrets.js",
+    "gcp:setup:cache": "node scripts/gcp-setup-cache.js",
     "gcp:check:ready": "node scripts/gcp-check-deployment.js"
   },
   "dependencies": {
