@@ -40,6 +40,7 @@ try {
   // Update version and add changelog entry
   versionData.version = newVersion;
   const timestamp = new Date().toISOString();
+  versionData.lastUpdated = timestamp;
   const humanDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',

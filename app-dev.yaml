@@ -122,10 +122,10 @@ network:
 # ============================================================
 # Development Notes
 # ============================================================
-# Deploy with: gcloud app deploy app-dev.yaml --project=YOUR_gen-lang-client-0138041294 --no-promote
-# Access at: https://dev-dot-YOUR_gen-lang-client-0138041294.uc.r.appspot.com
-# View logs: gcloud app logs tail -s dev --project=YOUR_gen-lang-client-0138041294
-# Monitor instances: gcloud app instances list --service=dev --project=YOUR_gen-lang-client-0138041294
+# Deploy with: gcloud app deploy app-dev.yaml --project=YOUR_PROJECT_ID --no-promote
+# Access at: https://dev-dot-YOUR_PROJECT_ID.uc.r.appspot.com
+# View logs: gcloud app logs tail -s dev --project=YOUR_PROJECT_ID
+# Monitor instances: gcloud app instances list --service=dev --project=YOUR_PROJECT_ID
 #
 # The --no-promote flag ensures dev doesn't become the default service
 #
