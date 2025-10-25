@@ -172,9 +172,16 @@ desktop.ini
 # - version.json (app version)
 # - node_modules/ will be installed fresh on App Engine
 
+# ============================================================
+# Source Maps (not needed in production or dev)
+# ============================================================
+# Exclude source maps to reduce deployment size by ~2MB
+frontend/build/**/*.map
+**/*.map
+
 # Deployment size optimization notes:
-# - Source maps: Can be excluded if not debugging in prod (add frontend/build/**/*.map)
+# - Source maps: EXCLUDED (saves ~2MB, use local dev for debugging)
 # - Test files: Already excluded
-# - Development dependencies: Not installed in production (--only=production)
-# - Frontend source: INCLUDED (needed for App Engine build process)
+# - Development dependencies: Not installed in production (npm ci --omit=dev)
+# - Frontend source: INCLUDED (needed for Cloud Build process)
 # ============================================================

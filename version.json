@@ -1,5 +1,5 @@
 {
-  "version": "2.14.0",
+  "version": "2.14.1",
   "lastUpdated": "2025-10-21T04:30:00.000Z",
   "changelog": {
     "1.0.0": {
@@ -155,6 +155,11 @@
     "2.14.0": {
       "description": "Cloud Build performance optimization: Refactor dependency caching from rsync to tar+gzip compression (85% size reduction), implement parallel cache transfers with multi-threaded downloads/uploads, switch from npm ci to npm install for cache utilization, reduce build time by ~1 minute, and dramatically improve log readability (65,000+ lines to ~20 lines)",
       "timestamp": "2025-10-25T22:37:46.861Z",
+      "date": "October 25, 2025"
+    },
+    "2.14.1": {
+      "description": "Update deployment documentation with accurate tar+gzip caching details, improve .gcloudignore with source map exclusions, and update app-dev.yaml template placeholders",
+      "timestamp": "2025-10-25T22:42:23.855Z",
       "date": "October 25, 2025"
     }
   }
