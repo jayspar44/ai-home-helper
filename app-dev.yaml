@@ -33,8 +33,8 @@ entrypoint: node backend/server.js
 # ============================================================
 # Environment Variables
 # ============================================================
-# TEMPLATE FILE: Replace YOUR_PROJECT_ID with your actual GCP project ID
-# when deploying via gcloud commands
+# TEMPLATE FILE: This file contains gen-lang-client-0138041294 placeholder
+# Deployment scripts auto-generate app-dev.yaml by replacing gen-lang-client-0138041294
 #
 # SECURITY: NO secrets in this file!
 # Backend fetches secrets directly from Secret Manager at runtime

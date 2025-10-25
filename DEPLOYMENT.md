@@ -167,6 +167,51 @@ gcloud services enable secretmanager.googleapis.com
 gcloud services list --enabled
 ```
 
+### 6. Set Up Build Cache (Recommended) ⚡
+
+**Enable tar+gzip dependency caching to speed up builds!**
+
+```bash
+# One-time setup - creates GCS bucket for caching
+npm run gcp:setup:cache
+```
+
+This creates a GCS bucket `gs://YOUR_PROJECT_ID_cloudbuild` that stores compressed cache archives:
+- `node_modules.tar.gz` (~55MB compressed)
+- `backend-node_modules.tar.gz` (~11MB compressed)
+- `frontend-node_modules.tar.gz` (~72MB compressed)
+- **Total: ~138MB** (85% smaller than uncompressed)
+
+**Benefits:**
+- ✅ First build: ~5-6 minutes (builds cache for next time)
+- ✅ Subsequent builds: **~5 minutes** (saves ~1 minute via cache)
+- ✅ Auto-cleanup: Cache expires after 7 days
+- ✅ Cost: **~$0.005/month** (negligible)
+- ✅ Clean logs: ~20 lines instead of 65,000+ with rsync
+
+**Technical Details:**
+- Uses tar+gzip compression for optimal performance
+- Parallel downloads/uploads with `gcloud storage cp -m`
+- npm install leverages cached node_modules (only updates changes)
+- Shared cache between dev and prod deployments
+
+**Performance Impact per Build:**
+- Cache download: 30s → 20s (parallel transfers)
+- npm installs: 30s → 5s (uses cache, only installs changes)
+- Cache upload: 30s → 20s (parallel transfers)
+
+**Manual cache commands:**
+```bash
+# View cache size
+gcloud storage ls gs://YOUR_PROJECT_ID_cloudbuild/cache/ --long --readable-sizes
+
+# Clear cache (if needed)
+gcloud storage rm --recursive gs://YOUR_PROJECT_ID_cloudbuild/cache/
+
+# Delete bucket (removes caching)
+gcloud storage buckets delete gs://YOUR_PROJECT_ID_cloudbuild
+```
+
 ---
 
 ## Secrets Setup
@@ -741,5 +786,4 @@ gcloud app services list            # List all services
 ---
 
 **Last Updated:** 2025-10-21
-**Version:** 2.12.2
 **Maintained by:** Roscoe Development Team

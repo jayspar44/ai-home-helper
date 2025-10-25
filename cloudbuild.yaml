@@ -10,11 +10,34 @@ substitutions:
   _SERVICE_NAME: 'default'
 
 steps:
+  # Step 0: Restore cached dependencies (tar+gzip for speed)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'restore-cache'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🔄 Restoring dependency cache..."
+
+        # Download compressed cache archives in parallel (faster!)
+        gcloud storage cp -m gs://$PROJECT_ID\_cloudbuild/cache/*.tar.gz . 2>/dev/null || echo "⚠️  No cache found (first build)"
+
+        # Extract archives (parallel for speed)
+        (tar -xzf node_modules.tar.gz 2>/dev/null && echo "✅ Root cache restored") || true &
+        (tar -xzf backend-node_modules.tar.gz -C backend/ 2>/dev/null && echo "✅ Backend cache restored") || true &
+        (tar -xzf frontend-node_modules.tar.gz -C frontend/ 2>/dev/null && echo "✅ Frontend cache restored") || true &
+
+        # Wait for all parallel operations to complete
+        wait
+
+        echo "✅ Cache restore complete"
+
   # Step 1: Install root dependencies
   - name: 'node:20'
     entrypoint: 'npm'
     args: ['install']
     id: 'install-root'
+    waitFor: ['restore-cache']
 
   # Step 2: Install backend dependencies
   - name: 'node:20'
@@ -22,7 +45,7 @@ steps:
     args: ['install']
     dir: 'backend'
     id: 'install-backend'
-    waitFor: ['install-root']
+    waitFor: ['restore-cache']
 
   # Step 3: Install frontend dependencies
   - name: 'node:20'
@@ -30,7 +53,7 @@ steps:
     args: ['install']
     dir: 'frontend'
     id: 'install-frontend'
-    waitFor: ['install-root']
+    waitFor: ['restore-cache']
 
   # Step 4: Build frontend with REACT_APP_FIREBASE_CONFIG secret
   # CRITICAL: This secret must be available during build time because
@@ -50,7 +73,30 @@ steps:
     secretEnv:
       - 'REACT_APP_FIREBASE_CONFIG'
 
-  # Step 5: Deploy to App Engine
+  # Step 5: Save dependency cache for next build (tar+gzip for speed)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'save-cache'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "💾 Saving dependency cache for next build..."
+
+        # Compress all caches in parallel (fastest!)
+        (tar -czf node_modules.tar.gz node_modules/ 2>/dev/null && echo "✅ Root cache compressed") || echo "⚠️  Root cache compression failed" &
+        (tar -czf backend-node_modules.tar.gz backend/node_modules/ 2>/dev/null && echo "✅ Backend cache compressed") || echo "⚠️  Backend cache compression failed" &
+        (tar -czf frontend-node_modules.tar.gz frontend/node_modules/ 2>/dev/null && echo "✅ Frontend cache compressed") || echo "⚠️  Frontend cache compression failed" &
+
+        # Wait for compression to complete
+        wait
+
+        # Upload all caches in parallel with -m flag (multi-threaded, faster!)
+        gcloud storage cp -m *.tar.gz gs://$PROJECT_ID\_cloudbuild/cache/ 2>/dev/null && echo "✅ All caches uploaded" || echo "⚠️  Cache upload failed"
+
+        echo "💾 Cache save operations complete"
+    waitFor: ['install-root', 'install-frontend', 'install-backend']
+
+  # Step 6: Deploy to App Engine
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -64,7 +110,7 @@ steps:
           gcloud app deploy app.yaml --quiet
         fi
     id: 'deploy'
-    waitFor: ['build-frontend', 'install-backend']
+    waitFor: ['build-frontend', 'install-backend', 'save-cache']
 
 # Secret Manager Configuration
 # These secrets are accessed from GCP Secret Manager

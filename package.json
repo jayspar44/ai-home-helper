@@ -1,6 +1,6 @@
 {
   "name": "home-helper",
-  "version": "2.12.2",
+  "version": "2.14.3",
   "description": "Home Helper app with Vercel serverless backend",
   "main": "api/index.js",
   "scripts": {
@@ -14,9 +14,8 @@
     "build:frontend": "cd frontend && npm run build",
     "test:frontend": "cd frontend && npm test",
     "validate-env": "node scripts/validate-env.js",
-    "version:get": "node scripts/version-manager.js get",
-    "version:bump": "node scripts/version-manager.js bump",
-    "version:analyze": "node scripts/version-manager.js analyze",
+    "version:get": "node scripts/get-version.js",
+    "version:bump": "node scripts/bump-version.js",
     "postinstall": "echo 'Setup complete! Run npm run dev:local to start development servers.'",
     "gcp:deploy:dev": "node scripts/gcp-deploy.js dev",
     "gcp:deploy:prod": "node scripts/gcp-deploy.js prod",
@@ -27,6 +26,7 @@
     "gcp:instances:list": "gcloud app instances list",
     "gcp:instances:count": "gcloud app instances list --format='table(service,version,id)' | tail -n +2 | wc -l",
     "gcp:setup:secrets": "node scripts/gcp-setup-secrets.js",
+    "gcp:setup:cache": "node scripts/gcp-setup-cache.js",
     "gcp:check:ready": "node scripts/gcp-check-deployment.js"
   },
   "dependencies": {

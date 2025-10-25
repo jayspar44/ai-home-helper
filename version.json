@@ -1,6 +1,6 @@
 {
-  "version": "2.12.2",
-  "lastUpdated": "2025-10-21T04:30:00.000Z",
+  "version": "2.14.3",
+  "lastUpdated": "2025-10-25T23:00:16.992Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -146,6 +146,31 @@
       "description": "Fix GCP environment detection in dev service: Remove NODE_ENV requirement from isGCP() check to properly detect App Engine dev service (NODE_ENV=development). This fixes 503 errors where backend was incorrectly trying to load from .env file instead of Secret Manager on GCP dev deployments.",
       "timestamp": "2025-10-21T04:30:00.000Z",
       "date": "October 21, 2025"
+    },
+    "2.13.0": {
+      "description": "Automated version management system: Single-command version updates with bump-version.js and get-version.js scripts, automatic synchronization across all package.json files, updated version management protocol, and new documentation protocol with clear scope definitions and DRY guidelines",
+      "timestamp": "2025-10-25T19:16:05.336Z",
+      "date": "October 25, 2025"
+    },
+    "2.14.0": {
+      "description": "Cloud Build performance optimization: Refactor dependency caching from rsync to tar+gzip compression (85% size reduction), implement parallel cache transfers with multi-threaded downloads/uploads, switch from npm ci to npm install for cache utilization, reduce build time by ~1 minute, and dramatically improve log readability (65,000+ lines to ~20 lines)",
+      "timestamp": "2025-10-25T22:37:46.861Z",
+      "date": "October 25, 2025"
+    },
+    "2.14.1": {
+      "description": "Update deployment documentation with accurate tar+gzip caching details, improve .gcloudignore with source map exclusions, and update app-dev.yaml template placeholders",
+      "timestamp": "2025-10-25T22:42:23.855Z",
+      "date": "October 25, 2025"
+    },
+    "2.14.2": {
+      "description": "Fix PR review issues: sync lastUpdated field in bump-version.js, optimize Cloud Build parallelization by removing unnecessary install-root dependencies for ~5 second build improvement, and fix app-dev.yaml placeholder inconsistencies",
+      "timestamp": "2025-10-25T22:53:02.681Z",
+      "date": "October 25, 2025"
+    },
+    "2.14.3": {
+      "description": "Remove --production flag from npm install commands to properly leverage cached dependencies including devDependencies",
+      "timestamp": "2025-10-25T23:00:16.992Z",
+      "date": "October 25, 2025"
     }
   }
 }
