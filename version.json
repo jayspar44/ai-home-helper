@@ -1,6 +1,6 @@
 {
-  "version": "2.14.2",
-  "lastUpdated": "2025-10-25T22:53:02.681Z",
+  "version": "2.14.3",
+  "lastUpdated": "2025-10-25T23:00:16.992Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -165,6 +165,11 @@
     "2.14.2": {
       "description": "Fix PR review issues: sync lastUpdated field in bump-version.js, optimize Cloud Build parallelization by removing unnecessary install-root dependencies for ~5 second build improvement, and fix app-dev.yaml placeholder inconsistencies",
       "timestamp": "2025-10-25T22:53:02.681Z",
+      "date": "October 25, 2025"
+    },
+    "2.14.3": {
+      "description": "Remove --production flag from npm install commands to properly leverage cached dependencies including devDependencies",
+      "timestamp": "2025-10-25T23:00:16.992Z",
       "date": "October 25, 2025"
     }
   }
