@@ -1,5 +1,5 @@
 {
-  "version": "2.12.2",
+  "version": "2.13.0",
   "lastUpdated": "2025-10-21T04:30:00.000Z",
   "changelog": {
     "1.0.0": {
@@ -146,6 +146,11 @@
       "description": "Fix GCP environment detection in dev service: Remove NODE_ENV requirement from isGCP() check to properly detect App Engine dev service (NODE_ENV=development). This fixes 503 errors where backend was incorrectly trying to load from .env file instead of Secret Manager on GCP dev deployments.",
       "timestamp": "2025-10-21T04:30:00.000Z",
       "date": "October 21, 2025"
+    },
+    "2.13.0": {
+      "description": "Automated version management system: Single-command version updates with bump-version.js and get-version.js scripts, automatic synchronization across all package.json files, updated version management protocol, and new documentation protocol with clear scope definitions and DRY guidelines",
+      "timestamp": "2025-10-25T19:16:05.336Z",
+      "date": "October 25, 2025"
     }
   }
 }

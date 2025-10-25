@@ -67,7 +67,23 @@ Version is managed via version.json and mirrored in the root, frontend and backe
 1. **Analyze changes**: Review what was modified
 2. **Classify**: PATCH (bugs/small fixes) | MINOR (new features) | MAJOR (breaking changes)
 3. **Propose**: Suggest version with reasoning
-4. **Implementation**: Update version.json + sync to package.json files
+4. **Implementation**: Run `npm run version:bump X.Y.Z "description"` which automatically updates version.json (version + changelog entry) and syncs to all 3 package.json files
+
+## Documentation Protocol
+
+**Scope of Each Document**:
+- **README.md**: Public-facing overview (features, quick start, architecture overview) - Target audience: Users, new developers, GitHub visitors
+- **DEPLOYMENT.md**: GCP deployment operations guide (setup, deployment, monitoring, troubleshooting) - Target audience: Deployers, DevOps
+- **CLAUDE.md**: AI agent instructions (project context, protocols, code style) - Target audience: Claude Code
+
+**Guidelines**:
+- **DRY Principle**: Link to canonical sources instead of duplicating content
+- **No Hardcoded Versions**: Never hardcode version numbers in docs (version lives in version.json only)
+- **Cross-linking**: Use relative markdown links (e.g., `[DEPLOYMENT.md](DEPLOYMENT.md)`)
+- **Update Triggers**:
+  - README.md: New features, major architecture changes
+  - DEPLOYMENT.md: Deployment process changes, new GCP features
+  - CLAUDE.md: New protocols, code style changes
 
 ## Code Style
 - Use functional React components with hooks

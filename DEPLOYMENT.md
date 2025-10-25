@@ -741,5 +741,4 @@ gcloud app services list            # List all services
 ---
 
 **Last Updated:** 2025-10-21
-**Version:** 2.12.2
 **Maintained by:** Roscoe Development Team
