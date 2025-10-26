@@ -1,6 +1,6 @@
 {
-  "version": "2.14.3",
-  "lastUpdated": "2025-10-25T23:00:16.992Z",
+  "version": "2.15.0",
+  "lastUpdated": "2025-10-26T01:58:00.032Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -170,6 +170,11 @@
     "2.14.3": {
       "description": "Remove --production flag from npm install commands to properly leverage cached dependencies including devDependencies",
       "timestamp": "2025-10-25T23:00:16.992Z",
+      "date": "October 25, 2025"
+    },
+    "2.15.0": {
+      "description": "Add GitHub Actions CI/CD workflows for automated deployments to dev and production environments",
+      "timestamp": "2025-10-26T01:58:00.032Z",
       "date": "October 25, 2025"
     }
   }

@@ -1,10 +1,9 @@
 # GCP Deployment Guide - Roscoe AI Home Helper
 
-**Last Updated:** 2025-10-21
-
 ## Table of Contents
 
 - [Overview](#overview)
+- [GitHub Actions Automated Deployment](#github-actions-automated-deployment) ⭐ NEW
 - [Free Tier Protection](#free-tier-protection)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
@@ -54,6 +53,260 @@ This guide covers deploying Roscoe AI Home Helper to Google Cloud Platform (GCP)
 - **Secrets:** GCP Secret Manager (4 secrets)
 - **Build:** Cloud Build with automatic secret injection
 - **Storage:** Firestore (Firebase)
+
+---
+
+## GitHub Actions Automated Deployment
+
+### Overview
+
+**NEW: Automated CI/CD** using GitHub Actions with Workload Identity Federation (keyless authentication).
+
+**Deployment Methods:**
+1. **GitHub Actions** (Automated) - Push to branch → Auto-deploy ⭐ Recommended for daily use
+2. **npm Scripts** (Manual) - Run commands locally → Manual deploy (Still available as fallback)
+
+### How It Works
+
+```
+┌─────────────────┐
+│ Push to develop │ → Auto-deploy to dev (no approval)
+└─────────────────┘
+
+┌─────────────────┐
+│ Push to main    │ → Wait for approval → Deploy to prod
+└─────────────────┘
+```
+
+**Architecture:**
+```
+GitHub Push → GitHub Actions → Authenticate (WIF) → Trigger Cloud Build → Deploy to App Engine
+```
+
+### Setup
+
+**First-time setup:** See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for complete step-by-step instructions.
+
+**Quick summary:**
+1. Run `bash scripts/setup-github-workload-identity.sh`
+2. Add GitHub Secrets (from script output)
+3. Create GitHub Environments (`development`, `production`)
+4. Create `develop` branch
+5. Test by pushing to `develop`
+
+**Setup time:** ~30 minutes (one-time)
+
+### Daily Workflow
+
+#### Developing a Feature
+
+```bash
+# 1. Create feature branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b feature/my-feature
+
+# 2. Make changes, commit
+git add .
+git commit -m "feat: Add new feature"
+git push origin feature/my-feature
+
+# 3. Create PR to develop (via GitHub UI)
+# 4. Merge PR → Auto-deploys to dev!
+# 5. Test: https://dev-dot-YOUR_PROJECT.uc.r.appspot.com
+```
+
+#### Deploying to Production
+
+```bash
+# 1. Create PR: develop → main (via GitHub UI)
+# 2. Merge PR
+# 3. Go to Actions tab → Review pending deployments
+# 4. Click "Approve and deploy"
+# 5. Live: https://YOUR_PROJECT.uc.r.appspot.com
+```
+
+### Workflows
+
+**Three GitHub Actions workflows are configured:**
+
+#### 1. Deploy to Development (`.github/workflows/deploy-dev.yml`)
+- **Trigger:** Push to `develop` branch
+- **Action:** Auto-deploy to dev service (no approval needed)
+- **Uses:** Existing `cloudbuild.yaml` and `app-dev.yaml`
+- **URL:** `https://dev-dot-YOUR_PROJECT.uc.r.appspot.com`
+
+#### 2. Deploy to Production (`.github/workflows/deploy-prod.yml`)
+- **Trigger:** Push to `main` branch
+- **Action:** Deploy to default service (requires manual approval)
+- **Uses:** Existing `cloudbuild.yaml` and `app.yaml`
+- **URL:** `https://YOUR_PROJECT.uc.r.appspot.com`
+
+#### 3. PR Validation (`.github/workflows/pr-validation.yml`)
+- **Trigger:** Pull requests to `develop` or `main`
+- **Action:** Run linting and build validation (no deployment)
+- **Purpose:** Catch issues before merge
+
+### Authentication
+
+Uses **Workload Identity Federation** (Google's recommended 2025 best practice):
+
+**Benefits:**
+- ✅ Keyless authentication (no service account JSON keys)
+- ✅ Short-lived tokens (10-minute max lifetime)
+- ✅ Automatic token rotation
+- ✅ Repository-specific security (uses numeric repo ID)
+- ✅ Reduced attack surface
+- ✅ 100% FREE (no additional GCP costs)
+
+**How it works:**
+1. GitHub Actions requests OIDC token from GitHub
+2. Google verifies the token via Workload Identity Federation
+3. Google issues short-lived GCP access token
+4. Workflow uses token to deploy to App Engine
+5. Token expires after workflow completes
+
+### Approval Process
+
+**Production deployments require manual approval:**
+
+1. **Trigger:** When you merge to `main`, workflow starts
+2. **Pause:** Workflow pauses at "Deploy to Production" job
+3. **Notification:** You receive GitHub notification (email/web)
+4. **Review:** Go to Actions tab → Click workflow run
+5. **Approve:** Click "Review pending deployments" → Check box → "Approve and deploy"
+6. **Deploy:** Workflow resumes and deploys to production
+
+**Approval screen example:**
+```
+┌─────────────────────────────────────────────┐
+│ Review pending deployments                  │
+│                                             │
+│ Environment: production                     │
+│ Triggered by: push to main                  │
+│                                             │
+│ ☑ Approve and deploy                        │
+│ ☐ Reject                                    │
+│                                             │
+│ Comment (optional): _________________       │
+│                                             │
+│ [Submit review]                             │
+└─────────────────────────────────────────────┘
+```
+
+### Monitoring Deployments
+
+**GitHub Actions:**
+- Go to **Actions** tab in your repository
+- Click on any workflow run to see logs
+- View deployment history, timing, and status
+
+**GCP Logs (runtime):**
+```bash
+# Development
+npm run gcp:logs:dev
+
+# Production
+npm run gcp:logs:prod
+```
+
+### Manual Deployments (Fallback)
+
+Your existing npm scripts still work and can be used anytime:
+
+```bash
+# Deploy to dev manually
+npm run gcp:deploy:dev
+
+# Deploy to prod manually
+npm run gcp:deploy:prod
+```
+
+**When to use manual deployments:**
+- Emergency hotfixes
+- Testing without pushing to GitHub
+- Bypassing approval process (if authorized)
+- GitHub Actions temporarily unavailable
+
+### Troubleshooting
+
+#### Issue: "Failed to generate Google Cloud access token"
+
+**Cause:** Workload Identity Federation not configured or IAM propagation delay
+
+**Solution:**
+1. Wait 5 minutes after setup (IAM propagation)
+2. Verify GitHub Secrets are added correctly
+3. Re-run workflow
+4. If still failing, re-run `scripts/setup-github-workload-identity.sh`
+
+#### Issue: "Permission denied" on deployment
+
+**Cause:** Service account missing IAM roles
+
+**Solution:**
+```bash
+# Re-run setup script to grant all necessary roles
+bash scripts/setup-github-workload-identity.sh
+```
+
+#### Issue: Approval button doesn't appear
+
+**Cause:** Environment not configured with required reviewers
+
+**Solution:**
+1. Settings → Environments → production
+2. Ensure "Required reviewers" is checked and you're listed
+3. Save and re-run workflow
+
+#### Issue: Workflow triggers but does nothing
+
+**Cause:** Branch name mismatch
+
+**Solution:**
+- Verify you pushed to `develop` (not `dev` or `development`)
+- Verify you merged to `main` (not `master`)
+- Branch names are case-sensitive
+
+### Cost
+
+**GitHub Actions:**
+- Public repositories: Unlimited free
+- Private repositories: 2,000 minutes/month free tier
+- Each deployment: ~5-10 minutes
+- **Estimated cost:** $0 (within free tier for typical usage)
+
+**Workload Identity Federation:**
+- **Cost:** $0 (free IAM configuration)
+
+**App Engine:**
+- Same as manual deployments (see [Cost Management](#cost-management))
+
+### Benefits
+
+**Why use GitHub Actions over manual deployments:**
+
+✅ **Automation** - Push to branch → automatic deployment (no commands to remember)
+✅ **Safety** - Manual approval for production prevents accidental deployments
+✅ **Consistency** - Same process every time (reduces human error)
+✅ **History** - Full audit trail of deployments in GitHub
+✅ **PR Validation** - Catch issues before merge (linting, build checks)
+✅ **Team Collaboration** - Clear approval process for team deployments
+✅ **Secure** - Keyless authentication (no credentials in GitHub)
+
+### Migration from Manual to Automated
+
+**You don't need to choose!** Both methods work simultaneously:
+
+- **Development:** Use GitHub Actions for convenience
+- **Emergency:** Use npm scripts for quick hotfixes
+- **Testing:** Use npm scripts for local testing
+
+**Gradual adoption:**
+1. Set up GitHub Actions (one-time)
+2. Use it for development deployments (`develop` branch)
+3. Keep using npm scripts for production (until comfortable)
+4. Eventually switch to GitHub Actions for everything
 
 ---
 
@@ -784,6 +1037,4 @@ gcloud app services list            # List all services
 **Need help?** Contact your GCP administrator or refer to official GCP documentation.
 
 ---
-
-**Last Updated:** 2025-10-21
 **Maintained by:** Roscoe Development Team

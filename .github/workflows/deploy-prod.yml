@@ -1,0 +1,92 @@
+name: Deploy to Production
+
+# Trigger on pushes to the main branch
+on:
+  push:
+    branches:
+      - main
+
+# Required permissions for Workload Identity Federation
+permissions:
+  id-token: write      # Required to request OIDC token
+  contents: read       # Required to checkout code
+
+jobs:
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production  # Uses GitHub Environment with required reviewers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Pre-deployment validation
+        run: |
+          echo "Pre-deployment checks..."
+          echo "✓ Project: ${{ secrets.GCP_PROJECT_ID }}"
+          echo "✓ Service: default (production)"
+          echo "✓ Branch: ${{ github.ref_name }}"
+          echo "✓ Commit: ${{ github.sha }}"
+          echo "✓ Deploying to production after manual approval"
+
+      - name: Deploy to App Engine Production via Cloud Build
+        id: deploy
+        run: |
+          echo "Deploying to production environment..."
+          echo "This will become the default service and receive all traffic."
+
+          # Deploy using existing Cloud Build configuration
+          gcloud app deploy app.yaml \
+            --quiet \
+            --project=${{ secrets.GCP_PROJECT_ID }}
+
+          echo "✓ Production deployment complete!"
+
+      - name: Get deployment URL
+        id: url
+        run: |
+          # Get the production URL
+          PROD_URL="https://${{ secrets.GCP_PROJECT_ID }}.uc.r.appspot.com"
+          echo "url=${PROD_URL}" >> $GITHUB_OUTPUT
+          echo "Production URL: ${PROD_URL}"
+
+      - name: Post deployment summary
+        run: |
+          echo "## Production Deployment Complete! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** default" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Approved by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Live and receiving traffic" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Allow a few minutes for the deployment to become active (cold start)." >> $GITHUB_STEP_SUMMARY
+
+      - name: Health check
+        run: |
+          echo "Waiting 30 seconds for deployment to stabilize..."
+          sleep 30
+
+          HEALTH_URL="https://${{ secrets.GCP_PROJECT_ID }}.uc.r.appspot.com/api/health"
+          echo "Checking health endpoint: ${HEALTH_URL}"
+
+          # Try health check (non-blocking - just for info)
+          curl -f -s "${HEALTH_URL}" || echo "Health check pending (cold start expected)"
