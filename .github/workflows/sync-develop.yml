@@ -22,7 +22,7 @@ jobs:
         with:
           ref: develop
           fetch-depth: 0  # Need full history for merge
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
 
       - name: Configure git
         run: |
