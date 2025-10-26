@@ -1,6 +1,6 @@
 {
-  "version": "2.15.2",
-  "lastUpdated": "2025-10-26T02:54:58.802Z",
+  "version": "2.15.3",
+  "lastUpdated": "2025-10-26T03:50:57.999Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -185,6 +185,11 @@
     "2.15.2": {
       "description": "GitHub Actions workflow improvements: Use optimized Cloud Build pipeline with tar+gzip caching and E2_HIGHCPU_8 for faster deployments, disable redundant ESLint in build step (linting handled by dedicated validation step)",
       "timestamp": "2025-10-26T02:54:58.802Z",
+      "date": "October 25, 2025"
+    },
+    "2.15.3": {
+      "description": "Fix deployment URL display in GitHub Actions summaries (was showing *** due to secret redaction)",
+      "timestamp": "2025-10-26T03:50:57.999Z",
       "date": "October 25, 2025"
     }
   }
