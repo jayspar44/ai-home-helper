@@ -1,0 +1,77 @@
+name: Deploy to Development
+
+# Trigger on pushes to the develop branch
+on:
+  push:
+    branches:
+      - develop
+
+# Required permissions for Workload Identity Federation
+permissions:
+  id-token: write      # Required to request OIDC token
+  contents: read       # Required to checkout code
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev Environment
+    runs-on: ubuntu-latest
+    environment: development  # Uses GitHub Environment for tracking and secrets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy to App Engine Dev via Cloud Build
+        id: deploy
+        run: |
+          echo "Deploying to dev environment using Cloud Build..."
+          echo "Project: ${{ secrets.GCP_PROJECT_ID }}"
+          echo "Service: dev"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Using optimized cloudbuild.yaml (caching + E2_HIGHCPU_8)"
+
+          # Trigger Cloud Build with optimized configuration
+          # This uses the same pipeline as manual 'npm run gcp:deploy:dev'
+          # Benefits: tar+gzip caching, parallel operations, faster machine type
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --substitutions=_ENV=dev,_SERVICE_NAME=dev
+
+          echo "✓ Cloud Build deployment complete!"
+
+      - name: Get deployment URL
+        id: url
+        run: |
+          # Get the dev service URL
+          DEV_URL="https://dev-dot-${{ secrets.GCP_PROJECT_ID }}.uc.r.appspot.com"
+          echo "url=${DEV_URL}" >> $GITHUB_OUTPUT
+          echo "Dev URL: ${DEV_URL}"
+
+      - name: Post deployment summary
+        run: |
+          echo "## Development Deployment Complete! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Development" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Allow a few minutes for the deployment to become active (cold start)." >> $GITHUB_STEP_SUMMARY

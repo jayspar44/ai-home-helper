@@ -499,7 +499,7 @@ export default function PlannerPage() {
     setShowUnifiedMealModal(true);
   };
 
-  const handleEditMeal = (mealData, section) => {
+  const handleEditMeal = (mealData, _section) => {
     setEditingMeal(mealData);
     // Pass date as string to avoid timezone conversion
     setSelectedDate(mealData.date);

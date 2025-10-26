@@ -1,11 +1,12 @@
 {
   "name": "home-helper",
-  "version": "2.14.3",
+  "version": "2.15.2",
   "description": "Home Helper app with Vercel serverless backend",
   "main": "api/index.js",
   "scripts": {
     "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "build": "npm run install-all && cd frontend && npm run build",
+    "lint": "eslint .",
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
     "dev:local": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\" --names \"backend,frontend\" --prefix-colors \"blue,green\"",

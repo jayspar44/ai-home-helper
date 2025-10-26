@@ -53,10 +53,6 @@ function info(message) {
   log(`ℹ️  ${message}`, 'cyan');
 }
 
-function warning(message) {
-  log(`⚠️  ${message}`, 'yellow');
-}
-
 /**
  * Generate app.yaml from template by replacing PROJECT_ID placeholder
  * @param {string} templateFile - Template file path (e.g., 'app.yaml.template')

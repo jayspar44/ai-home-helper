@@ -1,0 +1,117 @@
+name: PR Validation
+
+# Trigger on pull requests to develop or main branches
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+# No special permissions needed - read-only validation
+permissions:
+  contents: read
+  pull-requests: write  # To post comments on PRs
+
+# NOTE: This workflow validates code quality and build success only.
+# The project currently has no automated tests (unit, integration, or e2e).
+# Test coverage should be added as the project grows.
+
+jobs:
+  validate:
+    name: Validate Changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run ESLint
+        id: lint
+        run: |
+          echo "Running ESLint..."
+          npm run lint
+
+      - name: Build frontend (validation)
+        id: build
+        run: |
+          echo "Building frontend to validate configuration..."
+          cd frontend
+
+          # Create a dummy Firebase config for build validation
+          export REACT_APP_FIREBASE_CONFIG='{"apiKey":"test","authDomain":"test","projectId":"test","storageBucket":"test","messagingSenderId":"test","appId":"test"}'
+
+          # Disable ESLint plugin in build - linting is handled by dedicated step above
+          # This prevents redundant linting and treats build as compilation-only check
+          export DISABLE_ESLINT_PLUGIN=true
+
+          npm run build
+
+      - name: Check for common issues
+        run: |
+          echo "Checking for common issues..."
+
+          # Check for console.log statements (warning only)
+          if grep -r "console\.log" frontend/src --include="*.js" --include="*.jsx" | grep -v "node_modules"; then
+            echo "⚠️  Found console.log statements in code (consider removing for production)"
+          fi
+
+          # Check for TODO comments
+          if grep -r "TODO" frontend/src backend --include="*.js" --include="*.jsx" | grep -v "node_modules"; then
+            echo "ℹ️  Found TODO comments in code"
+          fi
+
+          echo "✓ Code checks complete"
+
+      - name: Post validation summary
+        if: always()
+        run: |
+          echo "## PR Validation Results :mag:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.head_ref }}\` → \`${{ github.base_ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.lint.outcome }}" == "success" ]; then
+            echo "✅ **Linting:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Linting:** Failed (see details above)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ steps.build.outcome }}" == "success" ]; then
+            echo "✅ **Build:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build:** Failed (see details above)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** This validation does not deploy - it only checks code quality." >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if critical checks failed
+        if: steps.build.outcome != 'success'
+        run: |
+          echo "❌ Build validation failed. Please fix the errors before merging."
+          exit 1
