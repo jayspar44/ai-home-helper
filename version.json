@@ -1,6 +1,6 @@
 {
-  "version": "2.15.4",
-  "lastUpdated": "2025-10-26T04:34:55.211Z",
+  "version": "2.15.5",
+  "lastUpdated": "2025-10-26T05:07:40.902Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -195,6 +195,11 @@
     "2.15.4": {
       "description": "Automate develop sync after production releases, skip redundant dev deployments, and document CI/CD workflow",
       "timestamp": "2025-10-26T04:34:55.211Z",
+      "date": "October 26, 2025"
+    },
+    "2.15.5": {
+      "description": "Fix sync-develop workflow to bypass branch protection using PAT",
+      "timestamp": "2025-10-26T05:07:40.902Z",
       "date": "October 26, 2025"
     }
   }
