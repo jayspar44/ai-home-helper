@@ -1,0 +1,51 @@
+name: Sync develop with main
+
+# Automatically sync develop branch after production releases
+# This keeps branches aligned without manual intervention
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger if needed
+
+permissions:
+  contents: write  # Required to push to develop branch
+
+jobs:
+  sync:
+    name: Merge main into develop
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0  # Need full history for merge
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge main into develop
+        run: |
+          echo "Syncing develop with main after production release..."
+          git fetch origin main
+          git merge origin/main --no-edit -m "sync: Align develop with main after production release"
+
+      - name: Push changes
+        run: |
+          git push origin develop
+          echo "✓ Successfully synced develop with main"
+
+      - name: Post sync summary
+        run: |
+          echo "## Branch Sync Complete! 🔄" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** Merged \`main\` → \`develop\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** Keep branches aligned after production release" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`sync: Align develop with main after production release\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** This sync commit will NOT trigger dev deployment (detected by \`deploy-dev.yml\`)." >> $GITHUB_STEP_SUMMARY

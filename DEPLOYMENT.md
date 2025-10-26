@@ -74,8 +74,11 @@ This guide covers deploying Roscoe AI Home Helper to Google Cloud Platform (GCP)
 └─────────────────┘
 
 ┌─────────────────┐
-│ Push to main    │ → Wait for approval → Deploy to prod
+│ Push to main    │ → Wait for approval → Deploy to prod → Auto-sync develop
 └─────────────────┘
+
+Note: After production deployment, develop automatically syncs with main
+(no manual intervention needed). Sync commits skip dev deployment to save resources.
 ```
 
 **Architecture:**

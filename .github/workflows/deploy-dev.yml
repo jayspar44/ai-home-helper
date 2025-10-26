@@ -21,7 +21,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if this is a sync commit
+        id: check-sync
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if [[ "$COMMIT_MSG" =~ ^sync: ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "ℹ️  This is a sync commit - deployment will be skipped"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "✓ This is a regular commit - proceeding with deployment"
+          fi
+
+      - name: Skip deployment for sync commits
+        if: steps.check-sync.outputs.skip == 'true'
+        run: |
+          echo "## Development Deployment Skipped ⏭️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** This is a sync commit from \`main\` → \`develop\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Message:** \`$(git log -1 --pretty=%B | head -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No deployment needed - this code was already deployed to production." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch Status:** \`develop\` is now aligned with \`main\`" >> $GITHUB_STEP_SUMMARY
+
       - name: Authenticate to Google Cloud
+        if: steps.check-sync.outputs.skip != 'true'
         id: auth
         uses: google-github-actions/auth@v2
         with:
@@ -30,11 +55,13 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Set up Cloud SDK
+        if: steps.check-sync.outputs.skip != 'true'
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Deploy to App Engine Dev via Cloud Build
+        if: steps.check-sync.outputs.skip != 'true'
         id: deploy
         run: |
           echo "Deploying to dev environment using Cloud Build..."
@@ -55,6 +82,7 @@ jobs:
           echo "✓ Cloud Build deployment complete!"
 
       - name: Get deployment URL
+        if: steps.check-sync.outputs.skip != 'true'
         id: url
         run: |
           # Get the project ID from gcloud (already authenticated)
@@ -66,6 +94,7 @@ jobs:
           echo "Dev URL: ${DEV_URL}"
 
       - name: Post deployment summary
+        if: steps.check-sync.outputs.skip != 'true'
         run: |
           echo "## Development Deployment Complete! :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
