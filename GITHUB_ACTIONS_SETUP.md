@@ -448,6 +448,8 @@ git push origin feature/my-awesome-feature
 # - Merge PR
 # - Approve deployment in Actions tab
 # - Deployed to: https://YOUR_PROJECT.uc.r.appspot.com
+# - Note: develop automatically syncs with main after production deployment
+#   (no manual intervention needed to keep branches aligned)
 ```
 
 ### Viewing Deployment Logs
