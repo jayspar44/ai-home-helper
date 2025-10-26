@@ -57,8 +57,11 @@ jobs:
       - name: Get deployment URL
         id: url
         run: |
-          # Get the dev service URL
-          DEV_URL="https://dev-dot-${{ secrets.GCP_PROJECT_ID }}.uc.r.appspot.com"
+          # Get the project ID from gcloud (already authenticated)
+          PROJECT_ID=$(gcloud config get-value project)
+
+          # Construct the dev service URL
+          DEV_URL="https://dev-dot-${PROJECT_ID}.uc.r.appspot.com"
           echo "url=${DEV_URL}" >> $GITHUB_OUTPUT
           echo "Dev URL: ${DEV_URL}"
 

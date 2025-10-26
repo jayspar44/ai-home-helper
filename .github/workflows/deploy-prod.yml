@@ -65,8 +65,11 @@ jobs:
       - name: Get deployment URL
         id: url
         run: |
-          # Get the production URL
-          PROD_URL="https://${{ secrets.GCP_PROJECT_ID }}.uc.r.appspot.com"
+          # Get the project ID from gcloud (already authenticated)
+          PROJECT_ID=$(gcloud config get-value project)
+
+          # Construct the production URL
+          PROD_URL="https://${PROJECT_ID}.uc.r.appspot.com"
           echo "url=${PROD_URL}" >> $GITHUB_OUTPUT
           echo "Production URL: ${PROD_URL}"
 
