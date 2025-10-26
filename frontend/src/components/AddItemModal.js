@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Bot, Camera, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Bot, Camera, AlertCircle } from 'lucide-react';
 import AIItemDetectionModal from './AIItemDetectionModal';
-import { daysToExpiryDate, expiryDateToDays, safeToDateInputValue } from '../utils/dateUtils';
+import { daysToExpiryDate, safeToDateInputValue } from '../utils/dateUtils';
 
 const LocationSelect = ({ value, onChange, disabled }) => (
   <select 

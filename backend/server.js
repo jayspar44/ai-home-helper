@@ -17,7 +17,6 @@ let genAI;
 let secrets;
 const app = express();
 let port = process.env.PORT || 3001;
-const fetch = require('node-fetch');
 const multer = require('multer');
 const fs = require('fs');
 
@@ -418,9 +417,8 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
 
         // If generating multiple recipes, create multiple prompts and run them
         if (generateCount > 1) {
-            const recipes = [];
             const promises = [];
-            
+
             for (let i = 0; i < generateCount; i++) {
                 const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, i + 1);
                 
@@ -665,7 +663,7 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
 // Suggest pantry item based on user input
 app.post('/api/pantry/suggest-item', checkAuth, async (req, res) => {
   try {
-    const { itemName, homeId } = req.body;
+    const { itemName, homeId: _homeId } = req.body;
     
     if (!itemName || !itemName.trim()) {
       return res.status(400).json({ error: 'Item name is required' });
@@ -752,7 +750,7 @@ Return JSON format:
 // Quick defaults for pantry items (fast location + expiry)
 app.post('/api/pantry/quick-defaults', checkAuth, async (req, res) => {
   try {
-    const { itemName, homeId } = req.body;
+    const { itemName, homeId: _homeId } = req.body;
     
     if (!itemName || !itemName.trim()) {
       return res.status(400).json({ error: 'Item name is required' });
@@ -1587,7 +1585,7 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
 
 
 // Global error handler for unhandled errors
-app.use((error, req, res, next) => {
+app.use((error, req, res, _next) => {
   console.error('Unhandled error:', error);
 
   // Don't expose internal errors in production

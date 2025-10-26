@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
-import { ChefHat, Calendar, Search, ChevronDown } from 'lucide-react';
+import { Calendar, Search, ChevronDown } from 'lucide-react';
 import { calculateRemainingDays } from '../utils/dateUtils';
 import RecipeSelector from '../components/RecipeSelector';
 import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
@@ -101,11 +101,10 @@ function RecipeCard({ recipe, onSave, isSaved, onSchedule }) {
 export default function RecipeGenerator() {
   const location = useLocation();
   const context = useOutletContext();
-  
+
   // Extract context values safely with defaults
   const userToken = context?.userToken;
   const activeHomeId = context?.activeHomeId;
-  const refreshProfile = context?.refreshProfile || (() => {});
   
   const [ingredients, setIngredients] = useState([]);
   const [ingredientText, setIngredientText] = useState('');

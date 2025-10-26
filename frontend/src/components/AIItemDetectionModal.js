@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, Camera, AlertCircle, Check, Loader2 } from 'lucide-react';
-import { calculateRemainingDays, daysToExpiryDate, safeToDateInputValue } from '../utils/dateUtils';
+import { calculateRemainingDays, safeToDateInputValue } from '../utils/dateUtils';
 
 const AIItemDetectionModal = ({ isOpen, onClose, onItemsDetected, homeId, userToken }) => {
   const [file, setFile] = useState(null);
