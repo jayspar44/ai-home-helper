@@ -16,6 +16,10 @@ permissions:
   contents: read
   pull-requests: write  # To post comments on PRs
 
+# NOTE: This workflow validates code quality and build success only.
+# The project currently has no automated tests (unit, integration, or e2e).
+# Test coverage should be added as the project grows.
+
 jobs:
   validate:
     name: Validate Changes
@@ -48,8 +52,7 @@ jobs:
         id: lint
         run: |
           echo "Running ESLint..."
-          npm run lint || echo "LINT_FAILED=true" >> $GITHUB_ENV
-        continue-on-error: true
+          npm run lint
 
       - name: Build frontend (validation)
         id: build

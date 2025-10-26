@@ -88,8 +88,8 @@ GitHub Push → GitHub Actions → Authenticate (WIF) → Trigger Cloud Build �
 **First-time setup:** See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for complete step-by-step instructions.
 
 **Quick summary:**
-1. Run `bash scripts/setup-github-workload-identity.sh`
-2. Add GitHub Secrets (from script output)
+1. Follow the manual gcloud commands in [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) (STEP 1)
+2. Add GitHub Secrets (values from gcloud commands output)
 3. Create GitHub Environments (`development`, `production`)
 4. Create `develop` branch
 5. Test by pushing to `develop`
@@ -235,10 +235,13 @@ npm run gcp:deploy:prod
 **Cause:** Workload Identity Federation not configured or IAM propagation delay
 
 **Solution:**
-1. Wait 5 minutes after setup (IAM propagation)
-2. Verify GitHub Secrets are added correctly
-3. Re-run workflow
-4. If still failing, re-run `scripts/setup-github-workload-identity.sh`
+1. Wait 5 minutes after gcloud commands (IAM propagation)
+2. Verify GitHub Secrets are correct (Settings → Secrets → Actions)
+3. Re-run the workflow (Actions → Re-run failed jobs)
+4. If still failing, verify the Workload Identity Pool and Provider exist:
+   ```bash
+   gcloud iam workload-identity-pools describe github-actions-pool --location=global --project=YOUR_PROJECT_ID
+   ```
 
 #### Issue: "Permission denied" on deployment
 
@@ -246,8 +249,14 @@ npm run gcp:deploy:prod
 
 **Solution:**
 ```bash
-# Re-run setup script to grant all necessary roles
-bash scripts/setup-github-workload-identity.sh
+# Manually grant the missing role
+SERVICE_ACCOUNT="github-actions-deployer@YOUR_PROJECT.iam.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/cloudbuild.builds.editor"
+
+# Grant all required roles (run all 6 commands from GITHUB_ACTIONS_SETUP.md STEP 1.2)
 ```
 
 #### Issue: Approval button doesn't appear

@@ -31,6 +31,7 @@ Push to main → Wait for approval → Deploy to production
 - ✅ Auto-deploy to dev on `develop` branch
 - ✅ Manual approval required for production
 - ✅ PR validation (linting, build checks)
+  - ⚠️ Note: No automated tests currently - validation checks code quality and build success only
 - ✅ Uses your existing Cloud Build configuration
 - ✅ Full deployment history in GitHub Actions
 
