@@ -1,6 +1,6 @@
 {
-  "version": "2.15.3",
-  "lastUpdated": "2025-10-26T03:50:57.999Z",
+  "version": "2.15.4",
+  "lastUpdated": "2025-10-26T04:34:55.211Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -191,6 +191,11 @@
       "description": "Fix deployment URL display in GitHub Actions summaries (was showing *** due to secret redaction)",
       "timestamp": "2025-10-26T03:50:57.999Z",
       "date": "October 25, 2025"
+    },
+    "2.15.4": {
+      "description": "Automate develop sync after production releases, skip redundant dev deployments, and document CI/CD workflow",
+      "timestamp": "2025-10-26T04:34:55.211Z",
+      "date": "October 26, 2025"
     }
   }
 }
