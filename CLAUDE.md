@@ -102,7 +102,7 @@ npm run install-all        # Install all dependencies
 **Cloud Build Optimizations** (used by both deployments):
 - Tar+gzip dependency caching (85% size reduction)
 - Parallel cache operations (restore/save)
-- E2_HIGHCPU_8 machine type (8 vCPUs)
+- E2_STANDARD_2 machine type (free tier: 2 vCPUs, 120 build-minutes/day)
 - Parallel dependency installation (root, frontend, backend)
 
 **Important Notes**:
@@ -146,6 +146,26 @@ Version is managed via version.json and mirrored in the root, frontend and backe
   - README.md: New features, major architecture changes
   - DEPLOYMENT.md: Deployment process changes, new GCP features
   - CLAUDE.md: New protocols, code style changes
+
+## Development Workflow Protocol
+
+**MANDATORY: Always follow the GitFlow branching model**:
+
+1. **Never commit directly to `develop` or `main`**
+2. **Always create a feature branch**: `git checkout -b feature/descriptive-name`
+3. **Work on feature branch**: Make changes, commit
+4. **Version bump**: Run `npm run version:bump X.Y.Z "description"` (after user approval)
+5. **Push and submit PR to `develop`**: Triggers PR validation (ESLint + build)
+6. **After merge**: Auto-deploys to dev environment for testing
+7. **Production release**: Create PR from `develop` to `main`
+8. **After production merge**: `sync-develop.yml` auto-syncs branches
+
+**Reasoning**: This workflow ensures:
+- All changes are validated before deployment
+- Version history is tracked before PR submission
+- Dev environment mirrors production deployment process
+- Production requires manual approval
+- Branches stay synchronized automatically
 
 ## Code Style
 - Use functional React components with hooks
