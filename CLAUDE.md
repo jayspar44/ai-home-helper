@@ -100,8 +100,6 @@ npm run install-all        # Install all dependencies
 - Saves ~5-10 minutes Cloud Build time (no redundant deployment)
 
 **Cloud Build Optimizations** (used by both deployments):
-- Tar+gzip dependency caching (85% size reduction)
-- Parallel cache operations (restore/save)
 - E2_STANDARD_2 machine type (free tier: 2 vCPUs, 120 build-minutes/day)
 - Parallel dependency installation (root, frontend, backend)
 
