@@ -75,7 +75,7 @@ app.use(pinoHttp({
     if (res.statusCode >= 500 || err) return 'error'
     return 'debug' // Normal requests at DEBUG (hidden in prod)
   },
-  customSuccessMessage: (req, res) => {
+  customSuccessMessage: (req, _res) => {
     return `${req.method} ${req.url}`
   },
   customErrorMessage: (req, res, err) => {
@@ -341,17 +341,17 @@ app.get('/api/homes/:homeId/members', checkAuth, async (req, res) => {
 });
 
 app.delete('/api/homes/:homeId/members/:memberId', checkAuth, async (req, res) => {
-    try {
-        const { homeId, memberId } = req.params;
-        const adminId = req.user.uid;
+    const { homeId, memberId } = req.params;
+    const adminId = req.user.uid;
 
+    try {
         const homeRef = db.collection('homes').doc(homeId);
         const memberRef = db.collection('users').doc(memberId);
 
         await db.runTransaction(async (transaction) => {
             const homeDoc = await transaction.get(homeRef);
             if (!homeDoc.exists) throw new Error("Home not found.");
-            
+
             const homeData = homeDoc.data();
             if (homeData.members[adminId] !== 'admin') {
                 throw new Error("You do not have permission to remove members.");
@@ -1564,6 +1564,8 @@ app.post('/api/planner/:homeId/log-meal', checkAuth, async (req, res) => {
       const createdDoc = await docRef.get();
       const data = createdDoc.data();
 
+      req.log.info({ homeId: req.params.homeId, userId: req.user.uid, date, mealType, description }, 'Meal logged');
+
       return res.status(201).json({
         id: docRef.id,
         ...data,
@@ -1575,7 +1577,6 @@ app.post('/api/planner/:homeId/log-meal', checkAuth, async (req, res) => {
           loggedAt: data.actual.loggedAt?.toDate?.()?.toISOString() || null
         } : null
       });
-      req.log.info({ homeId: req.params.homeId, userId: req.user.uid, date, mealType, description }, 'Meal logged');
     }
   } catch (error) {
     req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
