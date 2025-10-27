@@ -24,17 +24,20 @@ jobs:
       - name: Check if this is a sync commit
         id: check-sync
         run: |
-          git fetch origin main
-          CURRENT_COMMIT=$(git rev-parse HEAD)
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+          COMMIT_MSG=$(git log -1 --pretty=%B)
 
-          # Check if this commit already exists on main (meaning it's a sync)
-          if git merge-base --is-ancestor $CURRENT_COMMIT origin/main; then
+          # Skip deployment if both conditions are met:
+          # 1. Commit author is github-actions[bot]
+          # 2. Commit message starts with "sync:"
+          if [[ "$COMMIT_AUTHOR" == "github-actions[bot]" ]] && [[ "$COMMIT_MSG" =~ ^sync: ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "ℹ️  This commit already exists on main - skipping deployment"
-            echo "This is a sync from main → develop"
+            echo "ℹ️  This is an automated sync commit - deployment will be skipped"
+            echo "Author: $COMMIT_AUTHOR"
+            echo "Message: $(echo "$COMMIT_MSG" | head -1)"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "✓ This commit is unique to develop - proceeding with deployment"
+            echo "✓ This is a regular commit - proceeding with deployment"
           fi
 
       - name: Skip deployment for sync commits
