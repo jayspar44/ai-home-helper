@@ -128,10 +128,8 @@ availableSecrets:
     # - FRONTEND_URL
 
 # Build options
+# Note: Uses default machine type (E2_STANDARD_2) which is part of the free tier
 options:
-  # Use free tier machine type (120 build-minutes/day)
-  machineType: 'E2_STANDARD_2'
-
   # Enable build logging
   logging: 'CLOUD_LOGGING_ONLY'
 
