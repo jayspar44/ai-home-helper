@@ -17,6 +17,10 @@ steps:
     args:
       - '-c'
       - |
+        echo "============================================"
+        echo "CLOUD BUILD ENVIRONMENT: ${_ENV^^}"
+        echo "============================================"
+        echo ""
         echo "🔄 Restoring dependency cache..."
 
         # Download compressed cache archives in parallel (faster!)
