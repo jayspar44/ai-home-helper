@@ -129,8 +129,8 @@ availableSecrets:
 
 # Build options
 options:
-  # Use faster machine type for builds
-  machineType: 'E2_HIGHCPU_8'
+  # Use free tier machine type (120 build-minutes/day)
+  machineType: 'E2_STANDARD_2'
 
   # Enable build logging
   logging: 'CLOUD_LOGGING_ONLY'
