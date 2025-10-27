@@ -1,6 +1,6 @@
 {
   "version": "2.15.6",
-  "lastUpdated": "2025-10-27T03:11:15.292Z",
+  "lastUpdated": "2025-10-26T11:11:15.292Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -204,7 +204,7 @@
     },
     "2.15.6": {
       "description": "Configure Cloud Build to use E2_STANDARD_2 free tier machine type, add Development Workflow Protocol to CLAUDE.md with mandatory GitFlow branching model",
-      "timestamp": "2025-10-27T03:11:15.292Z",
+      "timestamp": "2025-10-26T11:11:15.292Z",
       "date": "October 26, 2025"
     }
   }
