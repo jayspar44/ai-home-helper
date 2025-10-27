@@ -29,18 +29,52 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Check if sync is needed
+        id: check-sync
+        run: |
+          git fetch origin main
+
+          # Check if develop is behind main
+          BEHIND=$(git rev-list --count HEAD..origin/main)
+
+          if [ "$BEHIND" -eq 0 ]; then
+            echo "needed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  develop is already up-to-date with main - no sync needed"
+          else
+            echo "needed=true" >> $GITHUB_OUTPUT
+            echo "✓ develop is behind main by $BEHIND commit(s) - sync needed"
+          fi
+
       - name: Merge main into develop
+        if: steps.check-sync.outputs.needed == 'true'
+        id: merge
         run: |
           echo "Syncing develop with main after production release..."
-          git fetch origin main
-          git merge origin/main --no-edit -m "sync: Align develop with main after production release"
+
+          # Use --no-ff to force a merge commit (prevents fast-forward)
+          # This ensures our custom commit message is used
+          git merge origin/main --no-ff -m "sync: Align develop with main after production release"
+
+          echo "merge_done=true" >> $GITHUB_OUTPUT
+          echo "✓ Merge completed"
 
       - name: Push changes
+        if: steps.check-sync.outputs.needed == 'true' && steps.merge.outputs.merge_done == 'true'
         run: |
           git push origin develop
           echo "✓ Successfully synced develop with main"
 
+      - name: Skip sync
+        if: steps.check-sync.outputs.needed == 'false'
+        run: |
+          echo "## Branch Sync Skipped ⏭️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** \`develop\` is already up-to-date with \`main\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** No action needed - branches are already synchronized" >> $GITHUB_STEP_SUMMARY
+
       - name: Post sync summary
+        if: steps.check-sync.outputs.needed == 'true'
         run: |
           echo "## Branch Sync Complete! 🔄" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
