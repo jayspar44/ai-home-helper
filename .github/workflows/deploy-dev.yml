@@ -24,13 +24,17 @@ jobs:
       - name: Check if this is a sync commit
         id: check-sync
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          if [[ "$COMMIT_MSG" =~ ^sync: ]]; then
+          git fetch origin main
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+
+          # Check if this commit already exists on main (meaning it's a sync)
+          if git merge-base --is-ancestor $CURRENT_COMMIT origin/main; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "ℹ️  This is a sync commit - deployment will be skipped"
+            echo "ℹ️  This commit already exists on main - skipping deployment"
+            echo "This is a sync from main → develop"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "✓ This is a regular commit - proceeding with deployment"
+            echo "✓ This commit is unique to develop - proceeding with deployment"
           fi
 
       - name: Skip deployment for sync commits
