@@ -69,11 +69,10 @@ jobs:
           echo "Service: dev"
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
-          echo "Using optimized cloudbuild.yaml (caching + E2_HIGHCPU_8)"
+          echo "Using optimized cloudbuild.yaml"
 
           # Trigger Cloud Build with optimized configuration
           # This uses the same pipeline as manual 'npm run gcp:deploy:dev'
-          # Benefits: tar+gzip caching, parallel operations, faster machine type
           gcloud builds submit \
             --config=cloudbuild.yaml \
             --project=${{ secrets.GCP_PROJECT_ID }} \
