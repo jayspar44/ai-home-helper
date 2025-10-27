@@ -57,57 +57,17 @@ npm run install-all        # Install all dependencies
 - `feature/*` = feature branches
 
 **Automated Workflows**:
+- **PR Validation**: Runs ESLint + build checks on PRs to `develop` or `main`
+- **Deploy to Development**: Push to `develop` → auto-deploys to dev environment
+- **Deploy to Production**: Push to `main` → requires manual approval → deploys to production
+- **Sync develop with main**: After production deployment, automatically merges `main` → `develop` (commits prefixed with "sync:" to skip redundant dev deployment)
 
-1. **PR Validation** (`.github/workflows/pr-validation.yml`)
-   - Triggers: PRs to `develop` or `main`
-   - Runs: ESLint (code quality) + Frontend build (compilation check)
-   - Note: Build step disables ESLint (handled by dedicated lint step)
+**Quick Reference**:
+- Dev environment: `https://dev-dot-{project-id}.uc.r.appspot.com`
+- Production: `https://{project-id}.uc.r.appspot.com`
+- Deployments use Cloud Build with secrets from GCP Secret Manager
 
-2. **Deploy to Development** (`.github/workflows/deploy-dev.yml`)
-   - Triggers: Push to `develop` branch
-   - Skips: Commits with "sync:" prefix (branch alignment, no new code)
-   - Action: Deploys to dev service via Cloud Build (optimized pipeline)
-   - URL: https://dev-dot-{project-id}.uc.r.appspot.com
-
-3. **Deploy to Production** (`.github/workflows/deploy-prod.yml`)
-   - Triggers: Push to `main` branch
-   - Requires: Manual approval via GitHub Environment "production"
-   - Action: Deploys to default service via Cloud Build
-   - URL: https://{project-id}.uc.r.appspot.com
-
-4. **Sync develop with main** (`.github/workflows/sync-develop.yml`)
-   - Triggers: After push to `main` (post-production deployment)
-   - Action: Automatically merges main → develop
-   - Commit: Prefixed with "sync:" to skip redundant dev deployment
-   - Purpose: Keeps branches aligned without manual intervention
-
-**Development Workflow**:
-```
-1. Create feature branch from develop: git checkout -b feature/my-feature
-2. Make changes, commit, push
-3. Open PR to develop → PR validation runs
-4. Merge PR → Auto-deploys to dev environment
-5. Test in dev environment
-6. Open PR from develop to main → PR validation runs
-7. Merge PR → Requires manual approval → Deploys to production
-8. sync-develop.yml automatically aligns develop with main
-```
-
-**Why sync-develop.yml exists**:
-- After production release, develop needs to match main
-- Without automation, requires manual git merge + admin bypass
-- Sync commits use "sync:" prefix so deploy-dev.yml skips deployment
-- Saves ~5-10 minutes Cloud Build time (no redundant deployment)
-
-**Cloud Build Optimizations** (used by both deployments):
-- E2_STANDARD_2 machine type (free tier: 2 vCPUs, 120 build-minutes/day)
-- Parallel dependency installation (root, frontend, backend)
-
-**Important Notes**:
-- All deployments use `cloudbuild.yaml` (optimized pipeline from v2.14.0)
-- Project ID fetched from gcloud (not secrets) to display actual URLs
-- Frontend build secrets injected at build time from Secret Manager
-- Backend secrets loaded at runtime from Secret Manager
+For complete deployment details, setup instructions, and troubleshooting, see [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## Database Schema
 ```javascript

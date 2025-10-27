@@ -27,6 +27,16 @@ Roscoe is a modern web application designed to streamline household management b
 - **Expiration Tracking**: Monitor shelf life and get notified of expiring items
 - **Inventory Integration**: Seamlessly use pantry items in recipe generation
 
+### 📅 **Smart Meal Planner**
+- **Weekly Planning**: Visual calendar showing meals for the entire week
+- **3-State Meal System**: Track meals from planned to completed
+  - Empty: No meal planned yet
+  - Planned: Recipe selected and scheduled
+  - Completed: Meal logged with actual consumption details
+- **Recipe Integration**: Add saved recipes directly to meal plan
+- **Timezone-Independent Dates**: Consistent meal tracking regardless of location
+- **Consumption Logging**: Record what was actually eaten vs. what was planned
+
 ### 👥 **Multi-User Home Management**
 - **Home Administration**: Invite and manage family members or housemates
 - **Role-Based Access**: Admin and member roles with appropriate permissions
@@ -93,46 +103,29 @@ Roscoe is a modern web application designed to streamline household management b
 
 ## 🛠️ Technology Stack
 
-### **Frontend Technologies**
-- **React 18**: Modern functional components with hooks
-- **React Router v6**: Declarative routing with nested routes
-- **Firebase Auth**: Secure authentication and user management
-- **Lucide React**: Consistent iconography
-- **CSS Custom Properties**: Theme-able design system
-- **Responsive Design**: Mobile-first approach with breakpoints
+### **Frontend**
+- React 18, React Router v6, Firebase Auth
+- CSS Custom Properties, Lucide React icons
+- Mobile-first responsive design
 
-### **Backend Technologies**
-- **Node.js**: JavaScript runtime for server-side logic
-- **Express.js**: Minimal web framework for API endpoints
-- **Firebase Admin**: Server-side Firebase integration and Firestore database
-- **Google Gemini 2.5 Flash**: AI-powered recipe generation and item recognition
-- **GCP Secret Manager**: Secure runtime secret loading
-- **CORS**: Cross-origin resource sharing configuration
+### **Backend**
+- Node.js + Express.js
+- Firebase Admin SDK + Firestore
+- Google Gemini 2.5 Flash (AI)
+- GCP Secret Manager
 
-### **Development Tools**
-- **Create React App**: Build tooling and development server
-- **ESLint**: Code quality and consistency
-- **Git**: Version control with structured commits
+### **Development & Deployment**
+- ESLint, Git, GitHub Actions
+- GCP App Engine, Cloud Build
+- Automated CI/CD pipeline
 
-## 📱 Responsive Design
-
-Roscoe is built mobile-first with breakpoints at:
-- **Mobile**: 320px - 767px (Primary experience)
-- **Tablet**: 768px - 1023px (Adaptive layout)
-- **Desktop**: 1024px+ (Sidebar navigation)
 
 ## 🎨 Design System
 
-### **Color Palette**
-- **Primary**: `#34D399` (Green 400) - Roscoe signature color
-- **Primary Light**: `#A7F3D0` (Green 200) - Accents and highlights  
-- **Primary Dark**: `#047857` (Green 700) - Text and borders
-- **Accent**: `#F97316` (Orange 500) - Call-to-action elements
-
-### **Typography**
-- **System Fonts**: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto
-- **Responsive Scale**: Fluid typography that scales with viewport
-- **Accessibility**: High contrast ratios and readable font sizes
+- **Color Palette**: Signature green primary colors with orange accents
+- **Typography**: Modern system font stack with responsive scaling
+- **Responsive**: Mobile-first design (320px to 1024px+)
+- **Accessibility**: WCAG-compliant with high contrast and proper focus management
 
 ## 📄 License
 
