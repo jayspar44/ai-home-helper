@@ -13,6 +13,7 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 - **Backend**: Node.js + Express.js, Firebase Admin SDK, Multer file uploads
 - **Database**: Firebase Firestore
 - **AI**: Google Gemini 2.5 Flash API (@google/generative-ai v0.17.1)
+- **Logging**: Pino (backend), Custom lightweight logger (frontend)
 - **Development**: ESLint 9.36.0, Concurrently, Nodemon
 
 - **Deployment**:
@@ -125,8 +126,62 @@ Version is managed via version.json and mirrored in the root, frontend and backe
 - Production requires manual approval
 - Branches stay synchronized automatically
 
+## Logging Protocol
+
+**Backend: Pino Structured Logging**
+- **Logger**: Pino with pino-http middleware ([backend/utils/logger.js](backend/utils/logger.js))
+- **Dependencies**: `pino`, `pino-http`, `pino-pretty` (dev transport)
+- **Log Levels**: DEBUG (dev only), INFO (prod), WARN, ERROR (always visible)
+- **Environment Behavior**:
+  - Development: Colored console output via pino-pretty, DEBUG level
+  - Production: JSON structured logs, INFO level, integrates with GCP Cloud Logging
+
+**HTTP Request Logging**:
+- One-line format at DEBUG level (silent in production)
+- Only logs: method, url, statusCode, responseTime, userId
+- Health check endpoints skipped
+- Pattern: `GET /api/pantry/items 200 45ms`
+
+**Business Context Logging**:
+- All features have application-level logs showing user actions
+- Include relevant context: userId, homeId, item names, AI metrics
+- Examples:
+  - `req.log.info({ userId, homeId, itemName, location }, 'Pantry item added');`
+  - `req.log.info({ userId, recipeCount, aiResponseTime }, 'Recipes generated');`
+  - `req.log.error({ err, userId }, 'Failed to save recipe');`
+
+**Sensitive Data Redaction**:
+- Automatically redacts: token, idToken, authorization, apiKey, serviceAccount, password
+- Safe to log: userId, uid, homeId (essential for debugging)
+- Never log: API keys, Firebase tokens, service account JSON
+
+**Frontend: Custom Lightweight Logger**
+- **Logger**: Custom environment-aware logger ([frontend/src/utils/logger.js](frontend/src/utils/logger.js))
+- **Zero Dependencies**: 50-line implementation to avoid bundle bloat
+- **Methods**: `logger.debug()`, `logger.info()`, `logger.warn()`, `logger.error()`
+- **Environment Behavior**:
+  - Development: All logs visible in browser console
+  - Production: Only errors visible (debug/info/warn silent)
+
+**Usage Patterns**:
+```javascript
+// Backend - Business logging
+req.log.info({ userId: req.user.uid, itemName, quantity }, 'Item added to pantry');
+req.log.error({ err: error, userId: req.user.uid }, 'Failed to fetch pantry items');
+
+// Frontend - Environment-aware
+logger.debug('Fetching user profile'); // Silent in prod
+logger.error('Failed to load recipes:', error); // Always visible
+```
+
+**Configuration**:
+- Set `LOG_LEVEL` environment variable to override (debug|info|warn|error)
+- GCP automatically maps Pino severity levels to Cloud Logging
+- View logs: `npm run gcp:logs:prod` or GCP Console → App Engine → Logs
+
 ## Code Style
 - Use functional React components with hooks
 - Follow existing CSS custom property patterns
 - All API endpoints require Firebase authentication
 - Restart backend dev server after Node.js changes
+- Use structured logging with Pino (backend) and custom logger (frontend)

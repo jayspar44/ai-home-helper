@@ -1,97 +1,55 @@
 /**
- * Environment-based Logger Utility
+ * Pino Logger Configuration
  * Provides structured logging for development and production environments
+ * with automatic sensitive data redaction
  */
+
+const pino = require('pino');
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-const logger = {
-  /**
-   * Debug level logging - only shows in development
-   * @param {string} message - Log message
-   * @param {any} data - Optional data object
-   */
-  debug: (message, data) => {
-    if (isDevelopment) {
-      console.log('🔍 DEBUG:', message, data || '');
-    }
-    // In production: silent (debug logs are not needed)
+// Configure Pino logger
+const logger = pino({
+  // Log level: debug in development, info in production
+  level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
+
+  // Redact sensitive fields from logs
+  redact: {
+    paths: [
+      'token',
+      'idToken',
+      'authorization',
+      'bearer',
+      'apiKey',
+      'geminiApiKey',
+      'serviceAccount',
+      'password',
+      'req.headers.authorization',
+      '*.token',
+      '*.idToken',
+      '*.authorization'
+    ],
+    remove: true // Completely remove sensitive fields
   },
 
-  /**
-   * Info level logging - formatted differently for dev vs prod
-   * @param {string} message - Log message
-   * @param {any} data - Optional data object
-   */
-  info: (message, data) => {
-    if (isDevelopment) {
-      console.log('ℹ️  INFO:', message, data || '');
-    } else {
-      // Production: structured JSON logging for Railway
-      console.log(JSON.stringify({
-        level: 'info',
-        message,
-        data,
-        timestamp: new Date().toISOString()
-      }));
+  // Development: Pretty formatted logs with colors
+  // Production: Structured JSON for GCP Cloud Logging
+  transport: isDevelopment ? {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'HH:MM:ss',
+      ignore: 'pid,hostname',
+      singleLine: false
     }
-  },
+  } : undefined,
 
-  /**
-   * Warning level logging
-   * @param {string} message - Log message
-   * @param {any} data - Optional data object
-   */
-  warn: (message, data) => {
-    if (isDevelopment) {
-      console.warn('⚠️  WARN:', message, data || '');
-    } else {
-      console.warn(JSON.stringify({
-        level: 'warn',
-        message,
-        data,
-        timestamp: new Date().toISOString()
-      }));
+  // Map Pino levels to GCP Cloud Logging severity
+  formatters: !isDevelopment ? {
+    level: (label) => {
+      return { severity: label.toUpperCase() };
     }
-  },
-
-  /**
-   * Error level logging - always logged with full details
-   * @param {string} message - Error message
-   * @param {Error|any} error - Error object or additional data
-   */
-  error: (message, error) => {
-    if (isDevelopment) {
-      console.error('❌ ERROR:', message, error);
-    } else {
-      // Production: structured JSON logging with error details
-      console.error(JSON.stringify({
-        level: 'error',
-        message,
-        error: error?.message || error,
-        stack: error?.stack,
-        timestamp: new Date().toISOString()
-      }));
-    }
-  },
-
-  /**
-   * Success level logging - for important positive outcomes
-   * @param {string} message - Success message
-   * @param {any} data - Optional data object
-   */
-  success: (message, data) => {
-    if (isDevelopment) {
-      console.log('✅ SUCCESS:', message, data || '');
-    } else {
-      console.log(JSON.stringify({
-        level: 'success',
-        message,
-        data,
-        timestamp: new Date().toISOString()
-      }));
-    }
-  }
-};
+  } : undefined
+});
 
 module.exports = logger;

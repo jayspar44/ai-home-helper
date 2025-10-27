@@ -73,6 +73,7 @@ Roscoe is a modern web application designed to streamline household management b
 - **Secrets**: GCP Secret Manager for secure credential storage
 - **Local Development**: Full-stack development on localhost
 - **Monitoring**: GCP Cloud Logging with structured logs
+- **Logging**: Pino structured logging (backend) with automatic GCP integration, custom lightweight logger (frontend)
 
 ### **Key Components**
 
@@ -113,6 +114,7 @@ Roscoe is a modern web application designed to streamline household management b
 - Firebase Admin SDK + Firestore
 - Google Gemini 2.5 Flash (AI)
 - GCP Secret Manager
+- Pino (structured logging)
 
 ### **Development & Deployment**
 - ESLint, Git, GitHub Actions

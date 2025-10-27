@@ -452,6 +452,50 @@ gcloud app logs read --service=dev --limit=100
 gcloud app logs read --service=default --limit=100 --freshness=1h
 ```
 
+### Logging System
+
+**Backend: Pino Structured Logging**
+- **Format**: JSON structured logs in production, colored console in development
+- **Log Levels**:
+  - `DEBUG`: Detailed debugging info (dev only, includes HTTP requests)
+  - `INFO`: Business events and key operations (default in prod)
+  - `WARN`: Potential issues and warnings
+  - `ERROR`: Actual errors requiring attention
+- **GCP Integration**: Pino severity levels automatically map to Cloud Logging levels
+
+**HTTP Request Logs**:
+- One-line format at DEBUG level (hidden in production by default)
+- Example: `GET /api/pantry/items 200 45ms`
+- Health check endpoints (`/api/health`, `/api/ready`) are not logged
+
+**Business Context Logs**:
+- Application-level logs showing user actions (INFO level)
+- Include structured context: userId, homeId, item names, AI metrics
+- Example: `{"level":"info","userId":"abc123","itemName":"milk","location":"fridge","msg":"Pantry item added"}`
+
+**Sensitive Data Protection**:
+- Automatically redacts: tokens, API keys, passwords, authorization headers
+- Safe identifiers preserved: userId, homeId (essential for debugging)
+- Never logs credentials or secrets
+
+**Configure Log Level**:
+```bash
+# In app.yaml or app-dev.yaml (add to env_variables)
+env_variables:
+  LOG_LEVEL: 'info'  # Options: debug, info, warn, error
+```
+
+**Frontend Logging**:
+- Custom lightweight logger (zero dependencies)
+- Development: All logs visible in browser console
+- Production: Only errors visible (debug/info/warn silent)
+
+**Tips for Effective Debugging**:
+1. Use structured log fields for filtering: `jsonPayload.userId="abc123"`
+2. Search by severity in GCP Console: ERROR, WARNING, INFO
+3. Filter by endpoint: `jsonPayload.url="/api/pantry/items"`
+4. Track AI performance: `jsonPayload.aiResponseTime > 1000`
+
 ### Check Instances
 
 **List active instances:**

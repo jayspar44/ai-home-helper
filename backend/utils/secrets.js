@@ -9,6 +9,7 @@
  */
 
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const logger = require('./logger');
 
 // Cache for loaded secrets (in-memory, per instance)
 const secretsCache = {};
@@ -54,13 +55,13 @@ async function fetchSecretFromGCP(secretName) {
   const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
 
   try {
-    console.log(`🔐 Fetching secret: ${secretName} from Secret Manager...`);
+    logger.debug({ secretName }, 'Fetching secret from Secret Manager');
     const [version] = await client.accessSecretVersion({ name });
     const secretValue = version.payload.data.toString('utf8');
-    console.log(`✅ Successfully loaded secret: ${secretName} (${secretValue.length} characters)`);
+    logger.info({ secretName, length: secretValue.length }, 'Successfully loaded secret');
     return secretValue;
   } catch (error) {
-    console.error(`❌ Failed to fetch secret ${secretName}:`, error.message);
+    logger.error({ err: error, secretName }, 'Failed to fetch secret');
     throw new Error(`Failed to fetch secret ${secretName}: ${error.message}`);
   }
 }
@@ -88,7 +89,7 @@ async function loadSecret(secretName, envVarName) {
     if (!secretValue) {
       throw new Error(`Environment variable ${envVarName} not set. Check your .env file.`);
     }
-    console.log(`🔓 Loaded ${secretName} from local environment variable`);
+    logger.debug({ secretName }, 'Loaded secret from local environment variable');
   }
 
   // Cache the secret
@@ -101,7 +102,8 @@ async function loadSecret(secretName, envVarName) {
  * @returns {Promise<Object>} Object containing all secrets
  */
 async function loadAllSecrets() {
-  console.log(`\n🔐 Loading secrets (environment: ${isGCP() ? 'GCP' : 'local'})...`);
+  const environment = isGCP() ? 'GCP' : 'local';
+  logger.info({ environment }, 'Loading secrets');
 
   try {
     const [firebaseServiceAccount, geminiApiKey, frontendUrl] = await Promise.all([
@@ -110,7 +112,7 @@ async function loadAllSecrets() {
       loadSecret('FRONTEND_URL', 'FRONTEND_URL')
     ]);
 
-    console.log('✅ All secrets loaded successfully\n');
+    logger.info('All secrets loaded successfully');
 
     return {
       firebaseServiceAccount,
@@ -118,7 +120,7 @@ async function loadAllSecrets() {
       frontendUrl
     };
   } catch (error) {
-    console.error('❌ Failed to load secrets:', error.message);
+    logger.error({ err: error }, 'Failed to load secrets');
     throw error;
   }
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Copy, Download, Check } from 'lucide-react';
+import logger from '../utils/logger';
 
 const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
   const [jsonData, setJsonData] = useState('');
@@ -60,7 +61,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
       }, 2000);
 
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      logger.error('Failed to copy to clipboard:', error);
       // Could add error toast here
     }
   };

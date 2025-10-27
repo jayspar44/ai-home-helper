@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PlannerRecipeCard from './PlannerRecipeCard';
+import logger from '../utils/logger';
 
 // Icons
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
@@ -37,14 +38,14 @@ export default function RecipeSelector({
   ];
 
   const fetchSavedRecipes = useCallback(async () => {
-    console.log('🔍 fetchSavedRecipes called', { getAuthHeaders: !!getAuthHeaders, activeHomeId });
+    logger.debug('🔍 fetchSavedRecipes called', { getAuthHeaders: !!getAuthHeaders, activeHomeId });
 
     if (!getAuthHeaders || !activeHomeId) {
-      console.log('❌ fetchSavedRecipes aborted - missing dependencies', { getAuthHeaders: !!getAuthHeaders, activeHomeId });
+      logger.debug('❌ fetchSavedRecipes aborted - missing dependencies', { getAuthHeaders: !!getAuthHeaders, activeHomeId });
       return;
     }
 
-    console.log('📡 Starting API call to /api/recipes/list');
+    logger.debug('📡 Starting API call to /api/recipes/list');
     setIsLoading(true);
     try {
       const response = await fetch(`/api/recipes/list`, {
@@ -53,40 +54,40 @@ export default function RecipeSelector({
         body: JSON.stringify({ homeId: activeHomeId })
       });
 
-      console.log('📡 API response received', { status: response.status, ok: response.ok });
+      logger.debug('📡 API response received', { status: response.status, ok: response.ok });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📦 API response data:', data);
-        console.log('🔢 Recipes array:', data.recipes);
-        console.log('📊 Recipes count:', data.recipes?.length || 0);
+        logger.debug('📦 API response data:', data);
+        logger.debug('🔢 Recipes array:', data.recipes);
+        logger.debug('📊 Recipes count:', data.recipes?.length || 0);
 
         const recipesList = data.recipes || [];
-        console.log('💾 Setting recipes state to:', recipesList);
+        logger.debug('💾 Setting recipes state to:', recipesList);
         setRecipes(recipesList);
         setError('');
 
-        console.log('✅ Successfully set recipes state');
+        logger.debug('✅ Successfully set recipes state');
       } else {
-        console.error('❌ API response not ok:', response.status);
+        logger.error('❌ API response not ok:', response.status);
         setError('Failed to load recipes');
         setRecipes([]);
       }
     } catch (err) {
-      console.error('❌ Error fetching recipes:', err);
+      logger.error('❌ Error fetching recipes:', err);
       setError('Failed to load recipes');
       setRecipes([]);
     } finally {
-      console.log('🏁 fetchSavedRecipes finished, setting loading to false');
+      logger.debug('🏁 fetchSavedRecipes finished, setting loading to false');
       setIsLoading(false);
     }
   }, [getAuthHeaders, activeHomeId]);
 
   // Initialize form when modal opens
   useEffect(() => {
-    console.log('🎪 Modal useEffect triggered', { isOpen });
+    logger.debug('🎪 Modal useEffect triggered', { isOpen });
     if (isOpen) {
-      console.log('🎪 Modal opened - initializing form');
+      logger.debug('🎪 Modal opened - initializing form');
       const formatDateForInput = (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -103,16 +104,16 @@ export default function RecipeSelector({
       setServings('');
       setSearchQuery('');
       setError('');
-      console.log('🎪 About to call fetchSavedRecipes');
+      logger.debug('🎪 About to call fetchSavedRecipes');
       fetchSavedRecipes();
     }
   }, [isOpen, selectedDate, selectedMealType, fetchSavedRecipes]);
 
   // Filter recipes based on search query
   useEffect(() => {
-    console.log('🔍 Filter useEffect triggered', { recipesCount: recipes.length, searchQuery });
+    logger.debug('🔍 Filter useEffect triggered', { recipesCount: recipes.length, searchQuery });
     if (!searchQuery.trim()) {
-      console.log('🔍 No search query - setting all recipes as filtered', { recipesCount: recipes.length });
+      logger.debug('🔍 No search query - setting all recipes as filtered', { recipesCount: recipes.length });
       setFilteredRecipes(recipes);
     } else {
       const query = searchQuery.toLowerCase();
@@ -124,19 +125,19 @@ export default function RecipeSelector({
             .toLowerCase().includes(query)
         )
       );
-      console.log('🔍 Filtered recipes', { query, originalCount: recipes.length, filteredCount: filtered.length });
+      logger.debug('🔍 Filtered recipes', { query, originalCount: recipes.length, filteredCount: filtered.length });
       setFilteredRecipes(filtered);
     }
   }, [searchQuery, recipes]);
 
   // Debug recipes state changes
   useEffect(() => {
-    console.log('📊 Recipes state changed:', { recipesCount: recipes.length, recipes });
+    logger.debug('📊 Recipes state changed:', { recipesCount: recipes.length, recipes });
   }, [recipes]);
 
   // Debug filteredRecipes state changes
   useEffect(() => {
-    console.log('📋 FilteredRecipes state changed:', { filteredCount: filteredRecipes.length, filteredRecipes });
+    logger.debug('📋 FilteredRecipes state changed:', { filteredCount: filteredRecipes.length, filteredRecipes });
   }, [filteredRecipes]);
 
   const handleRecipeSelect = (recipe) => {
@@ -170,7 +171,7 @@ export default function RecipeSelector({
         description: selectedRecipe.description
       };
 
-      console.log('📝 Planned data being sent:', plannedData);
+      logger.debug('📝 Planned data being sent:', plannedData);
 
       const mealPlan = {
         date: schedulingDate, // Date-only format, no timezone conversion
@@ -178,7 +179,7 @@ export default function RecipeSelector({
         planned: plannedData
       };
 
-      console.log('📅 Scheduling recipe:', { mealPlan, selectedRecipe });
+      logger.debug('📅 Scheduling recipe:', { mealPlan, selectedRecipe });
 
       const response = await fetch(`/api/planner/${activeHomeId}`, {
         method: 'POST',
@@ -186,27 +187,27 @@ export default function RecipeSelector({
         body: JSON.stringify(mealPlan)
       });
 
-      console.log('📅 Response status:', response.status, response.statusText);
+      logger.debug('📅 Response status:', response.status, response.statusText);
 
       if (response.ok) {
         const newMealPlan = await response.json();
-        console.log('✅ Recipe scheduled successfully:', newMealPlan);
+        logger.debug('✅ Recipe scheduled successfully:', newMealPlan);
         onSchedule(newMealPlan);
         onClose();
       } else {
         let errorMessage = 'Failed to schedule recipe';
         try {
           const errorData = await response.json();
-          console.error('❌ Failed to schedule recipe - Error Data:', errorData);
+          logger.error('❌ Failed to schedule recipe - Error Data:', errorData);
           errorMessage = errorData.error || errorMessage;
         } catch (parseError) {
-          console.error('❌ Failed to parse error response:', parseError);
-          console.error('❌ Response text:', await response.text());
+          logger.error('❌ Failed to parse error response:', parseError);
+          logger.error('❌ Response text:', await response.text());
         }
         setError(errorMessage);
       }
     } catch (err) {
-      console.error('❌ Error scheduling recipe:', err);
+      logger.error('❌ Error scheduling recipe:', err);
       setError('Failed to schedule recipe. Please try again.');
     } finally {
       setIsScheduling(false);

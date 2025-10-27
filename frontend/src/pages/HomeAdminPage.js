@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
+import logger from '../utils/logger';
 
 export default function HomeAdminPage() {
   const context = useOutletContext();
@@ -32,7 +33,7 @@ export default function HomeAdminPage() {
       await signOut(auth);
       // Firebase auth state change will be handled by the parent component
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 

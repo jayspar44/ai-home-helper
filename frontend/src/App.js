@@ -12,6 +12,7 @@ import RecipeGenerator from './pages/RecipeGenerator';
 import HomeAdminPage from './pages/HomeAdminPage';
 import PantryPage from './pages/PantryPage';
 import PlannerPage from './pages/PlannerPage';
+import logger from './utils/logger';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -23,15 +24,16 @@ export default function App() {
 
   // Debug: Log environment and config on app start
   useEffect(() => {
-    console.log('🔧 App Debug Info:');
-    console.log('- Environment:', process.env.NODE_ENV);
-    console.log('- Firebase config exists:', !!process.env.REACT_APP_FIREBASE_CONFIG);
-    console.log('- Auth object:', !!auth);
+    logger.debug('App Debug Info:', {
+      environment: process.env.NODE_ENV,
+      hasFirebaseConfig: !!process.env.REACT_APP_FIREBASE_CONFIG,
+      hasAuth: !!auth
+    });
 
     // Check for configuration errors
     if (!process.env.REACT_APP_FIREBASE_CONFIG) {
       const error = 'REACT_APP_FIREBASE_CONFIG environment variable is missing';
-      console.error('❌ Config Error:', error);
+      logger.error('Config Error:', error);
       setConfigError(error);
       setIsLoading(false);
       return;
@@ -39,10 +41,10 @@ export default function App() {
 
     try {
       const config = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
-      console.log('- Firebase project:', config.projectId);
+      logger.debug('Firebase project:', config.projectId);
     } catch (e) {
       const error = 'REACT_APP_FIREBASE_CONFIG is not valid JSON';
-      console.error('❌ Config Error:', error, e);
+      logger.error('Config Error:', error, e);
       setConfigError(error);
       setIsLoading(false);
       return;
@@ -52,18 +54,18 @@ export default function App() {
   const fetchProfile = useCallback(async (token) => {
       let timeoutId = null;
       try {
-          console.log('📡 Fetching user profile...');
+          logger.debug('Fetching user profile');
 
           // Create AbortController for timeout
           const controller = new AbortController();
 
           // Set up timeout that aborts after 15 seconds
           timeoutId = setTimeout(() => {
-              console.warn('⏰ Profile fetch timeout - aborting request');
+              logger.warn('Profile fetch timeout - aborting request');
               controller.abort();
-          }, 15000); // 15 second timeout for Railway
+          }, 15000); // 15 second timeout
 
-          console.log('📡 Starting fetch request...');
+          logger.debug('Starting profile fetch request');
           const response = await fetch('/api/user/me', {
               method: 'GET',
               signal: controller.signal,
@@ -79,40 +81,34 @@ export default function App() {
               clearTimeout(timeoutId);
               timeoutId = null;
           }
-          console.log('📡 Profile response status:', response.status);
+          logger.debug('Profile response status:', response.status);
 
           if (response.ok) {
               const data = await response.json();
-              console.log('✅ Profile data received:', data);
+              logger.info('Profile data received');
               setProfile(data);
           } else {
               const errorData = await response.json().catch(() => ({ error: 'No error data' }));
-              console.error("❌ Failed to fetch user profile:", errorData);
+              logger.error('Failed to fetch user profile:', errorData);
               // Only sign out on auth errors, not server errors
               if (response.status === 401) {
-                  console.log('🚪 Signing out due to 401 error');
+                  logger.info('Signing out due to 401 error');
                   signOut(auth);
               }
           }
       } catch (error) {
-          console.error("❌ Error fetching user profile:", error);
-          console.error("❌ Error details:", {
-              name: error.name,
-              message: error.message,
-              stack: error.stack
-          });
+          logger.error('Error fetching user profile:', error);
 
           // Handle different types of errors
           if (error.name === 'AbortError') {
-              console.error('❌ Profile fetch was aborted (timeout)');
+              logger.error('Profile fetch was aborted (timeout)');
               setProfileError('Server timeout - please try again');
           } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-              console.error('❌ Network error - unable to reach server');
+              logger.error('Network error - unable to reach server');
               setProfileError('Unable to reach server - check your connection');
           } else {
-              console.error('❌ Unexpected error during profile fetch');
+              logger.error('Unexpected error during profile fetch');
               setProfileError('Unexpected error - please try again');
-              // Only sign out on auth-specific errors, not server issues
           }
       } finally {
           // Always clean up timeout
@@ -123,38 +119,38 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    console.log('🔥 Setting up Firebase auth listener...');
+    logger.debug('Setting up Firebase auth listener');
 
     // Add a timeout fallback in case auth never resolves
     const authTimeout = setTimeout(() => {
-      console.warn('⏰ Auth state timeout - forcing loading to false');
+      logger.warn('Auth state timeout - forcing loading to false');
       setIsLoading(false);
     }, 10000); // 10 second timeout
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log('🔥 Auth state changed:', !!currentUser);
+      logger.debug('Auth state changed:', !!currentUser);
       clearTimeout(authTimeout); // Clear timeout since auth resolved
 
       if (currentUser) {
-        console.log('✅ User authenticated:', currentUser.uid);
+        logger.info('User authenticated');
         setUser(currentUser);
         try {
           const token = await currentUser.getIdToken();
-          console.log('✅ Got user token');
+          logger.debug('Got user token');
           setUserToken(token);
           await fetchProfile(token);
         } catch (error) {
-          console.error('❌ Error getting token or profile:', error);
+          logger.error('Error getting token or profile:', error);
         }
       } else {
-        console.log('❌ No user authenticated');
+        logger.debug('No user authenticated');
         setUser(null);
         setUserToken(null);
         setProfile(null);
       }
       setIsLoading(false);
     }, (error) => {
-      console.error('❌ Firebase auth error:', error);
+      logger.error('Firebase auth error:', error);
       clearTimeout(authTimeout);
       setIsLoading(false);
     });
@@ -166,7 +162,7 @@ export default function App() {
   }, [fetchProfile]);
 
   const handleLogout = () => {
-    signOut(auth).catch((error) => console.error("Logout Error:", error));
+    signOut(auth).catch((error) => logger.error("Logout Error:", error));
   };
 
 
@@ -231,7 +227,7 @@ export default function App() {
     );
   }
 
-  console.log('App render - user:', !!user, 'profile:', !!profile, 'userToken:', !!userToken, 'profileError:', profileError);
+  logger.debug('App render -', { hasUser: !!user, hasProfile: !!profile, hasToken: !!userToken, profileError });
 
   // Show profile error if we have a user but profile failed to load
   if (user && profileError && !profile) {
