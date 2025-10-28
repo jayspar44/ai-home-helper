@@ -129,48 +129,45 @@ const AddItemSection = ({
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-          Add New Items
-        </h2>
-        
-        {/* Two-column layout on desktop, stacked on mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          
-          {/* Camera Upload Card - Visually Prominent */}
-          <div 
+        {/* Vertical stack layout */}
+        <div className="space-y-3">
+
+          {/* Camera Upload Card - Visually Prominent but Compact */}
+          <div
             onClick={() => setShowAIModal(true)}
-            className="card cursor-pointer hover-lift transition-all duration-200 p-6 relative overflow-hidden"
-            style={{ 
+            className="card cursor-pointer hover-lift transition-all duration-200 p-4 relative overflow-hidden"
+            style={{
               backgroundColor: 'var(--color-primary-light)',
-              border: '2px solid var(--color-primary)',
-              minHeight: '140px'
+              border: '2px solid var(--color-primary)'
             }}
           >
             {/* Gradient overlay for visual interest */}
-            <div 
+            <div
               className="absolute inset-0 opacity-10"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)'
               }}
             />
-            
-            <div className="relative z-10 flex flex-col items-center text-center h-full justify-center">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+
+            <div className="relative z-10 flex items-center gap-4">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 <Camera className="w-6 h-6 text-white" />
               </div>
-              
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                Scan Multiple Items
-              </h3>
-              
-              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
-                Take a photo to add items instantly with AI
-              </p>
-              
-              <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium"
+
+              <div className="flex-1">
+                <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Scan Multiple Items
+                </h3>
+
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Take a photo to add items instantly with AI
+                </p>
+              </div>
+
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0"
                    style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
                 <Sparkles className="w-3 h-3" />
                 AI Powered
@@ -178,49 +175,41 @@ const AddItemSection = ({
             </div>
           </div>
 
-          {/* Text Entry Card - Secondary but accessible */}
-          <div className="card p-6" style={{ minHeight: '140px' }}>
-            <div className="flex flex-col h-full">
-              <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                Quick Add by Name
-              </h3>
-              
-              <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col">
-                <div className="flex-1 mb-4">
-                  <input
-                    type="text"
-                    ref={itemNameInputRef}
-                    value={quickAddName}
-                    onChange={e => setQuickAddName(e.target.value)}
-                    className="input-base focus-ring w-full"
-                    placeholder="e.g., 'milk', 'eggs', 'bread'"
-                    disabled={isLoading}
-                  />
-                </div>
-                
-                <button 
-                  type="submit"
-                  disabled={!quickAddName.trim() || isLoading}
-                  className="btn-base btn-primary w-full flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      Add Item
-                    </>
-                  )}
-                </button>
-              </form>
-              
-              <p className="text-xs mt-2 text-center" style={{ color: 'var(--text-muted)' }}>
-                Includes location & expiry automatically
-              </p>
-            </div>
+          {/* Text Entry Card - Compact */}
+          <div className="card p-4">
+            <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+              Quick Add by Name
+            </h3>
+
+            <form onSubmit={handleQuickAdd} className="flex gap-2">
+              <input
+                type="text"
+                ref={itemNameInputRef}
+                value={quickAddName}
+                onChange={e => setQuickAddName(e.target.value)}
+                className="input-base focus-ring flex-1"
+                placeholder="e.g., 'milk', 'eggs', 'bread'"
+                disabled={isLoading}
+              />
+
+              <button
+                type="submit"
+                disabled={!quickAddName.trim() || isLoading}
+                className="btn-base btn-primary flex items-center justify-center gap-2 px-6"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add Item
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         </div>
 

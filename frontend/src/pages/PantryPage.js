@@ -15,6 +15,9 @@ import JSONExportModal from '../components/JSONExportModal';
 import usePantryFilters from '../hooks/usePantryFilters';
 import useItemManager from '../hooks/useItemManager';
 
+// Styles
+import '../styles/Pantry.css';
+
 export default function PantryPage() {
   const navigate = useNavigate();
   const context = useOutletContext();
@@ -22,7 +25,7 @@ export default function PantryPage() {
 
   // Core state
   const [items, setItems] = useState([]);
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('list');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingEnhancementIds, setProcessingEnhancementIds] = useState([]);
@@ -216,10 +219,6 @@ export default function PantryPage() {
 
         {/* View & Manage Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-            Your Items ({totalItems})
-          </h2>
-
           {/* Toolbar */}
           <PantryToolbar
             searchQuery={searchQuery}
