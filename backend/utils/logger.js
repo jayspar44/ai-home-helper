@@ -27,7 +27,17 @@ const logger = pino({
       'req.headers.authorization',
       '*.token',
       '*.idToken',
-      '*.authorization'
+      '*.authorization',
+      '*.password',
+      '*.apiKey',
+      '*.secret',
+      '*.privateKey',
+      'req.body.token',
+      'req.body.password',
+      'req.body.apiKey',
+      'req.body.*.token',
+      'req.body.*.password',
+      'req.body.*.apiKey'
     ],
     remove: true // Completely remove sensitive fields
   },

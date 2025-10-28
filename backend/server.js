@@ -44,7 +44,7 @@ async function initializeServices() {
     logger.info('Gemini AI initialized successfully');
 
   } catch (error) {
-    logger.error({ err: error }, 'Failed to initialize services');
+    logger.error({ error: error }, 'Failed to initialize services');
     process.exit(1);
   }
 }
@@ -88,7 +88,8 @@ app.use(pinoHttp({
       userId: req.user?.uid
     }),
     res: (res) => ({
-      statusCode: res.statusCode
+      statusCode: res.statusCode,
+      responseTime: res.responseTime
     })
   }
 }))
@@ -102,7 +103,7 @@ const checkAuth = async (req, res, next) => {
       req.user = await admin.auth().verifyIdToken(idToken);
       next();
     } catch (error) {
-      req.log.error({ err: error }, 'Token verification failed');
+      req.log.error({ error: error }, 'Token verification failed');
       res.status(401).send('Unauthorized: Invalid token');
     }
   } else {
@@ -116,13 +117,13 @@ const checkAuth = async (req, res, next) => {
 // Enhanced health check endpoint for Railway and monitoring
 app.get('/api/health', (req, res) => {
   // Read version from root version.json
-  let version = '2.6.0'; // fallback
+  let version = 'unknown'; // fallback
   try {
     const versionPath = path.join(__dirname, '..', 'version.json');
     const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
     version = versionData.version;
   } catch (error) {
-    logger.warn({ err: error }, 'Could not read root version.json, using fallback');
+    logger.warn({ error: error }, 'Could not read root version.json, using fallback');
   }
 
   const healthCheck = {
@@ -167,8 +168,8 @@ app.get('/api/debug', (req, res) => {
         const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
         return versionData.version;
       } catch (error) {
-        logger.warn({ err: error }, 'Could not read root version.json in debug endpoint');
-        return '2.6.0'; // fallback
+        logger.warn({ error: error }, 'Could not read root version.json in debug endpoint');
+        return 'unknown'; // fallback
       }
     })(),
     firebase: {
@@ -223,7 +224,7 @@ app.post('/api/register', async (req, res) => {
     } else if (error.code === 'auth/invalid-password') {
         errorMessage = 'Password is not valid. It must be at least 6 characters long.';
     }
-    logger.error({ err: error, email: req.body.email }, 'User registration failed');
+    logger.error({ error: error, email: req.body.email }, 'User registration failed');
     res.status(400).json({ error: errorMessage });
   }
 });
@@ -276,7 +277,7 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
         res.json(response);
 
     } catch (error) {
-        req.log.error({ err: error, userId: req.user.uid }, 'Error fetching user profile');
+        req.log.error({ error: error, userId: req.user.uid }, 'Error fetching user profile');
         res.status(500).json({
             error: 'Internal server error',
             message: error.message,
@@ -367,7 +368,7 @@ app.delete('/api/homes/:homeId/members/:memberId', checkAuth, async (req, res) =
         logger.info({ homeId, adminId, memberId }, 'Member removed from home');
         res.status(200).json({ message: 'Member removed successfully.' });
     } catch (error) {
-        logger.error({ err: error, homeId, memberId, adminId }, 'Error removing member');
+        logger.error({ error: error, homeId, memberId, adminId }, 'Error removing member');
         res.status(400).json({ error: error.message });
     }
 });
@@ -389,7 +390,7 @@ app.post('/api/recipes/list', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: req.user.uid, recipeCount: recipeList.length }, 'Recipes fetched successfully');
     res.json({ recipes: recipeList });
   } catch (error) {
-    req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error fetching recipes');
+    req.log.error({ error: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error fetching recipes');
     res.status(500).json({ error: 'Failed to fetch recipes' });
   }
 });
@@ -402,7 +403,7 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: req.user.uid, recipeTitle: recipe.title, recipeId: docRef.id }, 'Recipe saved');
     res.status(201).json({ id: docRef.id, ...recipe });
   } catch (error) {
-    req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
+    req.log.error({ error: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
     res.status(500).json({ error: 'Failed to save recipe' });
   }
 });
@@ -470,14 +471,14 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
 
         // Validate recipe structure
         if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
-            req.log.error({ generatedText }, 'Invalid recipe format from AI');
+            req.log.error({ generatedText: generatedText.substring(0, 200) }, 'Invalid recipe format from AI');
             throw new Error('Generated recipe has invalid format');
         }
 
         req.log.info({ userId: req.user.uid, recipeTitle: recipe.title, aiResponseTime: Date.now() - startTime }, 'Recipe generated');
         res.json(recipe);
     } catch (error) {
-        req.log.error({ err: error, userId: req.user.uid }, 'Error generating recipe');
+        req.log.error({ error: error, userId: req.user.uid }, 'Error generating recipe');
         res.status(500).json({
             error: 'Failed to generate recipe',
             details: error.message
@@ -592,7 +593,7 @@ function parseRecipeResponse(text, servingSize, pantryItems = [], originalIngred
       };
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error parsing recipe response');
+    logger.error({ error: error }, 'Error parsing recipe response');
   }
   return {
     title: "Custom Recipe",
@@ -667,7 +668,7 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
     req.log.info({ homeId, adminId: requesterUid, newMemberEmail: email, newMemberId }, 'Member added to home');
 
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, email: req.body.email, userId: req.user.uid }, 'Error adding member');
+    req.log.error({ error: error, homeId: req.params.homeId, email: req.body.email, userId: req.user.uid }, 'Error adding member');
     res.status(500).json({ error: 'Failed to add member' });
   }
 });
@@ -748,7 +749,7 @@ Return JSON format:
         throw new Error('No valid JSON found in response');
       }
     } catch (parseError) {
-      req.log.error({ err: parseError, text }, 'Error parsing AI response for suggest-item');
+      req.log.error({ error: parseError, text: text.substring(0, 200) }, 'Error parsing AI response for suggest-item');
       return res.status(500).json({ error: 'Failed to parse AI response' });
     }
 
@@ -763,7 +764,7 @@ Return JSON format:
     res.json(suggestionData);
 
   } catch (error) {
-    req.log.error({ err: error, userId: req.user.uid, itemName: req.body.itemName }, 'Error in suggest-item');
+    req.log.error({ error: error, userId: req.user.uid, itemName: req.body.itemName }, 'Error in suggest-item');
     res.status(500).json({
       error: 'Failed to generate suggestions',
       details: error.message
@@ -813,7 +814,7 @@ Use these rules:
         throw new Error('No valid JSON found in response');
       }
     } catch (parseError) {
-      req.log.warn({ err: parseError, itemName }, 'Error parsing quick defaults, using fallback');
+      req.log.warn({ error: parseError, itemName }, 'Error parsing quick defaults, using fallback');
       // Return sensible fallback
       defaultsData = {
         location: itemName.toLowerCase().includes('milk') ||
@@ -835,7 +836,7 @@ Use these rules:
     res.json(defaultsData);
 
   } catch (error) {
-    req.log.warn({ err: error, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
+    req.log.warn({ error: error, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
     // Return sensible fallback on error
     res.json({
       location: 'pantry',
@@ -878,7 +879,7 @@ app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
     req.log.debug({ homeId, userId: userUid, itemCount: items.length }, 'Pantry items fetched');
     return res.json(items);
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching pantry items');
+    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching pantry items');
     return res.status(500).json({ error: 'Failed to fetch pantry items' });
   }
 });
@@ -946,7 +947,7 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
     res.status(201).json(resultData);
 
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error adding pantry item');
+    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error adding pantry item');
     res.status(500).json({ error: 'Failed to add pantry item' });
   }
 });
@@ -1012,7 +1013,7 @@ app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: userUid, itemId, itemName: name, location }, 'Pantry item updated');
     res.json(resultData);
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error updating pantry item');
+    req.log.error({ error: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error updating pantry item');
     res.status(500).json({ error: 'Failed to update pantry item' });
   }
 });
@@ -1045,7 +1046,7 @@ app.delete('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: userUid, itemId, itemName }, 'Pantry item deleted');
     res.json({ message: 'Item deleted' });
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error deleting pantry item');
+    req.log.error({ error: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error deleting pantry item');
     res.status(500).json({ error: 'Failed to delete pantry item' });
   }
 });
@@ -1172,7 +1173,7 @@ If no food items are detected, return an empty array: []`;
         detectedItems = JSON.parse(jsonMatch[0]);
       }
     } catch (parseError) {
-      req.log.error({ err: parseError, text }, 'Error parsing AI detection response');
+      req.log.error({ error: parseError, text: text.substring(0, 200) }, 'Error parsing AI detection response');
       return res.status(500).json({ error: 'Failed to parse AI response' });
     }
 
@@ -1203,14 +1204,14 @@ If no food items are detected, return an empty array: []`;
     res.json({ items: formattedItems });
 
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error in AI detection');
+    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error in AI detection');
 
     // Clean up file if it exists
     if (filePath) {
       try {
         await fs.unlink(filePath);
       } catch (unlinkError) {
-        req.log.error({ err: unlinkError, filePath }, 'Error deleting uploaded file');
+        req.log.error({ error: unlinkError, filePath: path.basename(filePath) }, 'Error deleting uploaded file');
       }
     }
 
@@ -1274,7 +1275,7 @@ app.get('/api/planner/:homeId', checkAuth, async (req, res) => {
     }, 'Meal plans fetched');
     res.json(mealPlans);
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching meal plans');
+    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching meal plans');
     res.status(500).json({ error: 'Failed to fetch meal plans' });
   }
 });
@@ -1451,7 +1452,7 @@ app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
       completed
     }, 'Meal plan updated');
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error updating meal plan');
+    req.log.error({ error: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error updating meal plan');
     res.status(500).json({ error: 'Failed to update meal plan' });
   }
 });
@@ -1479,7 +1480,7 @@ app.delete('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
     req.log.info({ homeId: req.params.homeId, userId: req.user.uid, planId: req.params.planId }, 'Meal plan deleted');
     res.json({ success: true });
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error deleting meal plan');
+    req.log.error({ error: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error deleting meal plan');
     res.status(500).json({ error: 'Failed to delete meal plan' });
   }
 });
@@ -1579,7 +1580,7 @@ app.post('/api/planner/:homeId/log-meal', checkAuth, async (req, res) => {
       });
     }
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
+    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
     res.status(500).json({ error: 'Failed to log meal' });
   }
 });
@@ -1659,7 +1660,7 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
       itemsDeducted: consumptionLogs.length
     }, 'Ingredients deducted from pantry');
   } catch (error) {
-    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
+    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
     res.status(500).json({ error: 'Failed to deduct ingredients' });
   }
 });
@@ -1667,7 +1668,7 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
 
 // Global error handler for unhandled errors
 app.use((error, req, res, _next) => {
-  req.log.error({ err: error }, 'Unhandled error');
+  req.log.error({ error: error }, 'Unhandled error');
 
   // Don't expose internal errors in production
   const errorResponse = process.env.NODE_ENV === 'production'
@@ -1707,7 +1708,7 @@ const startServer = async () => {
         );
         logger.info({ projectId }, 'CORS configured for GCP project');
       } catch (error) {
-        logger.warn({ err: error }, 'Could not determine project ID for CORS');
+        logger.warn({ error: error }, 'Could not determine project ID for CORS');
       }
     }
 
@@ -1774,7 +1775,7 @@ const startServer = async () => {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
-    logger.error({ err: error }, 'Failed to start server');
+    logger.error({ error: error }, 'Failed to start server');
     process.exit(1);
   }
 };
@@ -1789,7 +1790,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  logger.error({ err: error }, 'Uncaught Exception');
+  logger.error({ error: error }, 'Uncaught Exception');
   process.exit(1);
 });
 
