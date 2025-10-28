@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from '../hooks/useTheme';
 import VersionDisplay from './VersionDisplay';
 import logger from '../utils/logger';
 
@@ -9,33 +8,26 @@ const HomeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height
 
 const RecipeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 11.08V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M18 22a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path><path d="M18 16v.01"></path><path d="M18 20v.01"></path></svg>;
 
-const AdminIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
+const SettingsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
 
 const PantryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M19 11V9a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v2" /><path d="M6 11h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Z" /><path d="M10 11V9" /><path d="M14 11V9" /></svg>;
 
 const PlannerIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
 
+const ShoppingCartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>;
+
 const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 
 const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 
-const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
-
-const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
-
-
-
-
-export default function SharedLayout({ profile, onLogout, userToken }) {
+export default function SharedLayout({ profile, onLogout, userToken, refreshProfile }) {
   logger.debug('SharedLayout render - profile:', !!profile, 'userToken:', !!userToken);
-  
-  const { theme, toggleTheme, isDark } = useTheme();
   const [showHomeDropdown, setShowHomeDropdown] = useState(false);
   const [selectedHomeId, setSelectedHomeId] = useState(profile?.primaryHomeId);
   const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Get current home
   const currentHome = profile?.homes?.find(h => h.id === selectedHomeId) || profile?.homes?.[0];
   
@@ -60,7 +52,7 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
     userToken,
     activeHomeId: selectedHomeId,
     profile,
-    refreshProfile: () => {},
+    refreshProfile: refreshProfile || (() => {}),
     currentHome
   };
 
@@ -84,16 +76,22 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
       mobileLabel: 'Planner'
     },
     {
+      name: 'Shopping',
+      path: '/shopping-list',
+      icon: ShoppingCartIcon,
+      mobileLabel: 'Shopping'
+    },
+    {
       name: 'Recipes',
       path: '/recipe-generator',
       icon: RecipeIcon,
       mobileLabel: 'Recipes'
     },
     {
-      name: 'Admin',
-      path: '/home-admin',
-      icon: AdminIcon,
-      mobileLabel: 'Admin'
+      name: 'Manage',
+      path: '/manage',
+      icon: SettingsIcon,
+      mobileLabel: 'Manage'
     }
   ];
 
@@ -199,18 +197,6 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
             </div>
           </nav>
 
-          {/* Theme Toggle (Desktop Only) */}
-          <div className="p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-            <button
-              onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium hover:bg-opacity-80"
-              style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-            >
-              {isDark ? <SunIcon /> : <MoonIcon />}
-              <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-            </button>
-          </div>
-
         </div>
       </aside>
 
@@ -236,18 +222,6 @@ export default function SharedLayout({ profile, onLogout, userToken }) {
                 <VersionDisplay />
               </div>
             </div>
-          </div>
-
-          {/* Header Right */}
-          <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-opacity-80"
-              style={{ backgroundColor: 'var(--bg-tertiary)' }}
-            >
-              {isDark ? <SunIcon /> : <MoonIcon />}
-            </button>
           </div>
         </div>
       </header>

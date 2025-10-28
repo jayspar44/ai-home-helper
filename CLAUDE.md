@@ -13,6 +13,7 @@ AI home helper for families - recipe generation, pantry management, meal plannin
   - Group by: category, date added, user, status, or no grouping
   - Metadata: "2hr ago • Jason" on hover (conditional on multi-user)
   - Responsive padding (12px mobile, 8px desktop) for optimal touch targets
+- Manage page with user profile management, home settings (admin only), and theme preferences
 - Multi-user homes with role-based access (admin/member)
 - Firebase auth + Firestore multi-tenant architecture
 
@@ -44,7 +45,7 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 │   │   ├── UnifiedMealModal.js          # 3-state meal modal
 │   │   ├── RecipeSelector.js            # Recipe selection
 │   │   └── SharedLayout.js              # Main layout
-│   ├── pages/               # HomePage, PlannerPage, RecipeGenerator, PantryPage, ShoppingList
+│   ├── pages/               # HomePage, PlannerPage, RecipeGenerator, PantryPage, ShoppingList, ManagePage
 │   ├── hooks/               # useShoppingList (with search/filter/grouping), useTheme, useItemManager, usePantryFilters
 │   ├── styles/              # ShoppingList.css
 │   ├── utils/               # dateUtils.js (with formatRelativeTime)

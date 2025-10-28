@@ -97,10 +97,11 @@ Roscoe is a modern web application designed to streamline household management b
 - AI-assisted item entry with photo recognition
 - Expiration monitoring and alerts
 
-#### **Home Administration**
-- User invitation and role management
+#### **Manage**
+- User profile management (edit name, view email)
+- Home settings and member management (admin only)
+- Theme preferences (light/dark mode)
 - Account settings and logout functionality
-- Member oversight and permissions
 
 ## 🛠️ Technology Stack
 

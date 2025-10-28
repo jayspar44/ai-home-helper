@@ -11,7 +11,6 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
   const [editedName, setEditedName] = useState(item.name);
   const [editedQuantity, setEditedQuantity] = useState(item.quantity);
   const [editedUnit, setEditedUnit] = useState(item.unit);
-  const [showMetadata, setShowMetadata] = useState(false);
 
   // Update local state when item prop changes
   useEffect(() => {
@@ -73,11 +72,7 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
   };
 
   return (
-    <div
-      className={`shopping-list-item ${item.checked ? 'checked' : ''}`}
-      onMouseEnter={() => setShowMetadata(true)}
-      onMouseLeave={() => setShowMetadata(false)}
-    >
+    <div className={`shopping-list-item ${item.checked ? 'checked' : ''}`}>
       <button
         className="shopping-list-checkbox"
         onClick={handleCheckboxChange}
@@ -133,11 +128,11 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
           </span>
         )}
 
-        {/* Metadata - show on hover/tap */}
-        {showMetadata && item.addedAt && (
-          <span className="shopping-list-item-metadata">
+        {/* Metadata - always visible, matches pantry layout */}
+        {item.addedAt && (
+          <div className="shopping-list-item-metadata">
             {getMetadataText()}
-          </span>
+          </div>
         )}
       </div>
 

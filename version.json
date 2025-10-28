@@ -1,6 +1,6 @@
 {
-  "version": "2.18.0",
-  "lastUpdated": "2025-10-28T03:27:55.901Z",
+  "version": "2.19.0",
+  "lastUpdated": "2025-10-28T03:44:39.734Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -240,6 +240,11 @@
     "2.18.0": {
       "description": "Added search, filters, grouping, and metadata display to shopping list: search by item name, filter by category/status/user/date, group by category/date/user/status/none, metadata shows time and user (conditional on multi-user homes), responsive padding, fixed layout wrapping issues",
       "timestamp": "2025-10-28T03:27:55.901Z",
+      "date": "October 27, 2025"
+    },
+    "2.19.0": {
+      "description": "Comprehensive Manage page: Replaced Admin page with organized Manage interface featuring user profile editing (name), home management (name/members) for admins, and Settings section with theme toggle. Added backend PUT endpoints for user/home updates with proper authentication, fixed profile refresh bug causing unexpected logouts, improved responsive sidebar visibility (768-1024px breakpoint alignment), and enhanced UX with inline editing and proper permissions enforcement.",
+      "timestamp": "2025-10-28T03:44:39.734Z",
       "date": "October 27, 2025"
     }
   }
