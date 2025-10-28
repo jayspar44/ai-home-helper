@@ -100,22 +100,21 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
 
       if (!response.ok) throw new Error('Failed to delete item');
 
-      // Store the item for potential undo
-      const deletedItem = setItems(prev => {
-        const item = prev.find(i => i.id === itemId);
-        const remaining = prev.filter(i => i.id !== itemId);
-        
-        if (item) {
-          // Show success toast with undo option
-          showSuccess(`✓ Deleted "${item.name}"`, {
-            action: 'Undo',
-            onAction: () => handleDirectAddItem(item, setItems),
-            duration: 5000
-          });
-        }
-        
-        return remaining;
+      // Find and store the item before deleting
+      let deletedItem = null;
+      setItems(prev => {
+        deletedItem = prev.find(i => i.id === itemId);
+        return prev.filter(i => i.id !== itemId);
       });
+
+      // Show success toast after state update completes
+      if (deletedItem) {
+        showSuccess(`✓ Deleted "${deletedItem.name}"`, {
+          action: 'Undo',
+          onAction: () => handleDirectAddItem(deletedItem, setItems),
+          duration: 5000
+        });
+      }
     } catch (err) {
       const errorMessage = err.message || 'Failed to delete item';
       setError(errorMessage);
@@ -124,7 +123,7 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthHeaders, activeHomeId, showSuccess, showError]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError, handleDirectAddItem]);
 
   const handleAIItemsDetected = useCallback(async (detectedItems, setItems) => {
     try {

@@ -480,8 +480,8 @@ body {
   padding-bottom: var(--bottom-nav-height);
 }
 
-/* Tablet and up (768px+) */
-@media (min-width: 768px) {
+/* Desktop (1024px+) - Sidebar visibility */
+@media (min-width: 1024px) {
   :root {
     --text-xs: 12px;
     --text-sm: 14px;
@@ -490,20 +490,20 @@ body {
     --text-xl: 24px;
     --text-2xl: 32px;
   }
-  
+
   .container-mobile {
     max-width: none;
     padding: 0 var(--spacing-3);
   }
-  
+
   .mobile-only {
     display: none;
   }
-  
+
   .desktop-only {
     display: block;
   }
-  
+
   .mobile-nav-space {
     padding-bottom: 0;
   }

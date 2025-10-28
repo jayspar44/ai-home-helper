@@ -10,6 +10,7 @@ const VersionIcon = () => (
 
 export default function VersionDisplay({ className = "" }) {
   const [version, setVersion] = useState('1.0.0');
+  const [environment, setEnvironment] = useState('production');
 
   useEffect(() => {
     // Fetch version from backend health API
@@ -19,6 +20,7 @@ export default function VersionDisplay({ className = "" }) {
         if (response.ok) {
           const data = await response.json();
           setVersion(data.version);
+          setEnvironment(data.environment);
         }
       } catch (error) {
         logger.error('Failed to fetch version:', error);
@@ -32,7 +34,7 @@ export default function VersionDisplay({ className = "" }) {
   return (
     <div className={`flex items-center gap-2 text-xs ${className}`} style={{ color: 'var(--text-muted)' }}>
       <VersionIcon />
-      <span>v{version}</span>
+      <span>v{version}{environment === 'development' ? ' (dev)' : ''}</span>
     </div>
   );
 }

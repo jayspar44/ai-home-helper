@@ -1,6 +1,6 @@
 {
-  "version": "2.15.8",
-  "lastUpdated": "2025-10-27T23:31:15.450Z",
+  "version": "2.21.0",
+  "lastUpdated": "2025-10-28T04:39:20.829Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -216,6 +216,56 @@
       "description": "Implement comprehensive logging improvements: Pino for backend with structured JSON logging, custom lightweight logger for frontend, clean one-line HTTP logs, business context logging across all features (40+ log statements), sensitive data redaction, userId/homeId preserved for debugging",
       "timestamp": "2025-10-27T23:31:15.450Z",
       "date": "October 27, 2025"
+    },
+    "2.16.0": {
+      "description": "Add Smart Shopping List feature: AI-powered item parsing with natural language support, auto-categorization into 6 grocery categories (produce, dairy, meat, pantry, frozen, other), inline editing for all item fields, check/uncheck functionality with visual feedback, collapsible category sections, clear checked items button, mobile-responsive design with beautiful animations, new Firestore collection for shopping_lists scoped by homeId, 6 RESTful API endpoints, custom useShoppingList hook, and full integration with existing navigation and authentication system",
+      "timestamp": "2025-10-28T01:32:29.200Z",
+      "date": "October 27, 2025"
+    },
+    "2.16.1": {
+      "description": "Fix shopping list API endpoints to follow existing patterns: Change endpoints to accept homeId as route parameter instead of fetching from database, update frontend hook to pass activeHomeId from context, resolves 'No home associated with user' error",
+      "timestamp": "2025-10-28T01:43:52.467Z",
+      "date": "October 27, 2025"
+    },
+    "2.16.2": {
+      "description": "UI improvements: replaced checkbox with green check icon, standardized fonts, updated header pattern, fixed spacing to match pantry",
+      "timestamp": "2025-10-28T02:31:25.596Z",
+      "date": "October 27, 2025"
+    },
+    "2.17.0": {
+      "description": "Pantry UX improvements: make list view default, add click-to-edit rows, replace three-dot menu with hover-based delete button (shopping list pattern), mobile-optimized with always-visible actions",
+      "timestamp": "2025-10-28T03:08:21.922Z",
+      "date": "October 27, 2025"
+    },
+    "2.18.0": {
+      "description": "Added search, filters, grouping, and metadata display to shopping list: search by item name, filter by category/status/user/date, group by category/date/user/status/none, metadata shows time and user (conditional on multi-user homes), responsive padding, fixed layout wrapping issues",
+      "timestamp": "2025-10-28T03:27:55.901Z",
+      "date": "October 27, 2025"
+    },
+    "2.19.0": {
+      "description": "Comprehensive Manage page: Replaced Admin page with organized Manage interface featuring user profile editing (name), home management (name/members) for admins, and Settings section with theme toggle. Added backend PUT endpoints for user/home updates with proper authentication, fixed profile refresh bug causing unexpected logouts, improved responsive sidebar visibility (768-1024px breakpoint alignment), and enhanced UX with inline editing and proper permissions enforcement.",
+      "timestamp": "2025-10-28T03:44:39.734Z",
+      "date": "October 27, 2025"
+    },
+    "2.20.0": {
+      "description": "Enhanced navigation UX with emoji icons and added Planner/Shopping cards to HomePage for improved feature discoverability",
+      "timestamp": "2025-10-28T04:07:54.937Z",
+      "date": "October 28, 2025"
+    },
+    "2.20.1": {
+      "description": "Fix shopping list layout to match pantry design with hover-only input styling",
+      "timestamp": "2025-10-28T04:13:42.700Z",
+      "date": "October 28, 2025"
+    },
+    "2.20.2": {
+      "description": "Fix search box icon/text overlap on Pantry and Shopping List pages by adjusting input padding to prevent visual collision",
+      "timestamp": "2025-10-28T04:29:58.684Z",
+      "date": "October 28, 2025"
+    },
+    "2.21.0": {
+      "description": "Convert shopping list to modal-based editing with pantry-matching design",
+      "timestamp": "2025-10-28T04:39:20.829Z",
+      "date": "October 28, 2025"
     }
   }
 }
