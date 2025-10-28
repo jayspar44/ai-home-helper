@@ -44,15 +44,28 @@ const logger = pino({
 
   // Development: Pretty formatted logs with colors
   // Production: Structured JSON for GCP Cloud Logging
-  transport: isDevelopment ? {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'HH:MM:ss',
-      ignore: 'pid,hostname',
-      singleLine: false
+  // Safe transport configuration with fallback
+  transport: (() => {
+    if (!isDevelopment) return undefined;
+
+    try {
+      // Check if pino-pretty is available before using it
+      require.resolve('pino-pretty');
+      return {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss',
+          ignore: 'pid,hostname',
+          singleLine: false
+        }
+      };
+    } catch {
+      // pino-pretty not available - fallback to JSON logging
+      // This prevents crashes if NODE_ENV=development but pino-pretty not installed
+      return undefined;
     }
-  } : undefined,
+  })(),
 
   // Map Pino levels to GCP Cloud Logging severity
   formatters: !isDevelopment ? {

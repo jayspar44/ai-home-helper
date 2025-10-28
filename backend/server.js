@@ -44,7 +44,7 @@ async function initializeServices() {
     logger.info('Gemini AI initialized successfully');
 
   } catch (error) {
-    logger.error({ error: error }, 'Failed to initialize services');
+    logger.error({ err: error }, 'Failed to initialize services');
     process.exit(1);
   }
 }
@@ -88,8 +88,7 @@ app.use(pinoHttp({
       userId: req.user?.uid
     }),
     res: (res) => ({
-      statusCode: res.statusCode,
-      responseTime: res.responseTime
+      statusCode: res.statusCode
     })
   }
 }))
@@ -103,7 +102,7 @@ const checkAuth = async (req, res, next) => {
       req.user = await admin.auth().verifyIdToken(idToken);
       next();
     } catch (error) {
-      req.log.error({ error: error }, 'Token verification failed');
+      req.log.error({ err: error }, 'Token verification failed');
       res.status(401).send('Unauthorized: Invalid token');
     }
   } else {
@@ -123,7 +122,7 @@ app.get('/api/health', (req, res) => {
     const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
     version = versionData.version;
   } catch (error) {
-    logger.warn({ error: error }, 'Could not read root version.json, using fallback');
+    logger.warn({ err: error }, 'Could not read root version.json, using fallback');
   }
 
   const healthCheck = {
@@ -168,7 +167,7 @@ app.get('/api/debug', (req, res) => {
         const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
         return versionData.version;
       } catch (error) {
-        logger.warn({ error: error }, 'Could not read root version.json in debug endpoint');
+        logger.warn({ err: error }, 'Could not read root version.json in debug endpoint');
         return 'unknown'; // fallback
       }
     })(),
@@ -593,7 +592,7 @@ function parseRecipeResponse(text, servingSize, pantryItems = [], originalIngred
       };
     }
   } catch (error) {
-    logger.error({ error: error }, 'Error parsing recipe response');
+    logger.error({ err: error }, 'Error parsing recipe response');
   }
   return {
     title: "Custom Recipe",
@@ -1668,7 +1667,7 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
 
 // Global error handler for unhandled errors
 app.use((error, req, res, _next) => {
-  req.log.error({ error: error }, 'Unhandled error');
+  req.log.error({ err: error }, 'Unhandled error');
 
   // Don't expose internal errors in production
   const errorResponse = process.env.NODE_ENV === 'production'
@@ -1708,7 +1707,7 @@ const startServer = async () => {
         );
         logger.info({ projectId }, 'CORS configured for GCP project');
       } catch (error) {
-        logger.warn({ error: error }, 'Could not determine project ID for CORS');
+        logger.warn({ err: error }, 'Could not determine project ID for CORS');
       }
     }
 
@@ -1775,7 +1774,7 @@ const startServer = async () => {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
-    logger.error({ error: error }, 'Failed to start server');
+    logger.error({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 };
@@ -1790,7 +1789,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  logger.error({ error: error }, 'Uncaught Exception');
+  logger.error({ err: error }, 'Uncaught Exception');
   process.exit(1);
 });
 

@@ -174,6 +174,8 @@ logger.debug('Fetching user profile'); // Silent in prod
 logger.error('Failed to load recipes:', error); // Always visible
 ```
 
+**Important**: Always use `err` as the key name for error objects in Pino logs (not `error`). This triggers Pino's built-in error serializer which includes stack traces and proper error formatting.
+
 **Configuration**:
 - Set `LOG_LEVEL` environment variable to override (debug|info|warn|error)
 - GCP automatically maps Pino severity levels to Cloud Logging
