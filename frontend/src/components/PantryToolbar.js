@@ -27,7 +27,8 @@ const PantryToolbar = ({
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="input-base focus-ring pl-10 w-full"
+              className="input-base focus-ring w-full"
+              style={{ paddingLeft: '48px' }}
             />
           </div>
 

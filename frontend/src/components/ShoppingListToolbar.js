@@ -40,7 +40,8 @@ const ShoppingListToolbar = ({
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="input-base focus-ring pl-10 w-full"
+              className="input-base focus-ring w-full"
+              style={{ paddingLeft: '48px' }}
             />
           </div>
 
@@ -76,9 +77,10 @@ const ShoppingListToolbar = ({
             <select
               value={groupBy}
               onChange={(e) => onGroupByChange(e.target.value)}
-              className="btn-base btn-ghost px-4 py-2 pr-8 appearance-none cursor-pointer"
+              className="btn-base btn-ghost px-4 py-2.5 pr-8 appearance-none cursor-pointer"
               style={{
-                backgroundImage: 'none'
+                backgroundImage: 'none',
+                lineHeight: '1.5'
               }}
             >
               {groupByOptions.map(option => (

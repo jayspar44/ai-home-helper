@@ -1,6 +1,6 @@
 {
-  "version": "2.20.0",
-  "lastUpdated": "2025-10-28T04:07:54.937Z",
+  "version": "2.20.2",
+  "lastUpdated": "2025-10-28T04:29:58.684Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -250,6 +250,16 @@
     "2.20.0": {
       "description": "Enhanced navigation UX with emoji icons and added Planner/Shopping cards to HomePage for improved feature discoverability",
       "timestamp": "2025-10-28T04:07:54.937Z",
+      "date": "October 28, 2025"
+    },
+    "2.20.1": {
+      "description": "Fix shopping list layout to match pantry design with hover-only input styling",
+      "timestamp": "2025-10-28T04:13:42.700Z",
+      "date": "October 28, 2025"
+    },
+    "2.20.2": {
+      "description": "Fix search box icon/text overlap on Pantry and Shopping List pages by adjusting input padding to prevent visual collision",
+      "timestamp": "2025-10-28T04:29:58.684Z",
       "date": "October 28, 2025"
     }
   }
