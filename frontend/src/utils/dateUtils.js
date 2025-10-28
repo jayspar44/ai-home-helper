@@ -1,6 +1,7 @@
 /**
  * Utility functions for handling expiry dates and calculations
  */
+import { AlertTriangle, Clock } from 'lucide-react';
 
 /**
  * Check if a date is valid
@@ -79,7 +80,7 @@ export const getExpiryInfo = (item) => {
     return {
       text: 'Expired!',
       color: 'var(--color-error)',
-      icon: 'AlertTriangle',
+      icon: AlertTriangle,
       isExpired: true,
       isExpiringSoon: false,
       remainingDays
@@ -90,7 +91,7 @@ export const getExpiryInfo = (item) => {
     return {
       text: `${remainingDays} day${remainingDays === 1 ? '' : 's'} left`,
       color: 'var(--color-warning)',
-      icon: 'Clock',
+      icon: Clock,
       isExpired: false,
       isExpiringSoon: true,
       remainingDays
@@ -101,7 +102,7 @@ export const getExpiryInfo = (item) => {
     return {
       text: `${remainingDays} days left`,
       color: 'var(--color-warning-light)',
-      icon: 'Clock',
+      icon: Clock,
       isExpired: false,
       isExpiringSoon: true,
       remainingDays
@@ -156,4 +157,30 @@ export const daysToExpiryDate = (daysFromNow) => {
  */
 export const expiryDateToDays = (expiresAt) => {
   return calculateRemainingDays(expiresAt);
+};
+
+/**
+ * Format a date as relative time (e.g., "2hr ago", "3 days ago")
+ * @param {string|Date} date - The date to format
+ * @returns {string} - Formatted relative time
+ */
+export const formatRelativeTime = (date) => {
+  if (!date || !isValidDate(date)) return 'Unknown';
+
+  const now = new Date();
+  const past = new Date(date);
+  const diffMs = now.getTime() - past.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes}min ago`;
+  if (diffHours < 24) return `${diffHours}hr ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
 };

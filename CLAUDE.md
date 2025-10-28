@@ -1,10 +1,12 @@
 # Roscoe - AI Home Helper
 
 ## App Context
-AI home helper for families - recipe generation, pantry management, meal planning
+AI home helper for families - recipe generation, pantry management, meal planning, shopping lists
 - AI recipe generator with Gemini 2.5 Flash (multiple recipes, sophistication levels, pantry integration)
 - Smart pantry with photo recognition, expiry tracking, consumption logging
 - 3-state meal planner (empty→planned→completed) with timezone-independent dates
+- Smart shopping list with AI-powered item parsing, search, filters, grouping, and metadata tracking:
+- Manage page with user profile management, home settings (admin only), and theme preferences
 - Multi-user homes with role-based access (admin/member)
 - Firebase auth + Firestore multi-tenant architecture
 
@@ -25,15 +27,25 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 ## Project Structure
 ```
 ├── frontend/src/
-│   ├── components/           # 22 React components
+│   ├── components/           # 28 React components
 │   │   ├── pantry/          # Pantry components
-│   │   ├── UnifiedMealModal.js  # 3-state meal modal
-│   │   ├── RecipeSelector.js    # Recipe selection
-│   │   └── SharedLayout.js      # Main layout
-│   ├── pages/               # PlannerPage, RecipeGenerator, PantryPage
+│   │   ├── ShoppingListInput.js         # Inline add item input
+│   │   ├── ShoppingListItem.js          # Individual item with inline editing & metadata
+│   │   ├── ShoppingListCategory.js      # Collapsible group sections (category/date/user/status)
+│   │   ├── ShoppingListToolbar.js       # Search, filters, group by, actions
+│   │   ├── ShoppingListFilterModal.js   # Filter modal (category, status, user, date)
+│   │   ├── ShoppingListEmpty.js         # Empty state
+│   │   ├── UnifiedMealModal.js          # 3-state meal modal
+│   │   ├── RecipeSelector.js            # Recipe selection
+│   │   └── SharedLayout.js              # Main layout
+│   ├── pages/               # HomePage, PlannerPage, RecipeGenerator, PantryPage, ShoppingList, ManagePage
+│   ├── hooks/               # useShoppingList (with search/filter/grouping), useTheme, useItemManager, usePantryFilters
+│   ├── styles/              # ShoppingList.css
+│   ├── utils/               # dateUtils.js (with formatRelativeTime)
 │   └── contexts/            # ToastContext
 ├── backend/
-│   ├── server.js           # Main server with AI endpoints
+│   ├── server.js           # Main server with AI endpoints, shopping list endpoints (timestamp conversion)
+│   ├── services/           # shoppingListAI.js (AI parsing service with qualifier preservation)
 │   └── uploads/            # Temp AI image processing
 ├── version.json            # Single source of truth
 └── eslint.config.mjs       # Modern ESLint config
@@ -77,6 +89,7 @@ For complete deployment details, setup instructions, and troubleshooting, see [D
 // PantryItem: { name, location, quantity, expiresAt, createdBy, confidence?, detectedBy? }
 // MealPlan: { date, mealType, planned?: {recipeId, recipeName, ingredients}, actual?: {description, loggedAt} }
 // Recipe: { title, ingredients[], instructions[], pantryIngredients[], missingIngredients[] }
+// ShoppingList: { homeId, items: [{id, name, quantity, unit, category, checked, addedBy, addedAt, source}], lastUpdated, createdAt }
 ```
 
 ## Claude Code Version Management Protocol
@@ -173,6 +186,8 @@ req.log.error({ err: error, userId: req.user.uid }, 'Failed to fetch pantry item
 logger.debug('Fetching user profile'); // Silent in prod
 logger.error('Failed to load recipes:', error); // Always visible
 ```
+
+**Important**: Always use `err` as the key name for error objects in Pino logs (not `error`). This triggers Pino's built-in error serializer which includes stack traces and proper error formatting.
 
 **Configuration**:
 - Set `LOG_LEVEL` environment variable to override (debug|info|warn|error)

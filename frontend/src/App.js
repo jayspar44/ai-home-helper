@@ -9,9 +9,10 @@ import AuthPage from './auth/AuthPage';
 import SharedLayout from './components/SharedLayout';
 import HomePage from './pages/HomePage';
 import RecipeGenerator from './pages/RecipeGenerator';
-import HomeAdminPage from './pages/HomeAdminPage';
+import ManagePage from './pages/ManagePage';
 import PantryPage from './pages/PantryPage';
 import PlannerPage from './pages/PlannerPage';
+import ShoppingList from './pages/ShoppingList';
 import logger from './utils/logger';
 
 export default function App() {
@@ -283,12 +284,13 @@ export default function App() {
         <ToastProvider>
           <Router>
             <Routes>
-              <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} />}>
+              <Route path="/" element={<SharedLayout profile={profile} onLogout={handleLogout} userToken={userToken} refreshProfile={fetchProfile} />}>
                 <Route index element={<HomePage />} />
                 <Route path="recipe-generator" element={<RecipeGenerator />} />
-                <Route path="home-admin" element={<HomeAdminPage />} />
+                <Route path="manage" element={<ManagePage />} />
                 <Route path="/pantry" element={<PantryPage />} />
                 <Route path="/planner" element={<PlannerPage />} />
+                <Route path="/shopping-list" element={<ShoppingList />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
