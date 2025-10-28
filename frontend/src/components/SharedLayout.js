@@ -4,18 +4,7 @@ import VersionDisplay from './VersionDisplay';
 import logger from '../utils/logger';
 
 // ===== ICONS =====
-const HomeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
-
-const RecipeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 11.08V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M18 22a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path><path d="M18 16v.01"></path><path d="M18 20v.01"></path></svg>;
-
-const SettingsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
-
-const PantryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M19 11V9a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v2" /><path d="M6 11h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Z" /><path d="M10 11V9" /><path d="M14 11V9" /></svg>;
-
-const PlannerIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
-
-const ShoppingCartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>;
-
+// Navigation icons are now emojis - only keeping utility icons for dropdowns and checkmarks
 const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 
 const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
@@ -60,37 +49,37 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
     {
       name: 'Home',
       path: '/',
-      icon: HomeIcon,
+      emoji: '🏠',
       mobileLabel: 'Home'
     },
     {
       name: 'Pantry',
       path: '/pantry',
-      icon: PantryIcon,
+      emoji: '🥫',
       mobileLabel: 'Pantry'
     },
     {
       name: 'Planner',
       path: '/planner',
-      icon: PlannerIcon,
+      emoji: '📅',
       mobileLabel: 'Planner'
     },
     {
       name: 'Shopping',
       path: '/shopping-list',
-      icon: ShoppingCartIcon,
+      emoji: '🛒',
       mobileLabel: 'Shopping'
     },
     {
       name: 'Recipes',
       path: '/recipe-generator',
-      icon: RecipeIcon,
+      emoji: '🍽️',
       mobileLabel: 'Recipes'
     },
     {
       name: 'Manage',
       path: '/manage',
-      icon: SettingsIcon,
+      emoji: '⚙️',
       mobileLabel: 'Manage'
     }
   ];
@@ -174,7 +163,7 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
           {/* Navigation */}
           <nav className="flex-1 p-4">
             <div className="space-y-2">
-              {navigation.map(({ name, path, icon: Icon }) => (
+              {navigation.map(({ name, path, emoji }) => (
                 <NavLink
                   key={path}
                   to={path}
@@ -190,7 +179,7 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
                   })}
                   end
                 >
-                  <Icon />
+                  <span className="text-xl">{emoji}</span>
                   <span>{name}</span>
                 </NavLink>
               ))}
@@ -232,13 +221,13 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
       </main>
 
       {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
-      <nav className="mobile-only fixed bottom-0 left-0 right-0 border-t z-10" style={{ 
-        backgroundColor: 'var(--bg-card)', 
+      <nav className="mobile-only fixed bottom-0 left-0 right-0 border-t z-10" style={{
+        backgroundColor: 'var(--bg-card)',
         borderColor: 'var(--border-light)',
         height: 'var(--bottom-nav-height)'
       }}>
         <div className="flex justify-around items-center h-full px-2">
-          {navigation.map(({ mobileLabel, path, icon: Icon }) => (
+          {navigation.map(({ mobileLabel, path, emoji }) => (
             <NavLink
               key={path}
               to={path}
@@ -251,7 +240,7 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
               })}
               end
             >
-              <Icon />
+              <span className="text-xl">{emoji}</span>
               <span className="text-xs font-medium truncate">{mobileLabel}</span>
             </NavLink>
           ))}

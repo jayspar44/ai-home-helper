@@ -1,6 +1,6 @@
 {
-  "version": "2.19.0",
-  "lastUpdated": "2025-10-28T03:44:39.734Z",
+  "version": "2.20.0",
+  "lastUpdated": "2025-10-28T04:07:54.937Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -246,6 +246,11 @@
       "description": "Comprehensive Manage page: Replaced Admin page with organized Manage interface featuring user profile editing (name), home management (name/members) for admins, and Settings section with theme toggle. Added backend PUT endpoints for user/home updates with proper authentication, fixed profile refresh bug causing unexpected logouts, improved responsive sidebar visibility (768-1024px breakpoint alignment), and enhanced UX with inline editing and proper permissions enforcement.",
       "timestamp": "2025-10-28T03:44:39.734Z",
       "date": "October 27, 2025"
+    },
+    "2.20.0": {
+      "description": "Enhanced navigation UX with emoji icons and added Planner/Shopping cards to HomePage for improved feature discoverability",
+      "timestamp": "2025-10-28T04:07:54.937Z",
+      "date": "October 28, 2025"
     }
   }
 }
