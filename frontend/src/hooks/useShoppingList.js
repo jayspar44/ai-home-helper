@@ -14,13 +14,21 @@ const useShoppingList = (getAuthHeaders, activeHomeId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [groupBy, setGroupBy] = useState('category'); // category, date, user, status, none
+  const [groupBy, setGroupBy] = useState(() => {
+    const saved = localStorage.getItem('shoppingListGroupBy');
+    return saved || 'none';
+  });
   const [filters, setFilters] = useState({
     categories: ['produce', 'dairy', 'meat', 'pantry', 'frozen', 'other'],
     status: 'all', // all, checked, unchecked
     users: [], // empty = all users
     dateAdded: 'all' // all, today, this-week, older
   });
+
+  // Persist groupBy preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('shoppingListGroupBy', groupBy);
+  }, [groupBy]);
 
   // Fetch shopping list on mount
   const fetchShoppingList = useCallback(async () => {

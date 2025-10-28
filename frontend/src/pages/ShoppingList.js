@@ -6,6 +6,7 @@ import ShoppingListCategory from '../components/ShoppingListCategory';
 import ShoppingListEmpty from '../components/ShoppingListEmpty';
 import ShoppingListToolbar from '../components/ShoppingListToolbar';
 import ShoppingListFilterModal from '../components/ShoppingListFilterModal';
+import EditShoppingItemModal from '../components/EditShoppingItemModal';
 import logger from '../utils/logger';
 import '../styles/ShoppingList.css';
 
@@ -18,6 +19,7 @@ const ShoppingList = () => {
   const { userToken, activeHomeId } = context || {};
   const [homeMembers, setHomeMembers] = useState([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
 
   // Auth headers callback
   const getAuthHeaders = useCallback(() => ({
@@ -171,7 +173,7 @@ const ShoppingList = () => {
               category={category}
               items={itemsByCategory[category]}
               onCheck={toggleCheck}
-              onEdit={editItem}
+              onEdit={setEditingItem}
               onDelete={deleteItem}
               homeMembers={homeMembers}
             />
@@ -187,6 +189,15 @@ const ShoppingList = () => {
           onFiltersChange={setFilters}
           onClearFilters={handleClearFilters}
           homeMembers={homeMembers}
+        />
+
+        {/* Edit Item Modal */}
+        <EditShoppingItemModal
+          isOpen={!!editingItem}
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSave={editItem}
+          onDelete={deleteItem}
         />
       </div>
     </div>

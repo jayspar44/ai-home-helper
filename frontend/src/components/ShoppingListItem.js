@@ -1,54 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Trash2, Check } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 
 /**
- * Individual shopping list item with inline editing
- * Features checkbox, editable name/quantity/unit, delete button, metadata display
+ * Shopping list item component - matches pantry design
+ * Features checkbox, plain text display, click-to-edit modal pattern
  */
 const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(item.name);
-  const [editedQuantity, setEditedQuantity] = useState(item.quantity);
-  const [editedUnit, setEditedUnit] = useState(item.unit);
+  const handleRowClick = (e) => {
+    // Don't trigger edit if clicking checkbox or delete button
+    if (e.target.closest('.shopping-list-checkbox') || e.target.closest('.shopping-list-item-actions')) {
+      return;
+    }
+    onEdit(item);
+  };
 
-  // Update local state when item prop changes
-  useEffect(() => {
-    setEditedName(item.name);
-    setEditedQuantity(item.quantity);
-    setEditedUnit(item.unit);
-  }, [item]);
-
-  const handleCheckboxChange = () => {
+  const handleCheckboxClick = (e) => {
+    e.stopPropagation();
     onCheck(item.id, !item.checked);
   };
 
-  const handleSaveName = () => {
-    if (editedName.trim() !== item.name && editedName.trim().length > 0) {
-      onEdit(item.id, { name: editedName.trim() });
-    } else {
-      setEditedName(item.name); // Revert if empty or unchanged
-    }
-  };
-
-  const handleSaveQuantity = () => {
-    const quantity = parseFloat(editedQuantity);
-    if (!isNaN(quantity) && quantity > 0 && quantity !== item.quantity) {
-      onEdit(item.id, { quantity });
-    } else {
-      setEditedQuantity(item.quantity); // Revert if invalid
-    }
-  };
-
-  const handleSaveUnit = () => {
-    if (editedUnit.trim() !== item.unit && editedUnit.trim().length > 0) {
-      onEdit(item.id, { unit: editedUnit.trim() });
-    } else {
-      setEditedUnit(item.unit); // Revert if empty or unchanged
-    }
-  };
-
-  const handleDelete = () => {
+  const handleDelete = (e) => {
+    e.stopPropagation();
     onDelete(item.id);
   };
 
@@ -71,80 +44,90 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
     return timeText;
   };
 
+  // Get category emoji
+  const getCategoryEmoji = (category) => {
+    const emojiMap = {
+      produce: '🥬',
+      dairy: '🥛',
+      meat: '🥩',
+      pantry: '🏺',
+      frozen: '❄️',
+      other: '📦'
+    };
+    return emojiMap[category] || '📦';
+  };
+
   return (
-    <div className={`shopping-list-item ${item.checked ? 'checked' : ''}`}>
-      <button
-        className="shopping-list-checkbox"
-        onClick={handleCheckboxChange}
-        aria-label={`Check ${item.name}`}
+    <div className="relative shopping-list-item-wrapper">
+      <div
+        className="flex items-center justify-between p-3 rounded-lg transition-colors border-l-4 shopping-list-item"
+        onClick={handleRowClick}
         style={{
-          backgroundColor: item.checked ? 'var(--color-success)' : 'transparent',
-          border: item.checked ? 'none' : '2px solid var(--border-medium)',
-          color: 'white'
+          backgroundColor: 'var(--bg-tertiary)',
+          borderLeftColor: item.checked ? 'var(--color-success)' : 'var(--border-light)',
+          cursor: 'pointer'
         }}
       >
-        {item.checked && <Check size={16} />}
-      </button>
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          {/* Checkbox button */}
+          <button
+            className="shopping-list-checkbox"
+            onClick={handleCheckboxClick}
+            aria-label={`Check ${item.name}`}
+            style={{
+              backgroundColor: item.checked ? 'var(--color-success)' : 'transparent',
+              border: item.checked ? 'none' : '2px solid var(--border-medium)',
+              color: 'white'
+            }}
+          >
+            {item.checked && <Check size={16} />}
+          </button>
 
-      <div className="shopping-list-item-details">
-        <div className="shopping-list-item-main">
-          <input
-            type="text"
-            className="shopping-list-item-name"
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onBlur={handleSaveName}
-            onKeyPress={(e) => e.key === 'Enter' && e.target.blur()}
-            disabled={item.checked}
-          />
+          {/* Item info - plain text like pantry */}
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm" style={{
+              color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
+              textDecoration: item.checked ? 'line-through' : 'none'
+            }}>
+              {item.name}
+              <span className="text-xs font-normal ml-2" style={{ color: 'var(--text-muted)' }}>
+                {item.quantity} {item.unit}
+              </span>
+              {item.source?.name && (
+                <span className="text-xs ml-2 font-normal italic" style={{ color: 'var(--text-muted)' }}>
+                  (from {item.source.name})
+                </span>
+              )}
+            </div>
+            {/* Metadata (time + user) */}
+            {item.addedAt && (
+              <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {getMetadataText()}
+              </div>
+            )}
+          </div>
 
-          <div className="shopping-list-item-quantity">
-            <input
-              type="number"
-              className="shopping-list-quantity-input"
-              value={editedQuantity}
-              onChange={(e) => setEditedQuantity(e.target.value)}
-              onBlur={handleSaveQuantity}
-              onKeyPress={(e) => e.key === 'Enter' && e.target.blur()}
-              disabled={item.checked}
-              min="0"
-              step="0.1"
-            />
-            <input
-              type="text"
-              className="shopping-list-unit-input"
-              value={editedUnit}
-              onChange={(e) => setEditedUnit(e.target.value)}
-              onBlur={handleSaveUnit}
-              onKeyPress={(e) => e.key === 'Enter' && e.target.blur()}
-              disabled={item.checked}
-            />
+          {/* Category badge (matching pantry location badge styling) */}
+          <div className="text-xs px-2 py-1 rounded-full" style={{
+            backgroundColor: 'var(--bg-card)',
+            color: 'var(--text-muted)',
+            border: '1px solid var(--border-light)'
+          }}>
+            {getCategoryEmoji(item.category)}
           </div>
         </div>
 
-        {item.source?.name && (
-          <span className="shopping-list-item-source">
-            From: {item.source.name}
-          </span>
-        )}
-
-        {/* Metadata - always visible, matches pantry layout */}
-        {item.addedAt && (
-          <div className="shopping-list-item-metadata">
-            {getMetadataText()}
-          </div>
-        )}
-      </div>
-
-      <div className="shopping-list-item-actions">
-        <button
-          className="shopping-list-delete-btn"
-          onClick={handleDelete}
-          aria-label={`Delete ${item.name}`}
-          title="Delete item"
-        >
-          <Trash2 size={16} />
-        </button>
+        {/* Delete button (fade in on hover like pantry) */}
+        <div className="shopping-list-item-actions">
+          <button
+            onClick={handleDelete}
+            className="shopping-list-delete-btn"
+            aria-label={`Delete ${item.name}`}
+            title="Delete item"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

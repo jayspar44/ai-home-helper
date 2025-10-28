@@ -265,30 +265,28 @@
   padding: var(--spacing-1);
 }
 
-/* === INDIVIDUAL ITEM === */
-.shopping-list-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: 12px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
+/* === INDIVIDUAL ITEM (MATCHES PANTRY DESIGN) === */
+
+/* Item Wrapper */
+.shopping-list-item-wrapper {
   position: relative;
 }
 
+/* Item Container */
+.shopping-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  border-left-width: 4px;
+}
+
 .shopping-list-item:hover {
-  background: var(--bg-secondary);
-}
-
-.shopping-list-item.checked {
-  opacity: 0.5;
-}
-
-.shopping-list-item.checked .shopping-list-item-name,
-.shopping-list-item.checked .shopping-list-quantity-input,
-.shopping-list-item.checked .shopping-list-unit-input {
-  text-decoration: line-through;
-  color: var(--text-muted);
+  background: var(--bg-secondary) !important;
+  box-shadow: var(--shadow-sm);
 }
 
 /* === CHECKBOX === */
@@ -309,115 +307,13 @@
   transform: scale(1.1);
 }
 
-/* === ITEM DETAILS === */
-.shopping-list-item-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.shopping-list-item-main {
-  display: flex;
-  flex-wrap: nowrap; /* Prevent wrapping, let name truncate instead */
-  align-items: center;
-  gap: var(--spacing-1);
-}
-
-.shopping-list-item-name {
-  flex: 1;
-  min-width: 0; /* Allow flex to shrink below content size */
-  padding: 6px 8px;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-base);
-}
-
-.shopping-list-item-name:focus {
-  outline: none;
-  background: var(--bg-primary);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.1);
-}
-
-.shopping-list-item-name:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-.shopping-list-item-quantity {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.shopping-list-quantity-input,
-.shopping-list-unit-input {
-  padding: 6px 8px;
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-base);
-}
-
-.shopping-list-quantity-input {
-  width: 60px;
-  text-align: right;
-}
-
-.shopping-list-unit-input {
-  width: 60px;
-}
-
-.shopping-list-quantity-input:focus,
-.shopping-list-unit-input:focus {
-  outline: none;
-  background: var(--bg-primary);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.1);
-}
-
-.shopping-list-quantity-input:disabled,
-.shopping-list-unit-input:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-.shopping-list-item-source {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.shopping-list-item-metadata {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  transition: opacity var(--transition-fast);
-  animation: fadeIn 0.2s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 /* === ITEM ACTIONS === */
 .shopping-list-item-actions {
   display: flex;
   gap: 4px;
   opacity: 0;
   transition: opacity var(--transition-base);
+  margin-left: var(--spacing-1);
 }
 
 .shopping-list-item:hover .shopping-list-item-actions {
@@ -430,6 +326,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
+  min-width: 32px;
   padding: 0;
   background: transparent;
   border: none;
@@ -444,6 +341,10 @@
   color: var(--color-error);
 }
 
+.shopping-list-delete-btn:active {
+  transform: scale(0.95);
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 640px) {
   .shopping-list-input {
@@ -455,27 +356,15 @@
     justify-content: center;
   }
 
-  .shopping-list-item {
-    gap: var(--spacing-1);
-    padding: 12px; /* Comfortable touch target on mobile */
-  }
-
   /* Always show actions on mobile */
   .shopping-list-item-actions {
     opacity: 1;
   }
 
-  /* Keep row layout but make name truncate properly */
-  .shopping-list-item-name {
-    min-width: 100px; /* Ensure minimum readable width */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-@media (min-width: 641px) {
-  .shopping-list-item {
-    padding: 8px; /* Tighter spacing on desktop */
+  .shopping-list-delete-btn {
+    /* Slightly larger touch target on mobile */
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
   }
 }
