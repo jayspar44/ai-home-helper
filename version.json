@@ -1,6 +1,6 @@
 {
-  "version": "2.15.7",
-  "lastUpdated": "2025-10-27T04:56:57.069Z",
+  "version": "2.15.8",
+  "lastUpdated": "2025-10-27T23:31:15.450Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -210,6 +210,11 @@
     "2.15.7": {
       "description": "Remove unreliable Cloud Build caching mechanism that was failing due to race condition, simplify build configuration from 7 to 5 steps, and improve build reliability",
       "timestamp": "2025-10-27T04:56:57.069Z",
+      "date": "October 27, 2025"
+    },
+    "2.15.8": {
+      "description": "Implement comprehensive logging improvements: Pino for backend with structured JSON logging, custom lightweight logger for frontend, clean one-line HTTP logs, business context logging across all features (40+ log statements), sensitive data redaction, userId/homeId preserved for debugging",
+      "timestamp": "2025-10-27T23:31:15.450Z",
       "date": "October 27, 2025"
     }
   }

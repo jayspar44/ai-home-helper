@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '../utils/logger';
 
 // Icons
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
@@ -60,7 +61,7 @@ export default function RecipeSchedulingModal({
         description: recipe.description
       };
 
-      console.log('📝 Planned data being sent:', plannedData);
+      logger.debug('📝 Planned data being sent:', plannedData);
 
       const mealPlan = {
         date: schedulingDate, // Date-only format, no timezone conversion
@@ -68,7 +69,7 @@ export default function RecipeSchedulingModal({
         planned: plannedData
       };
 
-      console.log('📅 Scheduling recipe:', { mealPlan, recipe });
+      logger.debug('📅 Scheduling recipe:', { mealPlan, recipe });
 
       const response = await fetch(`/api/planner/${activeHomeId}`, {
         method: 'POST',
@@ -76,27 +77,27 @@ export default function RecipeSchedulingModal({
         body: JSON.stringify(mealPlan)
       });
 
-      console.log('📅 Response status:', response.status, response.statusText);
+      logger.debug('📅 Response status:', response.status, response.statusText);
 
       if (response.ok) {
         const newMealPlan = await response.json();
-        console.log('✅ Recipe scheduled successfully:', newMealPlan);
+        logger.debug('✅ Recipe scheduled successfully:', newMealPlan);
         onSchedule(newMealPlan);
         onClose();
       } else {
         let errorMessage = 'Failed to schedule recipe';
         try {
           const errorData = await response.json();
-          console.error('❌ Failed to schedule recipe - Error Data:', errorData);
+          logger.error('❌ Failed to schedule recipe - Error Data:', errorData);
           errorMessage = errorData.error || errorMessage;
         } catch (parseError) {
-          console.error('❌ Failed to parse error response:', parseError);
-          console.error('❌ Response text:', await response.text());
+          logger.error('❌ Failed to parse error response:', parseError);
+          logger.error('❌ Response text:', await response.text());
         }
         setError(errorMessage);
       }
     } catch (err) {
-      console.error('❌ Error scheduling recipe:', err);
+      logger.error('❌ Error scheduling recipe:', err);
       setError('Failed to schedule recipe. Please try again.');
     } finally {
       setIsScheduling(false);

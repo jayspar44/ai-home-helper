@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, Check, HelpCircle, MoreVertical } from 'lucide-react';
 import UnifiedMealModal from '../components/UnifiedMealModal';
 import PlannerRecipeCard from '../components/PlannerRecipeCard';
+import logger from '../utils/logger';
 
 // Date formatting utility - date-only format to avoid timezone conversion
 const formatDateForAPI = (date) => {
@@ -446,7 +447,7 @@ export default function PlannerPage() {
         setError('');
       } else {
         const errorText = await response.text();
-        console.error('Failed to fetch meal plans:', response.status, errorText);
+        logger.error('Failed to fetch meal plans:', response.status, errorText);
         if (response.status === 401) {
           setError('Session expired. Please refresh the page.');
         } else {
@@ -455,7 +456,7 @@ export default function PlannerPage() {
         setMealPlans([]);
       }
     } catch (err) {
-      console.error('Error fetching meal plans:', err);
+      logger.error('Error fetching meal plans:', err);
       setError('Failed to load meal plans');
       setMealPlans([]);
     } finally {
@@ -476,11 +477,11 @@ export default function PlannerPage() {
         const items = await response.json();
         setPantryItems(items);
       } else {
-        console.error('Failed to fetch pantry items:', response.status);
+        logger.error('Failed to fetch pantry items:', response.status);
         setPantryItems([]);
       }
     } catch (err) {
-      console.error('Error fetching pantry items:', err);
+      logger.error('Error fetching pantry items:', err);
       setPantryItems([]);
     }
   }, [userToken, activeHomeId, getAuthHeaders]);
@@ -547,10 +548,10 @@ export default function PlannerPage() {
           return updatedPlans;
         });
       } else {
-        console.error('Failed to complete meal:', response.status);
+        logger.error('Failed to complete meal:', response.status);
       }
     } catch (err) {
-      console.error('Error completing meal:', err);
+      logger.error('Error completing meal:', err);
     }
   };
 

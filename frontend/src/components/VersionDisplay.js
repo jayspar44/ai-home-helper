@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '../utils/logger';
 
 const VersionIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,7 +21,7 @@ export default function VersionDisplay({ className = "" }) {
           setVersion(data.version);
         }
       } catch (error) {
-        console.error('Failed to fetch version:', error);
+        logger.error('Failed to fetch version:', error);
         // Fallback to default version
       }
     };

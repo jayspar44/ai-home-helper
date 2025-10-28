@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import logger from './utils/logger';
 
 // --- Firebase Configuration ---
 // Reads the configuration from a single FIREBASE_CONFIG environment variable
@@ -9,7 +10,7 @@ try {
   // Parse the JSON string from FIREBASE_CONFIG environment variable
   firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG || '{}');
 } catch (error) {
-  console.error('Error parsing FIREBASE_CONFIG:', error);
+  logger.error('Error parsing FIREBASE_CONFIG:', error);
   firebaseConfig = {};
 }
 

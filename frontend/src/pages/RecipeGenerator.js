@@ -4,6 +4,7 @@ import { Calendar, Search, ChevronDown } from 'lucide-react';
 import { calculateRemainingDays } from '../utils/dateUtils';
 import RecipeSelector from '../components/RecipeSelector';
 import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
+import logger from '../utils/logger';
 
 const LoadingSpinner = () => <div className="w-6 h-6 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--border-light)', borderTopColor: 'var(--color-primary)' }}></div>;
 const SkeletonCard = () => (
@@ -170,7 +171,7 @@ export default function RecipeGenerator() {
         const items = await response.json();
         setPantryItems(items);
       } catch (err) {
-        console.error('Error fetching pantry items:', err);
+        logger.error('Error fetching pantry items:', err);
       } finally {
         setIsLoadingPantry(false);
       }
@@ -240,7 +241,7 @@ export default function RecipeGenerator() {
         setGeneratedRecipes([result]);
       }
     } catch (err) {
-      console.error('Failed to generate recipe:', err);
+      logger.error('Failed to generate recipe:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -300,14 +301,14 @@ export default function RecipeGenerator() {
     setShowRecipeSelector(false);
     setRecipeToSchedule(null);
     // Optionally show success message
-    console.log('Recipe scheduled successfully:', scheduledMeal);
+    logger.debug('Recipe scheduled successfully:', scheduledMeal);
   }, []);
 
   const handleDirectRecipeScheduled = useCallback((scheduledMeal) => {
     setShowRecipeSchedulingModal(false);
     setRecipeToDirectSchedule(null);
     // Optionally show success message
-    console.log('Recipe scheduled directly:', scheduledMeal);
+    logger.debug('Recipe scheduled directly:', scheduledMeal);
   }, []);
 
   const isRecipeSaved = generatedRecipe && savedRecipes.some(r => r.title === generatedRecipe.title);

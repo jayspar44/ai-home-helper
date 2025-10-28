@@ -13,6 +13,7 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 - **Backend**: Node.js + Express.js, Firebase Admin SDK, Multer file uploads
 - **Database**: Firebase Firestore
 - **AI**: Google Gemini 2.5 Flash API (@google/generative-ai v0.17.1)
+- **Logging**: Pino (backend), Custom lightweight logger (frontend)
 - **Development**: ESLint 9.36.0, Concurrently, Nodemon
 
 - **Deployment**:
@@ -57,57 +58,17 @@ npm run install-all        # Install all dependencies
 - `feature/*` = feature branches
 
 **Automated Workflows**:
+- **PR Validation**: Runs ESLint + build checks on PRs to `develop` or `main`
+- **Deploy to Development**: Push to `develop` → auto-deploys to dev environment
+- **Deploy to Production**: Push to `main` → requires manual approval → deploys to production
+- **Sync develop with main**: After production deployment, automatically merges `main` → `develop` (commits prefixed with "sync:" to skip redundant dev deployment)
 
-1. **PR Validation** (`.github/workflows/pr-validation.yml`)
-   - Triggers: PRs to `develop` or `main`
-   - Runs: ESLint (code quality) + Frontend build (compilation check)
-   - Note: Build step disables ESLint (handled by dedicated lint step)
+**Quick Reference**:
+- Dev environment: `https://dev-dot-{project-id}.uc.r.appspot.com`
+- Production: `https://{project-id}.uc.r.appspot.com`
+- Deployments use Cloud Build with secrets from GCP Secret Manager
 
-2. **Deploy to Development** (`.github/workflows/deploy-dev.yml`)
-   - Triggers: Push to `develop` branch
-   - Skips: Commits with "sync:" prefix (branch alignment, no new code)
-   - Action: Deploys to dev service via Cloud Build (optimized pipeline)
-   - URL: https://dev-dot-{project-id}.uc.r.appspot.com
-
-3. **Deploy to Production** (`.github/workflows/deploy-prod.yml`)
-   - Triggers: Push to `main` branch
-   - Requires: Manual approval via GitHub Environment "production"
-   - Action: Deploys to default service via Cloud Build
-   - URL: https://{project-id}.uc.r.appspot.com
-
-4. **Sync develop with main** (`.github/workflows/sync-develop.yml`)
-   - Triggers: After push to `main` (post-production deployment)
-   - Action: Automatically merges main → develop
-   - Commit: Prefixed with "sync:" to skip redundant dev deployment
-   - Purpose: Keeps branches aligned without manual intervention
-
-**Development Workflow**:
-```
-1. Create feature branch from develop: git checkout -b feature/my-feature
-2. Make changes, commit, push
-3. Open PR to develop → PR validation runs
-4. Merge PR → Auto-deploys to dev environment
-5. Test in dev environment
-6. Open PR from develop to main → PR validation runs
-7. Merge PR → Requires manual approval → Deploys to production
-8. sync-develop.yml automatically aligns develop with main
-```
-
-**Why sync-develop.yml exists**:
-- After production release, develop needs to match main
-- Without automation, requires manual git merge + admin bypass
-- Sync commits use "sync:" prefix so deploy-dev.yml skips deployment
-- Saves ~5-10 minutes Cloud Build time (no redundant deployment)
-
-**Cloud Build Optimizations** (used by both deployments):
-- E2_STANDARD_2 machine type (free tier: 2 vCPUs, 120 build-minutes/day)
-- Parallel dependency installation (root, frontend, backend)
-
-**Important Notes**:
-- All deployments use `cloudbuild.yaml` (optimized pipeline from v2.14.0)
-- Project ID fetched from gcloud (not secrets) to display actual URLs
-- Frontend build secrets injected at build time from Secret Manager
-- Backend secrets loaded at runtime from Secret Manager
+For complete deployment details, setup instructions, and troubleshooting, see [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## Database Schema
 ```javascript
@@ -165,8 +126,62 @@ Version is managed via version.json and mirrored in the root, frontend and backe
 - Production requires manual approval
 - Branches stay synchronized automatically
 
+## Logging Protocol
+
+**Backend: Pino Structured Logging**
+- **Logger**: Pino with pino-http middleware ([backend/utils/logger.js](backend/utils/logger.js))
+- **Dependencies**: `pino`, `pino-http`, `pino-pretty` (dev transport)
+- **Log Levels**: DEBUG (dev only), INFO (prod), WARN, ERROR (always visible)
+- **Environment Behavior**:
+  - Development: Colored console output via pino-pretty, DEBUG level
+  - Production: JSON structured logs, INFO level, integrates with GCP Cloud Logging
+
+**HTTP Request Logging**:
+- One-line format at DEBUG level (silent in production)
+- Only logs: method, url, statusCode, responseTime, userId
+- Health check endpoints skipped
+- Pattern: `GET /api/pantry/items 200 45ms`
+
+**Business Context Logging**:
+- All features have application-level logs showing user actions
+- Include relevant context: userId, homeId, item names, AI metrics
+- Examples:
+  - `req.log.info({ userId, homeId, itemName, location }, 'Pantry item added');`
+  - `req.log.info({ userId, recipeCount, aiResponseTime }, 'Recipes generated');`
+  - `req.log.error({ err, userId }, 'Failed to save recipe');`
+
+**Sensitive Data Redaction**:
+- Automatically redacts: token, idToken, authorization, apiKey, serviceAccount, password
+- Safe to log: userId, uid, homeId (essential for debugging)
+- Never log: API keys, Firebase tokens, service account JSON
+
+**Frontend: Custom Lightweight Logger**
+- **Logger**: Custom environment-aware logger ([frontend/src/utils/logger.js](frontend/src/utils/logger.js))
+- **Zero Dependencies**: 50-line implementation to avoid bundle bloat
+- **Methods**: `logger.debug()`, `logger.info()`, `logger.warn()`, `logger.error()`
+- **Environment Behavior**:
+  - Development: All logs visible in browser console
+  - Production: Only errors visible (debug/info/warn silent)
+
+**Usage Patterns**:
+```javascript
+// Backend - Business logging
+req.log.info({ userId: req.user.uid, itemName, quantity }, 'Item added to pantry');
+req.log.error({ err: error, userId: req.user.uid }, 'Failed to fetch pantry items');
+
+// Frontend - Environment-aware
+logger.debug('Fetching user profile'); // Silent in prod
+logger.error('Failed to load recipes:', error); // Always visible
+```
+
+**Configuration**:
+- Set `LOG_LEVEL` environment variable to override (debug|info|warn|error)
+- GCP automatically maps Pino severity levels to Cloud Logging
+- View logs: `npm run gcp:logs:prod` or GCP Console → App Engine → Logs
+
 ## Code Style
 - Use functional React components with hooks
 - Follow existing CSS custom property patterns
 - All API endpoints require Firebase authentication
 - Restart backend dev server after Node.js changes
+- Use structured logging with Pino (backend) and custom logger (frontend)
