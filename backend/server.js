@@ -11,6 +11,7 @@ const admin = require('firebase-admin');
 const logger = require('./utils/logger');
 const pinoHttp = require('pino-http');
 const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
+const { parseShoppingListItem } = require('./services/shoppingListAI');
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -285,6 +286,71 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
     }
 });
 
+// Update user profile (name)
+app.put('/api/user/me', checkAuth, async (req, res) => {
+    try {
+        const { name } = req.body;
+        const userId = req.user.uid;
+
+        req.log.debug({ userId, newName: name }, 'Updating user profile');
+
+        // Validate name
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            req.log.warn({ userId }, 'Invalid name provided');
+            return res.status(400).json({ error: 'Name is required and must be a non-empty string.' });
+        }
+
+        if (name.trim().length > 100) {
+            req.log.warn({ userId }, 'Name too long');
+            return res.status(400).json({ error: 'Name must be 100 characters or less.' });
+        }
+
+        // Update user document in Firestore
+        const userRef = db.collection('users').doc(userId);
+        await userRef.update({
+            name: name.trim(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Fetch updated user data
+        const updatedUserDoc = await userRef.get();
+        const userData = updatedUserDoc.data();
+
+        // Fetch homes where user is a member
+        const homesSnapshot = await db.collection('homes')
+            .where(`members.${userId}`, 'in', ['member', 'admin'])
+            .get();
+
+        const homes = [];
+        homesSnapshot.forEach(doc => {
+            homes.push({
+                id: doc.id,
+                ...doc.data(),
+                role: doc.data().members[userId]
+            });
+        });
+
+        const response = {
+            uid: userId,
+            email: req.user.email,
+            name: userData.name,
+            homes: homes,
+            primaryHomeId: userData.primaryHomeId || (homes[0]?.id || null)
+        };
+
+        req.log.info({ userId, newName: name.trim() }, 'User profile updated successfully');
+        res.json(response);
+
+    } catch (error) {
+        req.log.error({ err: error, userId: req.user.uid }, 'Error updating user profile');
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 app.post('/api/homes/add-member', checkAuth, async (req, res) => {
     try {
         const { homeId, newUserEmail } = req.body;
@@ -369,6 +435,72 @@ app.delete('/api/homes/:homeId/members/:memberId', checkAuth, async (req, res) =
     } catch (error) {
         logger.error({ error: error, homeId, memberId, adminId }, 'Error removing member');
         res.status(400).json({ error: error.message });
+    }
+});
+
+// Update home details (name)
+app.put('/api/homes/:homeId', checkAuth, async (req, res) => {
+    try {
+        const { homeId } = req.params;
+        const { name } = req.body;
+        const userId = req.user.uid;
+
+        req.log.debug({ homeId, userId, newName: name }, 'Updating home details');
+
+        // Validate name
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            req.log.warn({ homeId, userId }, 'Invalid home name provided');
+            return res.status(400).json({ error: 'Name is required and must be a non-empty string.' });
+        }
+
+        if (name.trim().length > 100) {
+            req.log.warn({ homeId, userId }, 'Home name too long');
+            return res.status(400).json({ error: 'Name must be 100 characters or less.' });
+        }
+
+        // Check if home exists and user is an admin
+        const homeRef = db.collection('homes').doc(homeId);
+        const homeDoc = await homeRef.get();
+
+        if (!homeDoc.exists) {
+            req.log.warn({ homeId, userId }, 'Home not found');
+            return res.status(404).json({ error: 'Home not found.' });
+        }
+
+        const homeData = homeDoc.data();
+
+        // Verify user is an admin
+        if (homeData.members[userId] !== 'admin') {
+            req.log.warn({ homeId, userId }, 'User is not admin - permission denied');
+            return res.status(403).json({ error: 'Only admins can update home details.' });
+        }
+
+        // Update home name
+        await homeRef.update({
+            name: name.trim(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Fetch updated home data
+        const updatedHomeDoc = await homeRef.get();
+        const updatedHomeData = updatedHomeDoc.data();
+
+        const response = {
+            id: homeId,
+            ...updatedHomeData,
+            role: homeData.members[userId]
+        };
+
+        req.log.info({ homeId, userId, newName: name.trim() }, 'Home updated successfully');
+        res.json(response);
+
+    } catch (error) {
+        req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error updating home');
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 });
 
@@ -1661,6 +1793,378 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
   } catch (error) {
     req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
     res.status(500).json({ error: 'Failed to deduct ingredients' });
+  }
+});
+
+// --- Shopping List Endpoints ---
+
+// GET shopping list for a home
+app.get('/api/shopping-list/:homeId', checkAuth, async (req, res) => {
+  try {
+    const userUid = req.user.uid;
+    const { homeId } = req.params;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Get shopping list
+    const shoppingListDoc = await db.collection('shopping_lists').doc(homeId).get();
+
+    if (!shoppingListDoc.exists) {
+      // Return empty list if doesn't exist yet
+      return res.json({
+        items: [],
+        lastUpdated: null
+      });
+    }
+
+    const shoppingListData = shoppingListDoc.data();
+
+    // Convert Firestore timestamps to ISO strings for all items
+    const itemsWithTimestamps = (shoppingListData.items || []).map(item => ({
+      ...item,
+      addedAt: item.addedAt?.toDate ? item.addedAt.toDate().toISOString() : item.addedAt
+    }));
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      itemCount: itemsWithTimestamps.length
+    }, 'Shopping list fetched');
+
+    res.json({
+      items: itemsWithTimestamps,
+      lastUpdated: shoppingListData.lastUpdated?.toDate().toISOString() || null
+    });
+
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error fetching shopping list');
+    res.status(500).json({ error: 'Failed to fetch shopping list' });
+  }
+});
+
+// POST - Add item to shopping list with AI parsing
+app.post('/api/shopping-list/:homeId/items', checkAuth, async (req, res) => {
+  try {
+    const userUid = req.user.uid;
+    const { homeId } = req.params;
+    const { text } = req.body;
+
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({ error: 'Item text is required' });
+    }
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Parse item with AI
+    const startTime = Date.now();
+    const parsedItem = await parseShoppingListItem(text, genAI, req.log);
+    const aiResponseTime = Date.now() - startTime;
+
+    // Create item with metadata
+    const { v4: uuidv4 } = require('uuid');
+    const newItem = {
+      id: uuidv4(),
+      name: parsedItem.name,
+      quantity: parsedItem.quantity,
+      unit: parsedItem.unit,
+      category: parsedItem.category,
+      checked: false,
+      addedBy: userUid,
+      addedAt: admin.firestore.Timestamp.now(),
+      source: {
+        type: 'manual'
+      }
+    };
+
+    // Get or create shopping list document
+    const shoppingListRef = db.collection('shopping_lists').doc(homeId);
+    const shoppingListDoc = await shoppingListRef.get();
+
+    if (!shoppingListDoc.exists) {
+      // Create new shopping list
+      await shoppingListRef.set({
+        homeId,
+        items: [newItem],
+        createdAt: admin.firestore.Timestamp.now(),
+        lastUpdated: admin.firestore.Timestamp.now()
+      });
+    } else {
+      // Add to existing list
+      await shoppingListRef.update({
+        items: admin.firestore.FieldValue.arrayUnion(newItem),
+        lastUpdated: admin.firestore.Timestamp.now()
+      });
+    }
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      itemName: newItem.name,
+      category: newItem.category,
+      aiResponseTime
+    }, 'Shopping list item added');
+
+    // Return item with ISO date string
+    res.json({
+      item: {
+        ...newItem,
+        addedAt: newItem.addedAt.toDate().toISOString()
+      }
+    });
+
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error adding shopping list item');
+    res.status(500).json({ error: 'Failed to add item' });
+  }
+});
+
+// PATCH - Update item fields
+app.patch('/api/shopping-list/:homeId/items/:itemId', checkAuth, async (req, res) => {
+  try {
+    const userUid = req.user.uid;
+    const { homeId, itemId } = req.params;
+    const { name, quantity, unit, category } = req.body;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Get shopping list
+    const shoppingListRef = db.collection('shopping_lists').doc(homeId);
+    const shoppingListDoc = await shoppingListRef.get();
+
+    if (!shoppingListDoc.exists) {
+      return res.status(404).json({ error: 'Shopping list not found' });
+    }
+
+    const shoppingListData = shoppingListDoc.data();
+    const items = shoppingListData.items || [];
+
+    // Find and update item
+    const itemIndex = items.findIndex(item => item.id === itemId);
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Update only provided fields
+    if (name !== undefined) items[itemIndex].name = name;
+    if (quantity !== undefined) items[itemIndex].quantity = quantity;
+    if (unit !== undefined) items[itemIndex].unit = unit;
+    if (category !== undefined) items[itemIndex].category = category;
+
+    // Save updated list
+    await shoppingListRef.update({
+      items,
+      lastUpdated: admin.firestore.Timestamp.now()
+    });
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      itemId,
+      itemName: items[itemIndex].name
+    }, 'Shopping list item updated');
+
+    // Return updated item with ISO date
+    const updatedItem = {
+      ...items[itemIndex],
+      addedAt: items[itemIndex].addedAt?.toDate().toISOString()
+    };
+
+    res.json({
+      success: true,
+      item: updatedItem
+    });
+
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid, itemId: req.params.itemId }, 'Error updating shopping list item');
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// PATCH - Toggle item checked state
+app.patch('/api/shopping-list/:homeId/items/:itemId/check', checkAuth, async (req, res) => {
+  try {
+    const userUid = req.user.uid;
+    const { homeId, itemId } = req.params;
+    const { checked } = req.body;
+
+    if (typeof checked !== 'boolean') {
+      return res.status(400).json({ error: 'checked field must be boolean' });
+    }
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Get shopping list
+    const shoppingListRef = db.collection('shopping_lists').doc(homeId);
+    const shoppingListDoc = await shoppingListRef.get();
+
+    if (!shoppingListDoc.exists) {
+      return res.status(404).json({ error: 'Shopping list not found' });
+    }
+
+    const shoppingListData = shoppingListDoc.data();
+    const items = shoppingListData.items || [];
+
+    // Find and update item
+    const itemIndex = items.findIndex(item => item.id === itemId);
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    items[itemIndex].checked = checked;
+
+    // Save updated list
+    await shoppingListRef.update({
+      items,
+      lastUpdated: admin.firestore.Timestamp.now()
+    });
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      itemId,
+      itemName: items[itemIndex].name,
+      checked
+    }, 'Shopping list item checked state updated');
+
+    // Return updated item with ISO date
+    const updatedItem = {
+      ...items[itemIndex],
+      addedAt: items[itemIndex].addedAt?.toDate().toISOString()
+    };
+
+    res.json({
+      success: true,
+      item: updatedItem
+    });
+
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid, itemId: req.params.itemId }, 'Error updating checked state');
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// DELETE - Remove item from shopping list
+app.delete('/api/shopping-list/:homeId/items/:itemId', checkAuth, async (req, res) => {
+  try {
+    const userUid = req.user.uid;
+    const { homeId, itemId } = req.params;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Get shopping list
+    const shoppingListRef = db.collection('shopping_lists').doc(homeId);
+    const shoppingListDoc = await shoppingListRef.get();
+
+    if (!shoppingListDoc.exists) {
+      return res.status(404).json({ error: 'Shopping list not found' });
+    }
+
+    const shoppingListData = shoppingListDoc.data();
+    const items = shoppingListData.items || [];
+
+    // Find item
+    const itemIndex = items.findIndex(item => item.id === itemId);
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const deletedItemName = items[itemIndex].name;
+
+    // Remove item
+    items.splice(itemIndex, 1);
+
+    // Save updated list
+    await shoppingListRef.update({
+      items,
+      lastUpdated: admin.firestore.Timestamp.now()
+    });
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      itemId,
+      itemName: deletedItemName
+    }, 'Shopping list item deleted');
+
+    res.json({
+      success: true
+    });
+
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid, itemId: req.params.itemId }, 'Error deleting shopping list item');
+    res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+// DELETE - Clear all checked items
+app.delete('/api/shopping-list/:homeId/checked', checkAuth, async (req, res) => {
+  try {
+    const userUid = req.user.uid;
+    const { homeId } = req.params;
+
+    // Verify user belongs to home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Get shopping list
+    const shoppingListRef = db.collection('shopping_lists').doc(homeId);
+    const shoppingListDoc = await shoppingListRef.get();
+
+    if (!shoppingListDoc.exists) {
+      return res.status(404).json({ error: 'Shopping list not found' });
+    }
+
+    const shoppingListData = shoppingListDoc.data();
+    const items = shoppingListData.items || [];
+
+    // Count checked items before removal
+    const checkedCount = items.filter(item => item.checked).length;
+
+    // Filter out checked items
+    const uncheckedItems = items.filter(item => !item.checked);
+
+    // Save updated list
+    await shoppingListRef.update({
+      items: uncheckedItems,
+      lastUpdated: admin.firestore.Timestamp.now()
+    });
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      clearedCount: checkedCount
+    }, 'Checked items cleared from shopping list');
+
+    res.json({
+      success: true,
+      clearedCount: checkedCount
+    });
+
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error clearing checked items');
+    res.status(500).json({ error: 'Failed to clear checked items' });
   }
 });
 

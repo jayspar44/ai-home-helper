@@ -1,6 +1,6 @@
 {
-  "version": "2.17.0",
-  "lastUpdated": "2025-10-28T03:08:21.922Z",
+  "version": "2.18.0",
+  "lastUpdated": "2025-10-28T03:27:55.901Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -235,6 +235,11 @@
     "2.17.0": {
       "description": "Pantry UX improvements: make list view default, add click-to-edit rows, replace three-dot menu with hover-based delete button (shopping list pattern), mobile-optimized with always-visible actions",
       "timestamp": "2025-10-28T03:08:21.922Z",
+      "date": "October 27, 2025"
+    },
+    "2.18.0": {
+      "description": "Added search, filters, grouping, and metadata display to shopping list: search by item name, filter by category/status/user/date, group by category/date/user/status/none, metadata shows time and user (conditional on multi-user homes), responsive padding, fixed layout wrapping issues",
+      "timestamp": "2025-10-28T03:27:55.901Z",
       "date": "October 27, 2025"
     }
   }
