@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, X, Save, BookOpen, Trash2 } from 'lucide-react';
 import RecipeSelector from './RecipeSelector';
+import logger from '../utils/logger';
 
 // Utility function to format date for input without timezone conversion
 const formatDateForInput = (date) => {
@@ -128,7 +129,7 @@ function UnifiedMealModal({
         dayName = new Date(date + 'T12:00:00').toLocaleDateString([], { weekday: 'long' });
       }
     } catch (error) {
-      console.warn('Invalid date for modal title:', date, error);
+      logger.warn('Invalid date for modal title:', date, error);
     }
     const mealLabel = mealTypeOptions.find(opt => opt.value === mealType)?.label || mealType;
 

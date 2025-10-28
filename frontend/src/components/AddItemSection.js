@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Camera, Plus, Sparkles, X } from 'lucide-react';
 import AIItemDetectionModal from './AIItemDetectionModal';
 import AddItemModal from './AddItemModal';
+import logger from '../utils/logger';
 
 const AddItemSection = ({ 
   onDirectAdd, 
@@ -112,14 +113,14 @@ const AddItemSection = ({
             onItemEnhancementRequested(addedItem.id, enhancement);
           }
         }).catch(error => {
-          console.error('Background AI processing error:', error);
+          logger.error('Background AI processing error:', error);
           // Remove processing indicator on error
           onItemEnhancementRequested(addedItem.id, null);
         });
       }
     } catch (error) {
       // Error is already handled by useItemManager hook with toast
-      console.error('Error adding item:', error);
+      logger.error('Error adding item:', error);
       setIsLoading(false);
     }
   };

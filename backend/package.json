@@ -1,6 +1,6 @@
 {
   "name": "home-helper-backend",
-  "version": "2.15.7",
+  "version": "2.15.8",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,9 +13,12 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "firebase-admin": "^13.5.0",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "pino": "^10.1.0",
+    "pino-http": "^11.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "pino-pretty": "^13.1.2"
   }
 }
