@@ -12,6 +12,7 @@ const logger = require('./utils/logger');
 const pinoHttp = require('pino-http');
 const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 const { parseShoppingListItem } = require('./services/shoppingListAI');
+const { version } = require('../version.json');
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -24,7 +25,7 @@ const fs = require('fs');
 
 // --- Async Initialization ---
 async function initializeServices() {
-  logger.info('Initializing Home Helper Backend');
+  logger.info({ version }, 'Initializing Home Helper Backend');
 
   try {
     // Load secrets (from Secret Manager in GCP, from .env locally)
@@ -2242,6 +2243,7 @@ const startServer = async () => {
     // Try to start server with port handling
     const server = app.listen(port, () => {
       logger.info({
+        version,
         port,
         environment: process.env.NODE_ENV || 'development',
         firebaseStatus: admin.apps.length > 0 ? 'connected' : 'disconnected',
