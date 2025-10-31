@@ -206,8 +206,13 @@ logger.error('Failed to load recipes:', error); // Always visible
 - **Library**: `express-rate-limit` (in-memory store)
 - **Middleware**: [backend/middleware/rateLimiter.js](backend/middleware/rateLimiter.js)
 - **Strategy**: Per-user rate limiting based on Firebase UID
-- **Limit**: 100 AI requests per hour per user
+- **Limit**: 100 AI requests per hour per user (configurable via environment variables)
 - **Response**: HTTP 429 with helpful error message
+
+**Environment Variables**:
+- `RATE_LIMIT_WINDOW_MS`: Window duration in milliseconds (default: 3600000 = 1 hour)
+- `RATE_LIMIT_MAX`: Maximum requests per window per user (default: 100)
+- `NODE_ENV`: When set to `production`, disables rate limit headers to prevent information disclosure
 
 **Protected AI Endpoints**:
 1. `POST /api/generate-recipe` - Recipe generation with Gemini

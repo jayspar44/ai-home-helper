@@ -1,6 +1,6 @@
 {
-  "version": "2.23.5",
-  "lastUpdated": "2025-10-31T03:53:21.667Z",
+  "version": "2.23.6",
+  "lastUpdated": "2025-10-31T04:41:25.460Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -301,6 +301,11 @@
       "description": "refactor(css): Complete Phase 3 CSS cleanup - SharedLayout, pantry components, ManagePage, AddItemModal, HomePage, and remove card view",
       "timestamp": "2025-10-31T03:53:21.667Z",
       "date": "October 30, 2025"
+    },
+    "2.23.6": {
+      "description": "Address PR review comments: Add rate limit environment configuration, improve security by conditionally exposing rate limit headers, refactor AI JSON parsing to shared utility (DRY), and enhance error logging with homeId context",
+      "timestamp": "2025-10-31T04:41:25.460Z",
+      "date": "October 31, 2025"
     }
   }
 }
