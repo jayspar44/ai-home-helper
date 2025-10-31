@@ -228,7 +228,7 @@ app.post('/api/register', async (req, res) => {
     } else if (error.code === 'auth/invalid-password') {
         errorMessage = 'Password is not valid. It must be at least 6 characters long.';
     }
-    logger.error({ error: error, email: req.body.email }, 'User registration failed');
+    logger.error({ err: error, email: req.body.email }, 'User registration failed');
     res.status(400).json({ error: errorMessage });
   }
 });
@@ -281,7 +281,7 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
         res.json(response);
 
     } catch (error) {
-        req.log.error({ error: error, userId: req.user.uid }, 'Error fetching user profile');
+        req.log.error({ err: error, userId: req.user.uid }, 'Error fetching user profile');
         res.status(500).json({
             error: 'Internal server error',
             message: error.message,
@@ -437,7 +437,7 @@ app.delete('/api/homes/:homeId/members/:memberId', checkAuth, async (req, res) =
         logger.info({ homeId, adminId, memberId }, 'Member removed from home');
         res.status(200).json({ message: 'Member removed successfully.' });
     } catch (error) {
-        logger.error({ error: error, homeId, memberId, adminId }, 'Error removing member');
+        logger.error({ err: error, homeId, memberId, adminId }, 'Error removing member');
         res.status(400).json({ error: error.message });
     }
 });
@@ -525,7 +525,7 @@ app.post('/api/recipes/list', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: req.user.uid, recipeCount: recipeList.length }, 'Recipes fetched successfully');
     res.json({ recipes: recipeList });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error fetching recipes');
+    req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error fetching recipes');
     res.status(500).json({ error: 'Failed to fetch recipes' });
   }
 });
@@ -538,7 +538,7 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: req.user.uid, recipeTitle: recipe.title, recipeId: docRef.id }, 'Recipe saved');
     res.status(201).json({ id: docRef.id, ...recipe });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
+    req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
     res.status(500).json({ error: 'Failed to save recipe' });
   }
 });
@@ -649,7 +649,7 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
     req.log.info({ homeId, adminId: requesterUid, newMemberEmail: email, newMemberId }, 'Member added to home');
 
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, email: req.body.email, userId: req.user.uid }, 'Error adding member');
+    req.log.error({ err: error, homeId: req.params.homeId, email: req.body.email, userId: req.user.uid }, 'Error adding member');
     res.status(500).json({ error: 'Failed to add member' });
   }
 });
@@ -702,47 +702,8 @@ app.post('/api/pantry/quick-defaults', checkAuth, aiRateLimiter, async (req, res
     const startTime = Date.now();
     req.log.debug({ userId: req.user.uid, itemName }, 'AI quick defaults requested');
 
-    const prompt = `For the food item "${itemName}", provide quick smart defaults for location and expiry days.
-
-Respond with ONLY this JSON format (no other text):
-{
-  "location": "pantry" | "fridge" | "freezer",
-  "daysUntilExpiry": number
-}
-
-Use these rules:
-- Fresh produce, dairy, meat → "fridge" 
-- Frozen items → "freezer"
-- Dry goods, canned items, snacks → "pantry"
-- Reasonable expiry days (1-3 for fresh, 7-30 for pantry items)`;
-
-    // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parse AI response
-    let defaultsData;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*?\}/s);
-      if (jsonMatch) {
-        defaultsData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
-    } catch (parseError) {
-      req.log.warn({ error: parseError, itemName }, 'Error parsing quick defaults, using fallback');
-      // Return sensible fallback
-      defaultsData = {
-        location: itemName.toLowerCase().includes('milk') ||
-                  itemName.toLowerCase().includes('yogurt') ||
-                  itemName.toLowerCase().includes('cheese') ||
-                  itemName.toLowerCase().includes('meat') ||
-                  itemName.toLowerCase().includes('fish') ? 'fridge' : 'pantry',
-        daysUntilExpiry: 7
-      };
-    }
+    // Call AI service (includes fallback logic)
+    const defaultsData = await getQuickDefaults(itemName, genAI, req.log);
 
     req.log.info({
       userId: req.user.uid,
@@ -754,7 +715,7 @@ Use these rules:
     res.json(defaultsData);
 
   } catch (error) {
-    req.log.warn({ error: error, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
+    req.log.warn({ err: error, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
     // Return sensible fallback on error
     res.json({
       location: 'pantry',
@@ -797,7 +758,7 @@ app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
     req.log.debug({ homeId, userId: userUid, itemCount: items.length }, 'Pantry items fetched');
     return res.json(items);
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching pantry items');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching pantry items');
     return res.status(500).json({ error: 'Failed to fetch pantry items' });
   }
 });
@@ -865,7 +826,7 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
     res.status(201).json(resultData);
 
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error adding pantry item');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error adding pantry item');
     res.status(500).json({ error: 'Failed to add pantry item' });
   }
 });
@@ -931,7 +892,7 @@ app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: userUid, itemId, itemName: name, location }, 'Pantry item updated');
     res.json(resultData);
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error updating pantry item');
+    req.log.error({ err: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error updating pantry item');
     res.status(500).json({ error: 'Failed to update pantry item' });
   }
 });
@@ -964,7 +925,7 @@ app.delete('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: userUid, itemId, itemName }, 'Pantry item deleted');
     res.json({ message: 'Item deleted' });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error deleting pantry item');
+    req.log.error({ err: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error deleting pantry item');
     res.status(500).json({ error: 'Failed to delete pantry item' });
   }
 });
@@ -1033,82 +994,8 @@ app.post('/api/pantry/:homeId/detect-items', checkAuth, aiRateLimiter, upload.si
     const imageData = await fs.readFile(filePath);
     const base64Image = imageData.toString('base64');
 
-    // Create the AI prompt for food detection
-    const prompt = `You are an expert at identifying food items in images. Analyze this image and detect all food items visible.
-
-For each item detected, you MUST provide ALL fields:
-1. Name: Be specific (e.g., "Honeycrisp Apples" not just "apples", "Whole Wheat Bread" not just "bread")
-2. Quantity: Estimate based on visual cues (e.g., "3 apples", "1 loaf", "2 lbs", "1 carton")
-3. Location: ALWAYS determine storage location based on item type:
-   - Fresh produce, dairy, meat, leftovers → "fridge"
-   - Frozen items → "freezer" 
-   - Dry goods, canned items, snacks, spices → "pantry"
-4. Days until expiry: ALWAYS estimate realistic shelf life:
-   - Fresh produce: 3-10 days
-   - Dairy: 5-14 days
-   - Meat/fish: 1-5 days
-   - Bread: 3-7 days
-   - Pantry items: 30-365 days
-   - Consider visible freshness cues
-5. Confidence: Your confidence level (0.0-1.0) in this detection
-
-CRITICAL: Every item MUST have location and daysUntilExpiry fields filled with realistic values.
-
-Respond ONLY with a JSON array, no other text:
-[
-  {
-    "name": "Item name",
-    "quantity": "Amount with unit", 
-    "location": "pantry|fridge|freezer",
-    "daysUntilExpiry": number,
-    "confidence": 0.0-1.0
-  }
-]
-
-If no food items are detected, return an empty array: []`;
-
-    // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: req.file.mimetype,
-          data: base64Image
-        }
-      }
-    ]);
-
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parse AI response
-    let detectedItems = [];
-    try {
-      // Extract JSON from response (in case there's extra text)
-      const jsonMatch = text.match(/\[.*\]/s);
-      if (jsonMatch) {
-        detectedItems = JSON.parse(jsonMatch[0]);
-      }
-    } catch (parseError) {
-      req.log.error({ error: parseError, text: text.substring(0, 200) }, 'Error parsing AI detection response');
-      return res.status(500).json({ error: 'Failed to parse AI response' });
-    }
-
-    // Validate and format detected items
-    const formattedItems = detectedItems.map(item => {
-      const daysUntilExpiry = item.daysUntilExpiry || 7;
-      const expiresAt = new Date(Date.now() + daysUntilExpiry * 24 * 60 * 60 * 1000);
-
-      return {
-        name: item.name || 'Unknown Item',
-        quantity: item.quantity || '1 item',
-        location: ['pantry', 'fridge', 'freezer'].includes(item.location) ? item.location : 'pantry',
-        expiresAt,
-        confidence: typeof item.confidence === 'number' ? item.confidence : 0.7,
-        detectedBy: 'ai'
-      };
-    });
+    // Call AI service
+    const formattedItems = await detectItemsFromImage(base64Image, req.file.mimetype, genAI, req.log);
 
     // Clean up uploaded file
     await fs.unlink(filePath);
@@ -1122,14 +1009,14 @@ If no food items are detected, return an empty array: []`;
     res.json({ items: formattedItems });
 
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error in AI detection');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error in AI detection');
 
     // Clean up file if it exists
     if (filePath) {
       try {
         await fs.unlink(filePath);
       } catch (unlinkError) {
-        req.log.error({ error: unlinkError, filePath: path.basename(filePath) }, 'Error deleting uploaded file');
+        req.log.error({ err: unlinkError, filePath: path.basename(filePath) }, 'Error deleting uploaded file');
       }
     }
 
@@ -1193,7 +1080,7 @@ app.get('/api/planner/:homeId', checkAuth, async (req, res) => {
     }, 'Meal plans fetched');
     res.json(mealPlans);
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching meal plans');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching meal plans');
     res.status(500).json({ error: 'Failed to fetch meal plans' });
   }
 });
@@ -1370,7 +1257,7 @@ app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
       completed
     }, 'Meal plan updated');
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error updating meal plan');
+    req.log.error({ err: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error updating meal plan');
     res.status(500).json({ error: 'Failed to update meal plan' });
   }
 });
@@ -1398,7 +1285,7 @@ app.delete('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
     req.log.info({ homeId: req.params.homeId, userId: req.user.uid, planId: req.params.planId }, 'Meal plan deleted');
     res.json({ success: true });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error deleting meal plan');
+    req.log.error({ err: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error deleting meal plan');
     res.status(500).json({ error: 'Failed to delete meal plan' });
   }
 });
@@ -1498,7 +1385,7 @@ app.post('/api/planner/:homeId/log-meal', checkAuth, async (req, res) => {
       });
     }
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
     res.status(500).json({ error: 'Failed to log meal' });
   }
 });
@@ -1578,7 +1465,7 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
       itemsDeducted: consumptionLogs.length
     }, 'Ingredients deducted from pantry');
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
     res.status(500).json({ error: 'Failed to deduct ingredients' });
   }
 });

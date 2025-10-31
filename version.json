@@ -1,6 +1,6 @@
 {
-  "version": "2.23.0",
-  "lastUpdated": "2025-10-31T01:42:38.573Z",
+  "version": "2.23.1",
+  "lastUpdated": "2025-10-31T01:48:24.453Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -275,6 +275,11 @@
     "2.23.0": {
       "description": "CSS consolidation Phase 1: Create 440+ lines of shared component classes (list items, modals, alerts, badges, empty states, categories, toolbars, loading states, input sections), migrate 6 components to use shared styles, reduce Pantry.css by 79% (95→20 lines) and ShoppingList.css by 62% (371→140 lines), improve consistency and maintainability across all pages",
       "timestamp": "2025-10-31T01:42:38.573Z",
+      "date": "October 30, 2025"
+    },
+    "2.23.1": {
+      "description": "Refactor AI logic into dedicated service modules: Extract recipe generation, pantry suggestions, quick defaults, and image detection logic from server.js into recipeAI.js and pantryAI.js services. Reduces server.js by 325 lines, improves code organization, testability, and maintainability while maintaining identical functionality.",
+      "timestamp": "2025-10-31T01:48:24.453Z",
       "date": "October 30, 2025"
     }
   }
