@@ -81,30 +81,6 @@
   transform: none;
 }
 
-/* === CLEAR CHECKED BUTTON === */
-.shopping-list-clear-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 12px;
-  margin-bottom: var(--spacing-2);
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--text-inverse);
-  background: var(--color-error);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  justify-content: center;
-}
-
-.shopping-list-clear-btn:hover {
-  background: #DC2626;
-  box-shadow: var(--shadow-md);
-}
-
 /* === CATEGORY-SPECIFIC STYLING === */
 /* Extends shared category-* classes with shopping-list-specific presentation */
 .shopping-list-category-emoji {

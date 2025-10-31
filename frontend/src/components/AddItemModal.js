@@ -24,36 +24,27 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
   if (action === 'accept') {
     const suggestion = suggestions[0];
     return (
-      <div className="card p-4 mt-4" style={{ 
-        backgroundColor: 'var(--color-success-light)', 
-        borderLeft: '4px solid var(--color-success)' 
-      }}>
+      <div className="card suggestion-panel suggestion-panel-success p-4 mt-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h4 className="font-semibold mb-1" style={{ color: 'var(--color-success)' }}>{suggestion.name}</h4>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+            <h4 className="font-semibold mb-1 icon-color-success">{suggestion.name}</h4>
+            <p className="text-sm mb-1 text-color-secondary">
               Quantity: {suggestion.quantity} • Shelf Life: {suggestion.shelfLife}
             </p>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>AI Confidence: {Math.round(confidence * 100)}%</p>
+            <p className="text-xs text-color-muted">AI Confidence: {Math.round(confidence * 100)}%</p>
           </div>
           <div className="flex flex-col gap-2">
-            <button 
-              onClick={() => onDirectAdd(suggestion)} 
-              className="btn-base px-4 py-2 text-sm"
-              style={{ 
-                backgroundColor: 'var(--color-success)', 
-                color: 'white',
-                borderColor: 'var(--color-success)'
-              }}
+            <button
+              onClick={() => onDirectAdd(suggestion)}
+              className="btn-base btn-success px-4 py-2 text-sm"
             >
               Use This
             </button>
-            <button 
-              onClick={() => onCustomize(suggestion)} 
-              className="btn-base btn-ghost px-4 py-2 text-sm"
-              style={{ 
-                borderColor: 'var(--color-success)',
-                color: 'var(--color-success)'
+            <button
+              onClick={() => onCustomize(suggestion)}
+              className="btn-base btn-ghost px-4 py-2 text-sm icon-color-success"
+              style={{
+                borderColor: 'var(--color-success)'
               }}
             >
               Customize
@@ -66,13 +57,10 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 
   if (action === 'choose') {
     return (
-      <div className="card p-4 mt-4" style={{ 
-        backgroundColor: 'var(--color-warning-light)', 
-        borderLeft: '4px solid var(--color-warning)' 
-      }}>
+      <div className="card suggestion-panel suggestion-panel-warning p-4 mt-4">
         <div className="mb-3">
-          <h4 className="font-semibold" style={{ color: 'var(--color-warning)' }}>"{inputQuery}" could be several things:</h4>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{guidance.message}</p>
+          <h4 className="font-semibold icon-color-warning">"{inputQuery}" could be several things:</h4>
+          <p className="text-sm mt-1 text-color-secondary">{guidance.message}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {suggestions.map((option, idx) => (
@@ -80,19 +68,18 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
               key={idx}
               type="button"
               onClick={() => onDirectAdd(option)}
-              className="text-left p-3 card-interactive transition-colors"
-              style={{ borderColor: 'var(--border-light)' }}
+              className="text-left p-3 card-interactive transition-colors border border-color-light"
             >
-              <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{option.name}</div>
-              <div className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{option.quantity}</div>
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>~{option.shelfLife}</div>
+              <div className="font-medium mb-1 text-color-primary">{option.name}</div>
+              <div className="text-sm mb-1 text-color-secondary">{option.quantity}</div>
+              <div className="text-xs text-color-muted">~{option.shelfLife}</div>
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
-          <button onClick={onTryAgain} className="hover:underline text-sm" style={{ color: 'var(--color-primary)' }}>✏️ Try a more specific name</button>
-          <button onClick={onOpenPhotoModal} className="hover:underline text-sm" style={{ color: 'var(--color-success)' }}>📷 Upload photo instead</button>
-          <button onClick={onProceed} className="hover:underline text-sm" style={{ color: 'var(--text-muted)' }}>Enter manually anyway</button>
+        <div className="flex flex-wrap gap-2 pt-3 border-t border-color-light">
+          <button onClick={onTryAgain} className="hover:underline text-sm icon-color-primary">✏️ Try a more specific name</button>
+          <button onClick={onOpenPhotoModal} className="hover:underline text-sm icon-color-success">📷 Upload photo instead</button>
+          <button onClick={onProceed} className="hover:underline text-sm text-color-muted">Enter manually anyway</button>
         </div>
       </div>
     );
@@ -100,41 +87,32 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 
   if (action === 'specify') {
     return (
-      <div className="card p-4 mt-4" style={{ 
-        backgroundColor: 'var(--color-error-light)', 
-        borderLeft: '4px solid var(--color-error)' 
-      }}>
+      <div className="card suggestion-panel suggestion-panel-error p-4 mt-4">
         <div className="text-center">
-          <h4 className="font-semibold mb-2" style={{ color: 'var(--color-error)' }}>Need more details about "{inputQuery}"</h4>
-          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>{guidance.message}</p>
-          <div className="card p-3 mb-4" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <div className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
+          <h4 className="font-semibold mb-2 text-color-error">Need more details about "{inputQuery}"</h4>
+          <p className="mb-4 text-color-secondary">{guidance.message}</p>
+          <div className="card bg-card p-3 mb-4">
+            <div className="text-sm space-y-1 text-color-secondary">
               {guidance.examples.map((ex, i) => <div key={i}>{ex}</div>)}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button 
-              onClick={onTryAgain} 
+            <button
+              onClick={onTryAgain}
               className="btn-base btn-primary px-6 py-2"
             >
               ✏️ Be More Specific
             </button>
-            <button 
-              onClick={onOpenPhotoModal} 
-              className="btn-base px-6 py-2"
-              style={{ 
-                backgroundColor: 'var(--color-success)', 
-                color: 'white',
-                borderColor: 'var(--color-success)'
-              }}
+            <button
+              onClick={onOpenPhotoModal}
+              className="btn-base btn-success px-6 py-2"
             >
               📷 Upload Photo
             </button>
           </div>
-          <button 
-            onClick={onProceed} 
-            className="hover:underline text-sm mt-3 block mx-auto" 
-            style={{ color: 'var(--text-muted)' }}
+          <button
+            onClick={onProceed}
+            className="hover:underline text-sm mt-3 block mx-auto text-color-muted"
           >
             Skip suggestions and enter manually
           </button>
