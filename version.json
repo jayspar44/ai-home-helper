@@ -1,6 +1,6 @@
 {
-  "version": "2.23.2",
-  "lastUpdated": "2025-10-31T02:19:34.453Z",
+  "version": "2.25.0",
+  "lastUpdated": "2025-10-31T06:05:37.903Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -286,6 +286,11 @@
       "description": "CSS consolidation Phase 2: Add 100+ utility classes (text, border, skeleton, background), migrate 5 modal components (FilterModal, EditItemModal, EditShoppingItemModal, ShoppingListFilterModal, JSONExportModal) to shared modal/alert classes, eliminate 200+ inline styles, replace modal delete buttons with trash icon (grey with red hover), reposition delete icon to footer left with proper spacing, reduce bundle by 100+ bytes",
       "timestamp": "2025-10-31T02:19:34.453Z",
       "date": "October 30, 2025"
+    },
+    "2.25.0": {
+      "description": "feat: Meal Planner redesign with progressive disclosure, week calendar navigation, and streamlined UI",
+      "timestamp": "2025-10-31T06:05:37.903Z",
+      "date": "October 31, 2025"
     }
   }
 }
