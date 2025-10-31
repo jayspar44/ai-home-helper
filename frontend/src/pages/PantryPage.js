@@ -25,7 +25,6 @@ export default function PantryPage() {
 
   // Core state
   const [items, setItems] = useState([]);
-  const [viewMode, setViewMode] = useState('list');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingEnhancementIds, setProcessingEnhancementIds] = useState([]);
@@ -197,10 +196,10 @@ export default function PantryPage() {
       <div className="container-mobile lg:max-w-none lg:px-8">
         {/* Page Header */}
         <div className="animate-fade-in mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             🥫 Pantry Manager
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-color-muted">
             Keep track of your ingredients across pantry, fridge, and freezer
           </p>
         </div>
@@ -223,8 +222,6 @@ export default function PantryPage() {
           <PantryToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
             onOpenFilter={() => setShowFilterModal(true)}
             activeFiltersCount={activeFiltersCount}
             onCreateRecipe={handleCreateRecipe}
@@ -262,7 +259,6 @@ export default function PantryPage() {
             <div className="animate-slide-up pantry-items">
               <UnifiedListView
                 items={filteredItems}
-                viewMode={viewMode}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onApplyEnhancement={handleApplyEnhancement}

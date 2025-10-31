@@ -1225,6 +1225,18 @@ input, textarea, select {
   background-color: var(--bg-card);
 }
 
+.bg-overlay {
+  background-color: var(--bg-overlay);
+}
+
+.bg-color-primary {
+  background-color: var(--color-primary);
+}
+
+.backdrop-blur {
+  backdrop-filter: blur(10px);
+}
+
 /* === TOAST COMPONENT === */
 .toast {
   position: fixed;

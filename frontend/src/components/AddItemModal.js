@@ -42,10 +42,7 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
             </button>
             <button
               onClick={() => onCustomize(suggestion)}
-              className="btn-base btn-ghost px-4 py-2 text-sm icon-color-success"
-              style={{
-                borderColor: 'var(--color-success)'
-              }}
+              className="btn-base btn-ghost px-4 py-2 text-sm icon-color-success border-color-success"
             >
               Customize
             </button>
@@ -270,16 +267,15 @@ const AddItemModal = ({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'var(--bg-card)' }}>
+        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-card">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <div className="flex items-center justify-between p-6 border-b border-color-light">
+            <h2 className="text-xl font-semibold text-color-primary">
               Add New Item
             </h2>
             <button
               onClick={handleClose}
-              className="p-2 rounded-lg hover:bg-opacity-80 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+              className="p-2 rounded-lg hover:bg-opacity-80 transition-colors text-color-muted"
             >
               <X className="w-5 h-5" />
             </button>
@@ -287,19 +283,17 @@ const AddItemModal = ({
 
           {/* Show tabs only for photo mode */}
           {activeTab === 'photo' && (
-            <div className="flex border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="flex border-b border-color-light">
               <button
                 onClick={() => setActiveTab('ai')}
-                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:bg-gray-50"
-                style={{ color: 'var(--text-muted)' }}
+                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:bg-gray-50 text-color-muted"
               >
                 <Bot className="w-4 h-4" />
                 Back to AI Suggestions
               </button>
               <button
-                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2"
-                style={{ 
-                  color: 'var(--color-primary)',
+                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2 icon-color-primary"
+                style={{
                   borderBottomColor: 'var(--color-primary)'
                 }}
               >
@@ -314,7 +308,7 @@ const AddItemModal = ({
             {activeTab === 'ai' && (
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="aiItemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  <label htmlFor="aiItemName" className="block text-sm font-medium mb-2 text-color-secondary">
                     What item would you like to add?
                   </label>
                   <input
@@ -334,20 +328,20 @@ const AddItemModal = ({
 
                 {isLoadingSuggestions && (
                   <div className="text-center py-8">
-                    <div className="animate-pulse text-lg mb-2" style={{ color: 'var(--color-primary)' }}>
+                    <div className="animate-pulse text-lg mb-2 icon-color-primary">
                       Getting AI suggestions...
                     </div>
-                    <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <div className="text-sm text-color-muted">
                       Analyzing "{formData.name}"
                     </div>
                   </div>
                 )}
 
                 {error && !suggestionResult && (
-                  <div className="mt-4 p-4 rounded-lg" style={{ 
-                    backgroundColor: 'var(--color-error-light)', 
+                  <div className="mt-4 p-4 rounded-lg" style={{
+                    backgroundColor: 'var(--color-error-light)',
                     borderLeft: '4px solid var(--color-error)',
-                    color: 'var(--color-error)' 
+                    color: 'var(--color-error)'
                   }}>
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -370,47 +364,47 @@ const AddItemModal = ({
                   <form onSubmit={handleManualSubmit} className="mt-6 space-y-4 animate-slide-up">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Quantity</label>
-                        <input 
-                          type="text" 
-                          value={formData.quantity} 
+                        <label htmlFor="quantity" className="block text-sm font-medium mb-2 text-color-secondary">Quantity</label>
+                        <input
+                          type="text"
+                          value={formData.quantity}
                           onChange={e => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                          className="input-base focus-ring w-full" 
+                          className="input-base focus-ring w-full"
                           placeholder="e.g., 1 dozen"
                         />
                       </div>
                       <div>
-                        <label htmlFor="expiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires on</label>
+                        <label htmlFor="expiresAt" className="block text-sm font-medium mb-2 text-color-secondary">Expires on</label>
                         <input
                           type="date"
                           id="expiresAt"
                           value={formData.expiresAt}
                           onChange={e => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
-                          className="input-base focus-ring w-full" 
+                          className="input-base focus-ring w-full"
                           placeholder="e.g., 7"
                         />
                       </div>
                       <div>
-                        <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Location</label>
+                        <label htmlFor="location" className="block text-sm font-medium mb-2 text-color-secondary">Location</label>
                         <LocationSelect 
                           value={formData.location} 
                           onChange={value => setFormData(prev => ({ ...prev, location: value }))}
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-                      <button 
-                        type="button" 
+                    <div className="flex justify-end gap-3 pt-4 border-t border-color-light">
+                      <button
+                        type="button"
                         onClick={() => {
                           setShowManualForm(false);
                           setSuggestionResult(null);
-                        }} 
+                        }}
                         className="btn-base btn-ghost"
                       >
                         Back
                       </button>
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         className="btn-base btn-primary"
                       >
                         Add Item
@@ -421,12 +415,11 @@ const AddItemModal = ({
 
                 {/* Manual Add Option */}
                 {!showManualForm && !isLoadingSuggestions && (
-                  <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-                    <button 
+                  <div className="text-center pt-4 border-t border-color-light">
+                    <button
                       type="button"
                       onClick={() => setShowManualForm(true)}
-                      className="text-sm underline hover:no-underline"
-                      style={{ color: 'var(--text-muted)' }}
+                      className="text-sm underline hover:no-underline text-color-muted"
                     >
                       Enter details manually instead
                     </button>
@@ -439,7 +432,7 @@ const AddItemModal = ({
               <form onSubmit={handleManualSubmit}>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="itemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <label htmlFor="itemName" className="block text-sm font-medium mb-2 text-color-secondary">
                       Item Name *
                     </label>
                     <input
@@ -453,24 +446,24 @@ const AddItemModal = ({
                       required
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      <label htmlFor="quantity" className="block text-sm font-medium mb-2 text-color-secondary">
                         Quantity
                       </label>
-                      <input 
-                        type="text" 
-                        id="quantity" 
-                        value={formData.quantity} 
+                      <input
+                        type="text"
+                        id="quantity"
+                        value={formData.quantity}
                         onChange={e => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                        className="input-base focus-ring w-full" 
+                        className="input-base focus-ring w-full"
                         placeholder="e.g., 1 dozen"
                       />
                     </div>
-                    
+
                     <div>
-                      <label htmlFor="expiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      <label htmlFor="expiresAt" className="block text-sm font-medium mb-2 text-color-secondary">
                         Expires on
                       </label>
                       <input
@@ -484,26 +477,26 @@ const AddItemModal = ({
                     </div>
                     
                     <div>
-                      <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      <label htmlFor="location" className="block text-sm font-medium mb-2 text-color-secondary">
                         Location
                       </label>
-                      <LocationSelect 
-                        value={formData.location} 
+                      <LocationSelect
+                        value={formData.location}
                         onChange={value => setFormData(prev => ({ ...prev, location: value }))}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end gap-3 pt-4">
-                    <button 
-                      type="button" 
-                      onClick={handleClose} 
+                    <button
+                      type="button"
+                      onClick={handleClose}
                       className="btn-base btn-ghost"
                     >
                       Cancel
                     </button>
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       className="btn-base btn-primary"
                     >
                       Add Item
@@ -516,14 +509,14 @@ const AddItemModal = ({
 
             {activeTab === 'photo' && (
               <div className="text-center py-8">
-                <Camera className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Camera className="w-16 h-16 mx-auto mb-4 icon-color-muted" />
+                <h3 className="text-lg font-semibold mb-2 text-color-primary">
                   Upload Photo for AI Detection
                 </h3>
-                <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+                <p className="mb-6 text-color-secondary">
                   Take or upload a photo of your items and let AI detect and add them automatically.
                 </p>
-                <button 
+                <button
                   onClick={() => setShowAIModal(true)}
                   className="btn-base btn-primary px-8 py-3"
                 >
@@ -534,10 +527,10 @@ const AddItemModal = ({
             )}
 
             {error && suggestionResult && (
-              <div className="mt-4 p-4 rounded-lg" style={{ 
-                backgroundColor: 'var(--color-error-light)', 
+              <div className="mt-4 p-4 rounded-lg" style={{
+                backgroundColor: 'var(--color-error-light)',
                 borderLeft: '4px solid var(--color-error)',
-                color: 'var(--color-error)' 
+                color: 'var(--color-error)'
               }}>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
