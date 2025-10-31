@@ -1,6 +1,6 @@
 {
-  "version": "2.22.0",
-  "lastUpdated": "2025-10-31T01:26:18.262Z",
+  "version": "2.23.0",
+  "lastUpdated": "2025-10-31T01:42:38.573Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -270,6 +270,11 @@
     "2.22.0": {
       "description": "Add rate limiting for AI endpoints: per-user rate limiter (100 requests/hour) protects 5 AI endpoints from abuse, express-rate-limit middleware with Firebase UID tracking, helpful error messages on limit exceeded, comprehensive test script for verification, and full documentation in CLAUDE.md",
       "timestamp": "2025-10-31T01:26:18.262Z",
+      "date": "October 30, 2025"
+    },
+    "2.23.0": {
+      "description": "CSS consolidation Phase 1: Create 440+ lines of shared component classes (list items, modals, alerts, badges, empty states, categories, toolbars, loading states, input sections), migrate 6 components to use shared styles, reduce Pantry.css by 79% (95→20 lines) and ShoppingList.css by 62% (371→140 lines), improve consistency and maintainability across all pages",
+      "timestamp": "2025-10-31T01:42:38.573Z",
       "date": "October 30, 2025"
     }
   }

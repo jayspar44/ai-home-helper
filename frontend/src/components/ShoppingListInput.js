@@ -26,7 +26,7 @@ const ShoppingListInput = ({ onAdd, loading }) => {
   };
 
   return (
-    <div className="shopping-list-input">
+    <div className="input-section">
       <input
         type="text"
         className="shopping-list-input-field"

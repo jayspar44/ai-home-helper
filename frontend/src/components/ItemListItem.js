@@ -5,7 +5,7 @@ import { getExpiryInfo, daysToExpiryDate, calculateRemainingDays } from '../util
 const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhancement, processingEnhancement = false }) => {
   const handleRowClick = (e) => {
     // Don't trigger edit if clicking delete button or enhancement actions
-    if (e.target.closest('.pantry-item-actions') || e.target.closest('.pantry-item-enhancement')) {
+    if (e.target.closest('.list-item-actions') || e.target.closest('.pantry-item-enhancement')) {
       return;
     }
     onEdit(item);
@@ -32,15 +32,14 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
   const ExpiryIcon = expiryInfo.icon;
 
   return (
-    <div className="relative pantry-list-item-wrapper">
+    <div className="relative">
       <div
-        className="flex items-center justify-between p-3 rounded-lg transition-colors border-l-4 pantry-list-item"
+        className="list-item"
         style={{
           backgroundColor: 'var(--bg-tertiary)',
           borderLeftColor: expiryInfo.isExpired ? 'var(--color-error)' :
                            expiryInfo.isExpiringSoon ? 'var(--color-warning)' :
-                           'var(--border-light)',
-          cursor: 'pointer'
+                           'var(--border-light)'
         }}
         onClick={handleRowClick}
       >
@@ -84,10 +83,10 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
       </div>
 
       {/* Delete button */}
-      <div className="pantry-item-actions">
+      <div className="list-item-actions">
         <button
           onClick={handleDelete}
-          className="pantry-delete-btn"
+          className="btn-icon-delete"
           aria-label={`Delete ${item.name}`}
           title="Delete item"
         >

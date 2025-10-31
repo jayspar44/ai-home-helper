@@ -110,7 +110,7 @@ const ShoppingList = () => {
     return (
       <div className="section-padding">
         <div className="container-mobile">
-          <div className="shopping-list-error">
+          <div className="alert alert-error">
             <p>Please sign in to access your shopping list</p>
           </div>
         </div>
@@ -150,16 +150,16 @@ const ShoppingList = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="shopping-list-error-message">
+          <div className="alert alert-error">
             {error}
           </div>
         )}
 
       {/* Loading State */}
       {loading && totalItems === 0 ? (
-        <div className="shopping-list-loading">
+        <div className="loading-container">
           <div className="spinner"></div>
-          <p>Loading shopping list...</p>
+          <p className="loading-text">Loading shopping list...</p>
         </div>
       ) : totalItems === 0 ? (
         // Empty State

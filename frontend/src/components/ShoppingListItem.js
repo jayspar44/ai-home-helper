@@ -9,7 +9,7 @@ import { formatRelativeTime } from '../utils/dateUtils';
 const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] }) => {
   const handleRowClick = (e) => {
     // Don't trigger edit if clicking checkbox or delete button
-    if (e.target.closest('.shopping-list-checkbox') || e.target.closest('.shopping-list-item-actions')) {
+    if (e.target.closest('.shopping-list-checkbox') || e.target.closest('.list-item-actions')) {
       return;
     }
     onEdit(item);
@@ -58,14 +58,13 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
   };
 
   return (
-    <div className="relative shopping-list-item-wrapper">
+    <div className="relative">
       <div
-        className="flex items-center justify-between p-3 rounded-lg transition-colors border-l-4 shopping-list-item"
+        className="list-item"
         onClick={handleRowClick}
         style={{
           backgroundColor: 'var(--bg-tertiary)',
-          borderLeftColor: item.checked ? 'var(--color-success)' : 'var(--border-light)',
-          cursor: 'pointer'
+          borderLeftColor: item.checked ? 'var(--color-success)' : 'var(--border-light)'
         }}
       >
         <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -118,10 +117,10 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
         </div>
 
         {/* Delete button (fade in on hover like pantry) */}
-        <div className="shopping-list-item-actions">
+        <div className="list-item-actions">
           <button
             onClick={handleDelete}
-            className="shopping-list-delete-btn"
+            className="btn-icon-delete"
             aria-label={`Delete ${item.name}`}
             title="Delete item"
           >
