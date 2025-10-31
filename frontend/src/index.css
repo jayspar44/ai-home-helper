@@ -1067,3 +1067,103 @@ input, textarea, select {
     flex-direction: column;
   }
 }
+
+/* === TEXT UTILITIES === */
+.text-color-primary {
+  color: var(--text-primary);
+}
+
+.text-color-secondary {
+  color: var(--text-secondary);
+}
+
+.text-color-muted {
+  color: var(--text-muted);
+}
+
+.text-color-inverse {
+  color: var(--text-inverse);
+}
+
+.text-color-error {
+  color: var(--color-error);
+}
+
+.text-color-success {
+  color: var(--color-success);
+}
+
+.text-color-warning {
+  color: var(--color-warning);
+}
+
+.text-color-primary-brand {
+  color: var(--color-primary);
+}
+
+/* === BORDER UTILITIES === */
+.border-color-light {
+  border-color: var(--border-light);
+}
+
+.border-color-medium {
+  border-color: var(--border-medium);
+}
+
+.border-color-strong {
+  border-color: var(--border-strong);
+}
+
+.border-b-light {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.border-t-light {
+  border-top: 1px solid var(--border-light);
+}
+
+.border-l-light {
+  border-left: 1px solid var(--border-light);
+}
+
+.border-r-light {
+  border-right: 1px solid var(--border-light);
+}
+
+/* === SKELETON LOADERS === */
+.skeleton {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-text {
+  height: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-card {
+  height: 5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* === BACKGROUND UTILITIES === */
+.bg-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+.bg-card {
+  background-color: var(--bg-card);
+}

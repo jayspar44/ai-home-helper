@@ -38,22 +38,18 @@ const FilterModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div 
-        className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--bg-card)' }}
-      >
+    <div className="modal-backdrop">
+      <div className="modal-container">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <div className="modal-header">
+          <h2 className="modal-title">
             Filter Items
           </h2>
           <div className="flex items-center gap-2">
             {isFilterActive() && (
               <button
                 onClick={onClearFilters}
-                className="p-2 rounded-lg hover:bg-opacity-80 transition-colors flex items-center gap-1 text-sm"
-                style={{ color: 'var(--text-muted)' }}
+                className="modal-close flex items-center gap-1 text-sm"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset
@@ -61,8 +57,7 @@ const FilterModal = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-opacity-80 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+              className="modal-close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -70,10 +65,10 @@ const FilterModal = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="modal-body space-y-6">
           {/* Location Filters */}
           <div>
-            <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="font-medium mb-3 text-color-primary">
               Location
             </h3>
             <div className="space-y-2">
@@ -88,12 +83,12 @@ const FilterModal = ({
                     checked={filters.locations.includes(id)}
                     onChange={(e) => handleLocationChange(id, e.target.checked)}
                     className="form-checkbox h-4 w-4 rounded"
-                    style={{ 
+                    style={{
                       accentColor: 'var(--color-primary)',
                       color: 'var(--color-primary)'
                     }}
                   />
-                  <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                  <span className="text-color-secondary">{label}</span>
                 </label>
               ))}
             </div>
@@ -101,7 +96,7 @@ const FilterModal = ({
 
           {/* Expiration Status Filters */}
           <div>
-            <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="font-medium mb-3 text-color-primary">
               Expiration Status
             </h3>
             <div className="space-y-2">
@@ -123,13 +118,11 @@ const FilterModal = ({
                       color: 'var(--color-primary)'
                     }}
                   />
-                  <span 
-                    style={{ 
-                      color: id === 'expired' ? 'var(--color-error)' :
-                             id === 'expiring-soon' ? 'var(--color-warning)' :
-                             'var(--text-secondary)'
-                    }}
-                  >
+                  <span className={
+                    id === 'expired' ? 'text-color-error' :
+                    id === 'expiring-soon' ? 'text-color-warning' :
+                    'text-color-secondary'
+                  }>
                     {label}
                   </span>
                 </label>
@@ -138,8 +131,8 @@ const FilterModal = ({
           </div>
 
           {/* Quick Stats */}
-          <div className="pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <div className="pt-4 border-t-light">
+            <div className="text-sm text-color-muted">
               <div className="flex justify-between py-1">
                 <span>Selected locations:</span>
                 <span>{filters.locations.length}/3</span>
@@ -157,15 +150,15 @@ const FilterModal = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 pt-0">
-          <button 
-            onClick={onClose} 
+        <div className="modal-footer">
+          <button
+            onClick={onClose}
             className="btn-base btn-ghost"
           >
             Cancel
           </button>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="btn-base btn-primary"
           >
             Apply Filters

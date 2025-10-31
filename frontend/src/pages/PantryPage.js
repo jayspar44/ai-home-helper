@@ -234,24 +234,20 @@ export default function PantryPage() {
 
           {/* Error Display */}
           {displayError && (
-            <div className="mb-6 p-4 rounded-lg" style={{ 
-              backgroundColor: 'var(--color-error-light)', 
-              borderLeft: '4px solid var(--color-error)',
-              color: 'var(--color-error)' 
-            }}>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="alert alert-error mb-6">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="alert-content">
                 <span>{displayError}</span>
-                <button 
-                  onClick={() => {
-                    setError('');
-                    setItemManagerError('');
-                  }}
-                  className="ml-auto text-sm underline"
-                >
-                  Dismiss
-                </button>
               </div>
+              <button
+                onClick={() => {
+                  setError('');
+                  setItemManagerError('');
+                }}
+                className="alert-dismiss text-sm underline"
+              >
+                Dismiss
+              </button>
             </div>
           )}
 
@@ -259,9 +255,7 @@ export default function PantryPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="animate-pulse h-20 bg-gray-200 rounded-lg" 
-                     style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-                </div>
+                <div key={i} className="skeleton-card"></div>
               ))}
             </div>
           ) : (

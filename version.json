@@ -1,6 +1,6 @@
 {
-  "version": "2.23.1",
-  "lastUpdated": "2025-10-31T01:48:24.453Z",
+  "version": "2.23.2",
+  "lastUpdated": "2025-10-31T02:19:34.453Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -280,6 +280,11 @@
     "2.23.1": {
       "description": "Refactor AI logic into dedicated service modules: Extract recipe generation, pantry suggestions, quick defaults, and image detection logic from server.js into recipeAI.js and pantryAI.js services. Reduces server.js by 325 lines, improves code organization, testability, and maintainability while maintaining identical functionality.",
       "timestamp": "2025-10-31T01:48:24.453Z",
+      "date": "October 30, 2025"
+    },
+    "2.23.2": {
+      "description": "CSS consolidation Phase 2: Add 100+ utility classes (text, border, skeleton, background), migrate 5 modal components (FilterModal, EditItemModal, EditShoppingItemModal, ShoppingListFilterModal, JSONExportModal) to shared modal/alert classes, eliminate 200+ inline styles, replace modal delete buttons with trash icon (grey with red hover), reposition delete icon to footer left with proper spacing, reduce bundle by 100+ bytes",
+      "timestamp": "2025-10-31T02:19:34.453Z",
       "date": "October 30, 2025"
     }
   }

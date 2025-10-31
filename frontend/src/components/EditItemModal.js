@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Trash2 } from 'lucide-react';
 import { daysToExpiryDate, expiryDateToDays, safeToDateInputValue } from '../utils/dateUtils';
 
 const LocationSelect = ({ value, onChange, disabled }) => (
@@ -85,20 +85,16 @@ const EditItemModal = ({
   if (!isOpen || !item) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div 
-        className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--bg-card)' }}
-      >
+    <div className="modal-backdrop">
+      <div className="modal-container">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <div className="modal-header">
+          <h2 className="modal-title">
             Edit Item
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-opacity-80 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
+            className="modal-close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -106,22 +102,16 @@ const EditItemModal = ({
 
         {/* Content */}
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
+          <div className="modal-body space-y-4">
             {error && (
-              <div className="p-4 rounded-lg" style={{ 
-                backgroundColor: 'var(--color-error-light)', 
-                borderLeft: '4px solid var(--color-error)',
-                color: 'var(--color-error)' 
-              }}>
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
+              <div className="alert alert-error">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label htmlFor="editItemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="editItemName" className="block text-sm font-medium mb-2 text-color-secondary">
                 Item Name *
               </label>
               <input
@@ -137,7 +127,7 @@ const EditItemModal = ({
             </div>
             
             <div>
-              <label htmlFor="editQuantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="editQuantity" className="block text-sm font-medium mb-2 text-color-secondary">
                 Quantity
               </label>
               <input 
@@ -152,7 +142,7 @@ const EditItemModal = ({
             </div>
             
             <div>
-              <label htmlFor="editExpiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="editExpiresAt" className="block text-sm font-medium mb-2 text-color-secondary">
                 Expires on
               </label>
               <input
@@ -167,7 +157,7 @@ const EditItemModal = ({
             </div>
             
             <div>
-              <label htmlFor="editLocation" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="editLocation" className="block text-sm font-medium mb-2 text-color-secondary">
                 Location
               </label>
               <LocationSelect 
@@ -179,32 +169,29 @@ const EditItemModal = ({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between p-6 pt-0 border-t" style={{ borderColor: 'var(--border-light)' }}>
-            <button 
+          <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+            <button
               type="button"
               onClick={handleDelete}
               disabled={isLoading}
-              className="btn-base px-4 py-2"
-              style={{ 
-                backgroundColor: 'var(--color-error-light)',
-                color: 'var(--color-error)',
-                borderColor: 'var(--color-error)'
-              }}
+              className="btn-icon-delete"
+              aria-label={`Delete ${item.name}`}
+              title="Delete item"
             >
-              Delete Item
+              <Trash2 size={20} />
             </button>
-            
+
             <div className="flex gap-3">
-              <button 
+              <button
                 type="button"
-                onClick={onClose} 
+                onClick={onClose}
                 disabled={isLoading}
                 className="btn-base btn-ghost"
               >
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isLoading || !formData.name.trim()}
                 className="btn-base btn-primary"
               >
