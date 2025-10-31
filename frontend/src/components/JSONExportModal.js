@@ -121,7 +121,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
         {/* Content */}
         <div className="flex-1 p-4 overflow-hidden flex flex-col">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm" className="text-color-secondary">
+            <p className="text-sm text-color-secondary">
               {items.length} items ready for export
             </p>
 
@@ -151,7 +151,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
           </div>
 
           {/* JSON Display */}
-          <div className="flex-1 border rounded-lg overflow-hidden" className="border-color-light">
+          <div className="flex-1 border border-color-light rounded-lg overflow-hidden">
             <textarea
               value={jsonData}
               readOnly
@@ -169,8 +169,8 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t text-center" className="border-color-light">
-          <p className="text-xs" className="text-color-muted">
+        <div className="p-4 border-t border-color-light text-center">
+          <p className="text-xs text-color-muted">
             This JSON contains all your pantry data including names, quantities, locations, and expiry dates.
             <br />
             You can paste this data into other applications or save it as a backup.

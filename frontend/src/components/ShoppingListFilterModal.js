@@ -93,7 +93,7 @@ const ShoppingListFilterModal = ({
         <div className="modal-body space-y-6">
           {/* Category Filters */}
           <div>
-            <h3 className="font-medium mb-3" className="text-color-primary">
+            <h3 className="font-medium mb-3 text-color-primary">
               Category
             </h3>
             <div className="space-y-2">
@@ -124,7 +124,7 @@ const ShoppingListFilterModal = ({
 
           {/* Status Filter */}
           <div>
-            <h3 className="font-medium mb-3" className="text-color-primary">
+            <h3 className="font-medium mb-3 text-color-primary">
               Status
             </h3>
             <div className="space-y-2">
@@ -154,7 +154,7 @@ const ShoppingListFilterModal = ({
           {/* User Filter - only show if multiple members */}
           {homeMembers.length > 1 && (
             <div>
-              <h3 className="font-medium mb-3" className="text-color-primary">
+              <h3 className="font-medium mb-3 text-color-primary">
                 Added By
               </h3>
               <div className="space-y-2">
@@ -179,7 +179,7 @@ const ShoppingListFilterModal = ({
 
           {/* Date Added Filter */}
           <div>
-            <h3 className="font-medium mb-3" className="text-color-primary">
+            <h3 className="font-medium mb-3 text-color-primary">
               Date Added
             </h3>
             <div className="space-y-2">
