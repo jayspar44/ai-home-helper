@@ -52,13 +52,13 @@ const ShoppingListCategory = ({ category, items, onCheck, onEdit, onDelete, home
     : `${totalCount}`;
 
   return (
-    <div className="shopping-list-category">
+    <div className="category-group">
       <button
-        className="shopping-list-category-header"
+        className="category-header"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >
-        <div className="shopping-list-category-title">
+        <div className="category-title">
           <span className="shopping-list-category-emoji">{meta.emoji}</span>
           <span className="shopping-list-category-name">{meta.name.toUpperCase()}</span>
         </div>
@@ -66,13 +66,13 @@ const ShoppingListCategory = ({ category, items, onCheck, onEdit, onDelete, home
           <span className="shopping-list-category-count">{countText}</span>
           <ChevronDown
             size={20}
-            className={`shopping-list-category-chevron ${expanded ? 'expanded' : ''}`}
+            className={`category-chevron ${expanded ? 'expanded' : ''}`}
           />
         </div>
       </button>
 
       {expanded && (
-        <div className="shopping-list-category-items">
+        <div className="category-items">
           {items.map(item => (
             <ShoppingListItem
               key={item.id}

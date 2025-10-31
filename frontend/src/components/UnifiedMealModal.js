@@ -435,28 +435,27 @@ function UnifiedMealModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       aria-describedby="modal-description"
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--bg-card)' }}
+        className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+        <div className="flex items-center justify-between p-4 border-b border-color-light">
           <h2
             id="modal-title"
-            className="text-lg font-semibold"
-            style={{ color: 'var(--text-primary)' }}
+            className="text-lg font-semibold text-color-primary"
           >
             {modalTitle}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-opacity-10 transition-colors"
-            style={{ color: 'var(--text-secondary)', ':hover': { backgroundColor: 'var(--text-secondary)' } }}
+            className="p-1 rounded-full hover:bg-opacity-10 transition-colors text-color-secondary"
             aria-label="Close modal"
           >
             <X className="icon-medium" />
@@ -466,10 +465,7 @@ function UnifiedMealModal({
         {/* Body */}
         <div id="modal-description" className="p-4 space-y-4">
           {error && (
-            <div
-              className="p-3 rounded-lg text-sm"
-              style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)' }}
-            >
+            <div className="alert alert-error text-sm">
               {error}
             </div>
           )}
@@ -480,20 +476,14 @@ function UnifiedMealModal({
               {completionStage === 'intent' && (
                 <div className="space-y-4">
                   {/* Planned meal display */}
-                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-secondary)' }}>
+                  <div className="section-info-box">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      <span className="text-sm font-medium text-color-primary">
                         Planned: {meal?.planned?.recipeName || meal?.planned?.description}
                       </span>
                       {/* Recipe badge if from recipe */}
                       {meal?.planned?.recipeId && (
-                        <div
-                          className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-                          style={{
-                            backgroundColor: 'var(--color-primary)',
-                            color: 'white'
-                          }}
-                        >
+                        <div className="badge badge-small badge-recipe flex items-center gap-1">
                           <BookOpen className="icon-small" />
                           Recipe
                         </div>
@@ -503,15 +493,15 @@ function UnifiedMealModal({
 
                   {/* Completion options */}
                   <div>
-                    <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-sm mb-3 text-color-secondary">
                       Did you eat this as planned?
                     </p>
                     <div className="space-y-2">
                       <button
                         onClick={handleCompleteAsPlanned}
                         disabled={isLoading}
-                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-color-inverse"
+                        style={{ backgroundColor: 'var(--color-success)' }}
                         aria-label="Mark meal as completed - ate as planned"
                       >
                         ✓ Yes, I ate this
@@ -519,8 +509,8 @@ function UnifiedMealModal({
                       <button
                         onClick={handleCompleteCustom}
                         disabled={isLoading}
-                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        style={{ backgroundColor: 'var(--color-warning, #f59e0b)', color: 'white' }}
+                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-color-inverse"
+                        style={{ backgroundColor: 'var(--color-warning)' }}
                         aria-label="Complete with different meal - ate something else"
                       >
                         ✗ No, I ate something else
@@ -528,8 +518,7 @@ function UnifiedMealModal({
                       <button
                         onClick={handleSwitchToEdit}
                         disabled={isLoading}
-                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-light)' }}
+                        className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 bg-tertiary text-color-primary border border-color-light"
                         aria-label="Edit planned meal instead"
                       >
                         📝 Edit plan instead
@@ -542,15 +531,15 @@ function UnifiedMealModal({
               {completionStage === 'custom-meal' && (
                 <div className="space-y-4">
                   {/* Show original plan */}
-                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-secondary)' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <div className="section-info-box">
+                    <span className="text-sm text-color-secondary">
                       Originally planned: {meal?.planned?.recipeName || meal?.planned?.description}
                     </span>
                   </div>
 
                   {/* Custom meal entry */}
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                    <label className="block text-sm font-medium mb-2 text-color-primary">
                       What did you actually eat?
                     </label>
                     <textarea
@@ -558,24 +547,14 @@ function UnifiedMealModal({
                       onChange={(e) => setCustomMealDescription(e.target.value)}
                       placeholder="Enter what you actually ate..."
                       rows={2}
-                      className="w-full p-3 rounded-lg border resize-none"
-                      style={{
-                        borderColor: 'var(--border-light)',
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)'
-                      }}
+                      className="form-textarea"
                       aria-label="Description of what you actually ate"
                     />
 
                     {/* Recipe selector button */}
                     <button
                       onClick={() => setShowRecipeSelector(true)}
-                      className="flex items-center gap-2 px-3 py-2 mt-2 text-sm rounded-lg border transition-colors"
-                      style={{
-                        borderColor: 'var(--border-light)',
-                        color: 'var(--color-primary)',
-                        backgroundColor: 'transparent'
-                      }}
+                      className="flex items-center gap-2 px-3 py-2 mt-2 text-sm rounded-lg border border-color-light transition-colors text-color-primary-brand bg-primary"
                       aria-label="Choose from recipe library"
                     >
                       <BookOpen className="icon-small" />
@@ -585,7 +564,7 @@ function UnifiedMealModal({
 
                   {/* Optional notes */}
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                    <label className="block text-sm font-medium mb-2 text-color-primary">
                       Notes (optional)
                     </label>
                     <textarea
@@ -593,12 +572,7 @@ function UnifiedMealModal({
                       onChange={(e) => setCustomMealNotes(e.target.value)}
                       placeholder="Any additional notes..."
                       rows={1}
-                      className="w-full p-3 rounded-lg border resize-none"
-                      style={{
-                        borderColor: 'var(--border-light)',
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)'
-                      }}
+                      className="form-textarea"
                       aria-label="Optional notes about your meal"
                     />
                   </div>
@@ -607,8 +581,7 @@ function UnifiedMealModal({
                   <div className="flex gap-3">
                     <button
                       onClick={() => setCompletionStage('intent')}
-                      className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors"
-                      style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                      className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors bg-tertiary text-color-primary"
                       aria-label="Go back to completion options"
                     >
                       Back
@@ -616,8 +589,7 @@ function UnifiedMealModal({
                     <button
                       onClick={handleCustomCompletion}
                       disabled={isLoading || !customMealDescription.trim()}
-                      className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
-                      style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                      className="btn-base btn-primary flex-1 disabled:opacity-50"
                       aria-label="Save custom meal completion"
                     >
                       {isLoading ? 'Saving...' : 'Complete with Changes'}
@@ -632,31 +604,19 @@ function UnifiedMealModal({
           {modalMode !== 'complete' && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                <label className="text-sm font-medium text-color-primary">
                   {modalMode === 'planned' ? 'Or enter what you actually ate:' : modalMode === 'view-completed' ? 'What did you eat?' : 'What are you eating?'}
                 </label>
               {/* Recipe indicator badge */}
               {isFromRecipe && (
-                <div
-                  className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-                  style={{
-                    backgroundColor: 'var(--color-primary)',
-                    color: 'white'
-                  }}
-                >
+                <div className="badge badge-small badge-recipe flex items-center gap-1">
                   <BookOpen className="w-3 h-3" />
                   Recipe
                 </div>
               )}
               {/* Manual meal indicator badge */}
               {isManualMeal && (
-                <div
-                  className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-                  style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    color: 'var(--text-secondary)'
-                  }}
-                >
+                <div className="badge badge-small badge-manual flex items-center gap-1">
                   ✏️ Manual
                 </div>
               )}
@@ -667,24 +627,14 @@ function UnifiedMealModal({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter meal description..."
                 rows={2}
-                className="w-full p-3 rounded-lg border resize-none"
-                style={{
-                  borderColor: 'var(--border-light)',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)'
-                }}
+                className="form-textarea"
                 aria-label="Meal description"
               />
 
               {modalMode === 'add' && (
                 <button
                   onClick={() => setShowRecipeSelector(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors"
-                  style={{
-                    borderColor: 'var(--border-light)',
-                    color: 'var(--color-primary)',
-                    backgroundColor: 'transparent'
-                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-color-light transition-colors text-color-primary-brand bg-primary"
                   aria-label="Choose recipe from library"
                 >
                   <BookOpen className="w-4 h-4" />
@@ -699,35 +649,25 @@ function UnifiedMealModal({
           {modalMode !== 'complete' && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="block text-sm font-medium mb-2 text-color-primary">
                 Date
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full p-3 rounded-lg border"
-                style={{
-                  borderColor: 'var(--border-light)',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)'
-                }}
+                className="form-input"
                 aria-label="Select date for meal"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="block text-sm font-medium mb-2 text-color-primary">
                 Meal
               </label>
               <select
                 value={mealType}
                 onChange={(e) => setMealType(e.target.value)}
-                className="w-full p-3 rounded-lg border"
-                style={{
-                  borderColor: 'var(--border-light)',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)'
-                }}
+                className="form-select"
                 aria-label="Select meal type"
               >
                 {mealTypeOptions.map(option => (
@@ -743,14 +683,13 @@ function UnifiedMealModal({
 
         {/* Footer - Only show for non-complete modes */}
         {modalMode !== 'complete' && (
-          <div className="flex items-center justify-between p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="flex items-center justify-between p-4 border-t border-color-light">
             <div className="flex gap-2">
               {meal && modalMode !== 'complete' && (
                 <button
                   onClick={handleDelete}
                   disabled={isLoading}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{ color: 'var(--color-error)' }}
+                  className="p-2 rounded-lg transition-colors text-color-error"
                   title="Delete meal"
                   aria-label="Delete this meal"
                 >
@@ -761,11 +700,10 @@ function UnifiedMealModal({
                 <button
                   onClick={handleRevertToPlanned}
                   disabled={isLoading}
-                  className="px-3 py-1 text-sm rounded-lg transition-colors"
+                  className="px-3 py-1 text-sm rounded-lg transition-colors bg-primary border"
                   style={{
-                    color: 'var(--color-warning, #f59e0b)',
-                    border: '1px solid var(--color-warning, #f59e0b)',
-                    backgroundColor: 'transparent'
+                    color: 'var(--color-warning)',
+                    borderColor: 'var(--color-warning)'
                   }}
                   title="Revert to planned state"
                   aria-label="Revert meal to planned state"
@@ -778,8 +716,7 @@ function UnifiedMealModal({
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg font-medium transition-colors"
-                style={{ color: 'var(--text-secondary)' }}
+                className="px-4 py-2 rounded-lg font-medium transition-colors text-color-secondary"
                 aria-label="Cancel and close modal"
               >
                 Cancel
@@ -788,8 +725,8 @@ function UnifiedMealModal({
                 <button
                   onClick={handleQuickComplete}
                   disabled={isLoading}
-                  className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                  style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-color-inverse"
+                  style={{ backgroundColor: 'var(--color-success)' }}
                   aria-label="Complete meal as planned"
                 >
                   ✓ Complete
@@ -798,8 +735,7 @@ function UnifiedMealModal({
               <button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                className="btn-base btn-primary flex items-center gap-2"
                 aria-label="Save meal changes"
               >
                 <Save className="icon-small" />
@@ -811,11 +747,10 @@ function UnifiedMealModal({
 
         {/* Complete modal footer - just cancel */}
         {modalMode === 'complete' && completionStage === 'intent' && (
-          <div className="flex items-center justify-center p-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="flex items-center justify-center p-4 border-t border-color-light">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg font-medium transition-colors"
-              style={{ color: 'var(--text-secondary)' }}
+              className="px-4 py-2 rounded-lg font-medium transition-colors text-color-secondary"
               aria-label="Cancel and close modal"
             >
               Cancel

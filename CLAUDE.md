@@ -5,16 +5,16 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 - AI recipe generator with Gemini 2.5 Flash (multiple recipes, sophistication levels, pantry integration)
 - Smart pantry with photo recognition, expiry tracking, consumption logging
 - 3-state meal planner (empty→planned→completed) with timezone-independent dates
-- Smart shopping list with AI-powered item parsing, search, filters, grouping, and metadata tracking:
+- Smart shopping list with AI-powered item parsing, search, filters, grouping, and metadata tracking
 - Manage page with user profile management, home settings (admin only), and theme preferences
 - Multi-user homes with role-based access (admin/member)
-- Firebase auth + Firestore multi-tenant architecture
+- Modern CSS design system with utility classes and design tokens
 
 ## Tech Stack
 - **Frontend**: React 18.3.1, CSS custom properties, Lucide React icons
 - **Backend**: Node.js + Express.js, Firebase Admin SDK, Multer file uploads
 - **Database**: Firebase Firestore
-- **AI**: Google Gemini 2.5 Flash API (@google/generative-ai v0.17.1)
+- **AI**: Google Gemini 2.5 Flash API
 - **Logging**: Pino (backend), Custom lightweight logger (frontend)
 - **Development**: ESLint 9.36.0, Concurrently, Nodemon
 
@@ -28,7 +28,11 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 ```
 ├── frontend/src/
 │   ├── components/           # 28 React components
-│   │   ├── pantry/          # Pantry components
+│   │   ├── pantry/          # Pantry components (list view only)
+│   │   │   ├── ItemListItem.js          # List view pantry item with AI enhancements
+│   │   │   ├── UnifiedListView.js       # List-only view
+│   │   │   ├── PantryToolbar.js         # Search, filters, actions
+│   │   │   └── AddItemSection.js        # AI and manual item entry
 │   │   ├── ShoppingListInput.js         # Inline add item input
 │   │   ├── ShoppingListItem.js          # Individual item with inline editing & metadata
 │   │   ├── ShoppingListCategory.js      # Collapsible group sections (category/date/user/status)
@@ -37,10 +41,10 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 │   │   ├── ShoppingListEmpty.js         # Empty state
 │   │   ├── UnifiedMealModal.js          # 3-state meal modal
 │   │   ├── RecipeSelector.js            # Recipe selection
-│   │   └── SharedLayout.js              # Main layout
+│   │   └── SharedLayout.js              # Main layout with responsive nav
 │   ├── pages/               # HomePage, PlannerPage, RecipeGenerator, PantryPage, ShoppingList, ManagePage
 │   ├── hooks/               # useShoppingList (with search/filter/grouping), useTheme, useItemManager, usePantryFilters
-│   ├── styles/              # ShoppingList.css
+│   ├── styles/              # ShoppingList.css, Pantry.css
 │   ├── utils/               # dateUtils.js (with formatRelativeTime)
 │   └── contexts/            # ToastContext
 ├── backend/
@@ -194,9 +198,61 @@ logger.error('Failed to load recipes:', error); // Always visible
 - GCP automatically maps Pino severity levels to Cloud Logging
 - View logs: `npm run gcp:logs:prod` or GCP Console → App Engine → Logs
 
+## Rate Limiting Protocol
+
+**Purpose**: Protect AI endpoints from abuse and prevent runaway scripts while allowing generous legitimate use.
+
+**Implementation**:
+- **Library**: `express-rate-limit` (in-memory store)
+- **Middleware**: [backend/middleware/rateLimiter.js](backend/middleware/rateLimiter.js)
+- **Strategy**: Per-user rate limiting based on Firebase UID
+- **Limit**: 100 AI requests per hour per user (configurable via environment variables)
+- **Response**: HTTP 429 with helpful error message
+
+**Environment Variables**:
+- `RATE_LIMIT_WINDOW_MS`: Window duration in milliseconds (default: 3600000 = 1 hour)
+- `RATE_LIMIT_MAX`: Maximum requests per window per user (default: 100)
+- `NODE_ENV`: When set to `production`, disables rate limit headers to prevent information disclosure
+
+**Protected AI Endpoints**:
+1. `POST /api/generate-recipe` - Recipe generation with Gemini
+2. `POST /api/pantry/suggest-item` - AI item suggestions
+3. `POST /api/pantry/quick-defaults` - AI quick defaults for location/expiry
+4. `POST /api/pantry/:homeId/detect-items` - AI image detection
+5. `POST /api/shopping-list/:homeId/items` - AI shopping list parsing
+
+**Error Response** (when limit exceeded):
+```json
+{
+  "error": "Too many AI requests",
+  "message": "You've reached the limit of 100 AI requests per hour. Please try again later.",
+  "retryAfter": "1 hour"
+}
+```
+
+**Usage Pattern**:
+```javascript
+// Apply to AI endpoints after checkAuth middleware
+app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {
+  // AI endpoint logic
+});
+```
+
+
 ## Code Style
 - Use functional React components with hooks
-- Follow existing CSS custom property patterns
+- Follow existing CSS custom property patterns and utility classes (prefer CSS classes over inline styles)
 - All API endpoints require Firebase authentication
 - Restart backend dev server after Node.js changes
 - Use structured logging with Pino (backend) and custom logger (frontend)
+
+## CSS Styling Guidelines
+- **Prefer CSS utility classes over inline styles** for maintainability and consistency
+- **Use design tokens**: CSS custom properties defined in `index.css` (e.g., `--bg-card`, `--color-primary`, `--text-muted`)
+- **Utility class naming conventions**:
+  - Colors: `.text-color-primary`, `.text-color-secondary`, `.text-color-muted`, `.icon-color-primary`
+  - Backgrounds: `.bg-primary`, `.bg-secondary`, `.bg-tertiary`, `.bg-card`, `.bg-color-primary`
+  - Borders: `.border-color-light`, `.border-color-medium`
+  - Buttons: `.btn-base`, `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-success`, `.btn-error`, `.btn-warning`
+  - Badges: `.badge-recipe`, `.badge-location`, `.badge-expired`, `.badge-ai`
+- **Inline styles acceptable for**: Dynamic values (animations, computed colors), gradients, conditional border colors

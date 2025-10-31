@@ -110,7 +110,7 @@ const ShoppingList = () => {
     return (
       <div className="section-padding">
         <div className="container-mobile">
-          <div className="shopping-list-error">
+          <div className="alert alert-error">
             <p>Please sign in to access your shopping list</p>
           </div>
         </div>
@@ -123,10 +123,10 @@ const ShoppingList = () => {
       <div className="container-mobile lg:max-w-none lg:px-8">
         {/* Page Header */}
         <div className="animate-fade-in mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             🛒 Shopping List
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-color-muted">
             Add items with natural language like "2 lbs chicken" or "milk"
           </p>
         </div>
@@ -150,16 +150,16 @@ const ShoppingList = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="shopping-list-error-message">
+          <div className="alert alert-error">
             {error}
           </div>
         )}
 
       {/* Loading State */}
       {loading && totalItems === 0 ? (
-        <div className="shopping-list-loading">
+        <div className="loading-container">
           <div className="spinner"></div>
-          <p>Loading shopping list...</p>
+          <p className="loading-text">Loading shopping list...</p>
         </div>
       ) : totalItems === 0 ? (
         // Empty State
