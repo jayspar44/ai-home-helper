@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { getExpiryStatus } from '../utils/dateUtils';
 
 const usePantryFilters = (items) => {
@@ -7,6 +7,15 @@ const usePantryFilters = (items) => {
     locations: ['pantry', 'fridge', 'freezer'],
     expirationStatus: 'all' // 'all' | 'fresh' | 'expiring-soon' | 'expired'
   });
+  const [groupBy, setGroupBy] = useState(() => {
+    const saved = localStorage.getItem('pantryGroupBy');
+    return saved || 'none'; // Default to no grouping
+  });
+
+  // Persist groupBy preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('pantryGroupBy', groupBy);
+  }, [groupBy]);
 
   // getExpiryStatus moved to dateUtils
 
@@ -38,6 +47,66 @@ const usePantryFilters = (items) => {
     return filtered;
   }, [items, searchQuery, filters]);
 
+  // Group items based on groupBy strategy
+  const { itemsByGroup, sortedGroups } = useMemo(() => {
+    const grouped = {};
+
+    if (groupBy === 'location') {
+      // Group by location (pantry, fridge, freezer)
+      const locations = ['pantry', 'fridge', 'freezer'];
+      locations.forEach(loc => { grouped[loc] = []; });
+
+      filteredItems.forEach(item => {
+        const location = item.location || 'pantry';
+        if (grouped[location]) {
+          grouped[location].push(item);
+        } else {
+          grouped.pantry.push(item);
+        }
+      });
+
+    } else if (groupBy === 'expiration') {
+      // Group by expiration status
+      grouped.expired = [];
+      grouped['expiring-soon'] = [];
+      grouped.fresh = [];
+
+      filteredItems.forEach(item => {
+        const status = getExpiryStatus(item);
+        if (grouped[status]) {
+          grouped[status].push(item);
+        }
+      });
+
+    } else {
+      // No grouping - single flat list
+      grouped.all = [...filteredItems];
+    }
+
+    // Filter out empty groups
+    const nonEmptyGroups = Object.fromEntries(
+      Object.entries(grouped).filter(([_, items]) => items.length > 0)
+    );
+
+    // Determine sort order for groups
+    let groupOrder = [];
+    if (groupBy === 'location') {
+      groupOrder = ['pantry', 'fridge', 'freezer'];
+    } else if (groupBy === 'expiration') {
+      groupOrder = ['expired', 'expiring-soon', 'fresh']; // Critical items first
+    } else {
+      groupOrder = ['all'];
+    }
+
+    const sortedGroupKeys = groupOrder.filter(key => nonEmptyGroups[key]);
+
+    return {
+      itemsByGroup: nonEmptyGroups,
+      sortedGroups: sortedGroupKeys
+    };
+  }, [filteredItems, groupBy]);
+
+  // Legacy support for existing code
   const groupedItems = useMemo(() => {
     return {
       pantry: filteredItems.filter(item => item.location === 'pantry'),
@@ -76,7 +145,11 @@ const usePantryFilters = (items) => {
     filters,
     setFilters,
     filteredItems,
-    groupedItems,
+    groupedItems, // Legacy support
+    itemsByGroup,
+    sortedGroups,
+    groupBy,
+    setGroupBy,
     activeFiltersCount,
     clearFilters
   };

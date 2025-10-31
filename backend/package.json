@@ -1,6 +1,6 @@
 {
   "name": "home-helper-backend",
-  "version": "2.23.6",
+  "version": "2.24.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -74,10 +74,12 @@ const ShoppingListToolbar = ({
             <select
               value={groupBy}
               onChange={(e) => onGroupByChange(e.target.value)}
-              className="btn-base btn-ghost px-4 py-2.5 pr-8 appearance-none cursor-pointer"
+              className="btn-base btn-ghost px-4 py-2.5 appearance-none cursor-pointer"
               style={{
                 backgroundImage: 'none',
-                lineHeight: '1.5'
+                lineHeight: '1.5',
+                paddingRight: '2.5rem',
+                minWidth: '160px'
               }}
             >
               {groupByOptions.map(option => (

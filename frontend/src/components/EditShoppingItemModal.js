@@ -33,6 +33,23 @@ const EditShoppingItemModal = ({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // ESC key handler
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (item) {
       setFormData({
@@ -86,8 +103,8 @@ const EditShoppingItemModal = ({
   if (!isOpen || !item) return null;
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-container">
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title">

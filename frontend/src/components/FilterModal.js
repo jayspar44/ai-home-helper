@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 
-const FilterModal = ({ 
-  isOpen, 
-  onClose, 
-  filters, 
+const FilterModal = ({
+  isOpen,
+  onClose,
+  filters,
   onFiltersChange,
-  onClearFilters 
+  onClearFilters
 }) => {
+  // ESC key handler
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleLocationChange = (location, checked) => {
@@ -38,8 +55,8 @@ const FilterModal = ({
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-container">
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title">

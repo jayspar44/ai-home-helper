@@ -95,11 +95,12 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
   return (
     <div
       className="modal-backdrop"
+      onClick={handleClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="export-modal-title"
     >
-      <div className="modal-container modal-container-lg flex flex-col">
+      <div className="modal-container modal-container-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h2

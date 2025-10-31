@@ -7,6 +7,7 @@ import { daysToExpiryDate } from '../utils/dateUtils';
 import AddItemSection from '../components/AddItemSection';
 import PantryToolbar from '../components/PantryToolbar';
 import UnifiedListView from '../components/UnifiedListView';
+import PantryCategory from '../components/PantryCategory';
 import FilterModal from '../components/FilterModal';
 import EditItemModal from '../components/EditItemModal';
 import JSONExportModal from '../components/JSONExportModal';
@@ -47,6 +48,10 @@ export default function PantryPage() {
     filters,
     setFilters,
     filteredItems,
+    itemsByGroup,
+    sortedGroups,
+    groupBy,
+    setGroupBy,
     activeFiltersCount,
     clearFilters
   } = usePantryFilters(items);
@@ -224,6 +229,8 @@ export default function PantryPage() {
             onSearchChange={setSearchQuery}
             onOpenFilter={() => setShowFilterModal(true)}
             activeFiltersCount={activeFiltersCount}
+            groupBy={groupBy}
+            onGroupByChange={setGroupBy}
             onCreateRecipe={handleCreateRecipe}
             onExportJSON={handleExportJSON}
             totalItems={totalItems}
@@ -255,17 +262,30 @@ export default function PantryPage() {
                 <div key={i} className="skeleton-card"></div>
               ))}
             </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📦</div>
+              <h3 className="text-lg font-semibold mb-2 text-color-primary">
+                No items yet
+              </h3>
+              <p className="text-sm text-color-muted">
+                Add some items to your pantry to get started
+              </p>
+            </div>
           ) : (
-            <div className="animate-slide-up pantry-items">
-              <UnifiedListView
-                items={filteredItems}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onApplyEnhancement={handleApplyEnhancement}
-                onDismissEnhancement={handleDismissEnhancement}
-                processingEnhancementIds={processingEnhancementIds}
-                isEmpty={filteredItems.length === 0}
-              />
+            <div className="shopping-list-categories">
+              {sortedGroups.map(group => (
+                <PantryCategory
+                  key={group}
+                  category={group}
+                  items={itemsByGroup[group]}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onApplyEnhancement={handleApplyEnhancement}
+                  onDismissEnhancement={handleDismissEnhancement}
+                  processingEnhancementIds={processingEnhancementIds}
+                />
+              ))}
             </div>
           )}
         </div>

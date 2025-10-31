@@ -1,15 +1,24 @@
 import React from 'react';
-import { Search, Filter, Download } from 'lucide-react';
+import { Search, Filter, Download, ChevronDown } from 'lucide-react';
 
 const PantryToolbar = ({
   searchQuery,
   onSearchChange,
   onOpenFilter,
   activeFiltersCount,
+  groupBy = 'none',
+  onGroupByChange,
   onCreateRecipe,
   onExportJSON,
   totalItems
 }) => {
+  // Group by options
+  const groupByOptions = [
+    { value: 'location', label: 'Location' },
+    { value: 'expiration', label: 'Expiration' },
+    { value: 'none', label: 'No Grouping' }
+  ];
+
   return (
     <div className="card p-4 mb-6">
       <div className="flex flex-col gap-4">
@@ -53,6 +62,30 @@ const PantryToolbar = ({
               </span>
             )}
           </button>
+
+          {/* Group By Selector */}
+          <div className="relative">
+            <select
+              value={groupBy}
+              onChange={(e) => onGroupByChange(e.target.value)}
+              className="btn-base btn-ghost px-4 py-2.5 appearance-none cursor-pointer"
+              style={{
+                backgroundImage: 'none',
+                lineHeight: '1.5',
+                paddingRight: '2.5rem',
+                minWidth: '160px'
+              }}
+            >
+              {groupByOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="w-4 h-4 icon-color-muted absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
+            />
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 ml-auto">
