@@ -68,25 +68,20 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
   const ExpiryIcon = expiryInfo.icon;
 
   return (
-    <div 
-      className={`card-interactive p-4 rounded-lg hover-lift transition-all duration-200 relative ${showMenu ? 'overflow-visible' : ''}`}
-      style={{ 
-        backgroundColor: 'var(--bg-tertiary)',
-        border: expiryInfo.isExpired ? '2px solid var(--color-error)' : 
-               expiryInfo.isExpiringSoon ? '2px solid var(--color-warning)' : 
+    <div
+      className={`card-interactive bg-tertiary p-4 rounded-lg hover-lift transition-all duration-200 relative ${showMenu ? 'overflow-visible' : ''}`}
+      style={{
+        border: expiryInfo.isExpired ? '2px solid var(--color-error)' :
+               expiryInfo.isExpiringSoon ? '2px solid var(--color-warning)' :
                '1px solid var(--border-light)',
         minHeight: '140px'
       }}
     >
       {/* Expired/Expiring Soon Badge */}
       {(expiryInfo.isExpired || expiryInfo.isExpiringSoon) && (
-        <div 
-          className="absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-          style={{ 
-            backgroundColor: expiryInfo.isExpired ? 'var(--color-error)' : 'var(--color-warning)',
-            color: 'white',
-            zIndex: 1
-          }}
+        <div
+          className={`badge badge-small absolute -top-2 -right-2 flex items-center gap-1 ${expiryInfo.isExpired ? 'badge-expired' : 'badge-expiring'}`}
+          style={{ zIndex: 1 }}
         >
           {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}
           {expiryInfo.isExpired ? 'Expired' : 'Soon'}
@@ -96,10 +91,9 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
       <div className="flex flex-col h-full">
         {/* Item Name */}
         <div className="flex-1 mb-3">
-          <h3 
-            className="font-medium text-sm leading-tight mb-2"
-            style={{ 
-              color: 'var(--text-primary)',
+          <h3
+            className="font-medium text-sm leading-tight mb-2 text-color-primary"
+            style={{
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -109,14 +103,9 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
           >
             {item.name}
           </h3>
-          
+
           {/* Location Badge */}
-          <div className="inline-flex items-center text-xs px-2 py-1 rounded-full mb-2" 
-               style={{ 
-                 backgroundColor: 'var(--bg-card)', 
-                 color: 'var(--text-muted)',
-                 border: '1px solid var(--border-light)'
-               }}>
+          <div className="badge badge-location text-xs mb-2">
             <span className="mr-1">
               {item.location === 'pantry' ? '🏠' : item.location === 'fridge' ? '❄️' : '🧊'}
             </span>
@@ -125,7 +114,7 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
 
           {/* Quantity */}
           {item.quantity && (
-            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <div className="text-xs text-color-secondary">
               Qty: {item.quantity}
             </div>
           )}
@@ -139,17 +128,15 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
               {ExpiryIcon && <ExpiryIcon className="w-3 h-3" />}
               <span className="truncate">{expiryInfo.text}</span>
             </div>
-            
+
             {/* AI Badge / Processing Indicator */}
             {processingEnhancement ? (
-              <div className="text-xs mt-1 inline-flex items-center gap-1" 
-                   style={{ color: 'var(--color-primary)' }}>
+              <div className="text-xs mt-1 inline-flex items-center gap-1 text-color-primary-brand">
                 <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
                 AI processing...
               </div>
             ) : item.detectedBy === 'ai' && (
-              <div className="text-xs mt-1 inline-flex items-center gap-1" 
-                   style={{ color: 'var(--color-primary)' }}>
+              <div className="badge badge-ai text-xs mt-1 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" /> AI
               </div>
             )}
@@ -160,14 +147,10 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
             <button
               ref={buttonRef}
               onClick={handleMenuToggle}
-              className="p-2 rounded hover:bg-opacity-80 transition-colors"
-              style={{ 
-                color: 'var(--text-muted)',
+              className="p-2 rounded hover:bg-opacity-80 transition-colors text-color-muted flex items-center justify-center"
+              style={{
                 minWidth: '44px',
-                minHeight: '44px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                minHeight: '44px'
               }}
               aria-label="Item options"
             >
@@ -175,13 +158,10 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
             </button>
 
             {showMenu && createPortal(
-              <div 
+              <div
                 ref={portalMenuRef}
-                className="fixed bg-white rounded-lg shadow-xl border min-w-[140px]"
-                style={{ 
-                  backgroundColor: 'var(--bg-card)', 
-                  borderColor: 'var(--border-light)',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                className="fixed bg-card rounded-lg shadow-xl border border-color-light min-w-[140px]"
+                style={{
                   zIndex: 9999,
                   top: `${menuPosition.top}px`,
                   left: `${menuPosition.left}px`
@@ -192,11 +172,8 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
                     onEdit(item);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors rounded-t-lg"
-                  style={{ 
-                    color: 'var(--text-primary)',
-                    minHeight: '44px'
-                  }}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors rounded-t-lg text-color-primary"
+                  style={{ minHeight: '44px' }}
                 >
                   <Edit2 className="w-4 h-4" />
                   Edit
@@ -206,11 +183,8 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
                     onDelete(item.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 flex items-center gap-3 transition-colors rounded-b-lg"
-                  style={{ 
-                    color: 'var(--color-error)',
-                    minHeight: '44px'
-                  }}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 flex items-center gap-3 transition-colors rounded-b-lg text-color-error"
+                  style={{ minHeight: '44px' }}
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete
@@ -231,35 +205,34 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
                 {item.pendingEnhancement.isLowConfidence ? (
-                  <AlertCircle className="w-3 h-3" style={{ color: 'var(--color-error)' }} />
+                  <AlertCircle className="w-3 h-3 text-color-error" />
                 ) : (
-                  <Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
+                  <Sparkles className="w-3 h-3 text-color-primary-brand" />
                 )}
-                <span className="text-xs font-semibold" style={{ 
-                  color: item.pendingEnhancement.isLowConfidence ? 'var(--color-error)' : 'var(--color-primary)' 
+                <span className="text-xs font-semibold" style={{
+                  color: item.pendingEnhancement.isLowConfidence ? 'var(--color-error)' : 'var(--color-primary)'
                 }}>
                   {item.pendingEnhancement.isLowConfidence ? 'Needs Review' : 'AI Suggestion'}
                 </span>
               </div>
-              <button 
+              <button
                 onClick={() => onDismissEnhancement?.(item.id)}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--text-muted)' }}
+                className="p-1 rounded hover:bg-gray-100 transition-colors text-color-muted"
                 aria-label="Dismiss"
               >
                 <X className="w-3 h-3" />
               </button>
             </div>
-            
+
             {/* Original → Suggestion */}
-            <div className="flex-1 text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex-1 text-xs mb-3 text-color-secondary">
               {item.pendingEnhancement.isLowConfidence ? (
                 <div>
-                  <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                  <div className="font-medium mb-1 text-color-primary">
                     "{item.name}" doesn't look like food
                   </div>
                   {item.pendingEnhancement.guidance?.examples && (
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <div className="text-xs text-color-muted">
                       Try: {item.pendingEnhancement.guidance.examples.slice(0, 2).join(', ')}
                     </div>
                   )}
@@ -267,11 +240,11 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
               ) : (
                 <div>
                   <div className="mb-1">
-                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>"{item.name}"</span>
+                    <span className="font-medium text-color-primary">"{item.name}"</span>
                     <span className="mx-1">→</span>
-                    <span className="font-medium" style={{ color: 'var(--color-primary)' }}>"{item.pendingEnhancement.name}"</span>
+                    <span className="font-medium text-color-primary-brand">"{item.pendingEnhancement.name}"</span>
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <div className="text-xs text-color-muted">
                     {item.pendingEnhancement.quantity && `${item.pendingEnhancement.quantity} • `}
                     {item.pendingEnhancement.location} • {item.pendingEnhancement.expiresAt ? `${calculateRemainingDays(item.pendingEnhancement.expiresAt)}d` : `${item.pendingEnhancement.daysUntilExpiry}d`}
                   </div>
@@ -283,43 +256,32 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
             <div className="flex gap-1">
               {item.pendingEnhancement.isLowConfidence ? (
                 <>
-                  <button 
+                  <button
                     onClick={() => onEdit(item)}
-                    className="flex-1 btn-base py-1 text-xs font-medium"
-                    style={{ 
-                      backgroundColor: 'var(--color-error)', 
-                      color: 'white',
-                      border: '1px solid var(--color-error)'
+                    className="flex-1 btn-base py-1 text-xs font-medium text-color-inverse"
+                    style={{
+                      backgroundColor: 'var(--color-error)',
+                      borderColor: 'var(--color-error)'
                     }}
                   >
                     Update
                   </button>
-                  <button 
+                  <button
                     onClick={() => onDelete(item.id)}
-                    className="flex-1 btn-base py-1 text-xs"
-                    style={{ 
-                      backgroundColor: 'var(--bg-card)', 
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-medium)'
-                    }}
+                    className="flex-1 btn-base btn-secondary py-1 text-xs"
                   >
                     Remove
                   </button>
                 </>
               ) : (
                 <>
-                  <button 
+                  <button
                     onClick={() => onApplyEnhancement?.(item.id, item.pendingEnhancement)}
-                    className="flex-1 btn-base py-1 text-xs font-medium"
-                    style={{ 
-                      backgroundColor: 'var(--color-primary)', 
-                      color: 'white',
-                      border: '1px solid var(--color-primary)'
-                    }}
+                    className="flex-1 btn-base btn-primary py-1 text-xs font-medium"
                   >
                     Apply
                   </button>
-                  <button 
+                  <button
                     onClick={() => onEdit({
                       ...item,
                       name: item.pendingEnhancement.name,
@@ -327,12 +289,7 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
                       location: item.pendingEnhancement.location,
                       expiresAt: item.pendingEnhancement.expiresAt || daysToExpiryDate(item.pendingEnhancement.daysUntilExpiry || 7)
                     })}
-                    className="flex-1 btn-base py-1 text-xs"
-                    style={{ 
-                      backgroundColor: 'var(--bg-card)', 
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-medium)'
-                    }}
+                    className="flex-1 btn-base btn-secondary py-1 text-xs"
                   >
                     Edit
                   </button>
