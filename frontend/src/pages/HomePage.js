@@ -60,15 +60,15 @@ export default function HomePage() {
         
         {/* ===== WELCOME SECTION ===== */}
         <div className="animate-fade-in mb-8 lg:mb-12">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             {greeting}, {profile?.name?.split(' ')[0] || 'there'}! 👋
           </h1>
           {currentHome && (
-            <p className="text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
-              Managing <span className="font-semibold" style={{ color: 'var(--color-primary)' }}>{currentHome.name}</span>
+            <p className="text-lg mb-4 text-color-secondary">
+              Managing <span className="font-semibold icon-color-primary">{currentHome.name}</span>
             </p>
           )}
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-color-muted">
             Your smart assistant for a organized, happy home.
           </p>
         </div>
@@ -76,8 +76,8 @@ export default function HomePage() {
 
         {/* ===== QUICK ACTIONS ===== */}
         <div className="mb-8 lg:mb-12">
-          <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>Quick Actions</h2>
-          
+          <h2 className="text-xl font-semibold mb-6 text-color-primary">Quick Actions</h2>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
               <Link
@@ -87,16 +87,16 @@ export default function HomePage() {
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div
-                  className="flex items-center justify-center w-12 h-12 rounded-lg flex-shrink-0 text-2xl"
-                  style={{ backgroundColor: action.color, color: 'white' }}
+                  className="flex items-center justify-center w-12 h-12 rounded-lg flex-shrink-0 text-2xl text-white"
+                  style={{ backgroundColor: action.color }}
                 >
                   {action.emoji}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--text-primary)' }}>
+                  <h3 className="font-semibold text-lg mb-2 text-color-primary">
                     {action.title}
                   </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-sm leading-relaxed text-color-muted">
                     {action.description}
                   </p>
                 </div>
@@ -109,8 +109,7 @@ export default function HomePage() {
         {/* ===== FLOATING ACTION BUTTON (Mobile) ===== */}
         <Link
           to="/pantry"
-          className="mobile-only fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 z-10 text-3xl"
-          style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+          className="mobile-only fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 z-10 text-3xl bg-color-primary text-white"
         >
           +
         </Link>

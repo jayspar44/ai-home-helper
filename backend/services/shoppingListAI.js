@@ -1,5 +1,7 @@
 // shoppingListAI.js - AI parsing service for shopping list items
 
+const { parseAIJsonResponse } = require('../utils/aiHelpers');
+
 /**
  * Parses natural language shopping list item text into structured data
  * Uses Google Gemini AI to extract name, quantity, unit, and category
@@ -61,23 +63,11 @@ Return ONLY valid JSON, no explanation or markdown formatting.`;
     // Parse JSON from response
     let parsedItem;
     try {
-      // Remove markdown code blocks if present
+      // Remove markdown code blocks if present (AI sometimes adds these)
       const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const jsonMatch = cleanedText.match(/\{[\s\S]*?\}/);
-
-      if (jsonMatch) {
-        parsedItem = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
+      parsedItem = parseAIJsonResponse(cleanedText, logger, { inputText: text, context: 'shopping-list-item' });
     } catch (parseError) {
-      logger.error({
-        err: parseError,
-        responseText: responseText.substring(0, 200),
-        inputText: text
-      }, 'Failed to parse AI response for shopping list item');
-
-      // Return fallback
+      // Return fallback on parsing error
       return createFallbackItem(text);
     }
 

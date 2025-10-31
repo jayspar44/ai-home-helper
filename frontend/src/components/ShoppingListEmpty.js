@@ -7,10 +7,10 @@ import { ShoppingCart } from 'lucide-react';
  */
 const ShoppingListEmpty = () => {
   return (
-    <div className="shopping-list-empty">
-      <ShoppingCart size={64} className="shopping-list-empty-icon" />
-      <h3 className="shopping-list-empty-title">Your shopping list is empty</h3>
-      <p className="shopping-list-empty-text">
+    <div className="empty-state">
+      <ShoppingCart size={64} className="empty-state-icon" />
+      <h3 className="empty-state-title">Your shopping list is empty</h3>
+      <p className="empty-state-text">
         Add items manually above using natural language like "2 lbs chicken" or "milk"
       </p>
     </div>

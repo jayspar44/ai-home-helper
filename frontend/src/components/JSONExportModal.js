@@ -94,29 +94,25 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="modal-backdrop"
+      onClick={handleClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="export-modal-title"
     >
-      <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
-        style={{ backgroundColor: 'var(--bg-card)' }}
-      >
+      <div className="modal-container modal-container-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+        <div className="modal-header">
           <h2
             id="export-modal-title"
-            className="text-lg font-semibold flex items-center gap-2"
-            style={{ color: 'var(--text-primary)' }}
+            className="modal-title flex items-center gap-2"
           >
             <Download className="icon-small" />
             Export Pantry Data
           </h2>
           <button
             onClick={handleClose}
-            className="p-1 rounded-full hover:bg-opacity-10 transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
+            className="modal-close"
             aria-label="Close modal"
           >
             <X className="icon-medium" />
@@ -126,7 +122,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
         {/* Content */}
         <div className="flex-1 p-4 overflow-hidden flex flex-col">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm text-color-secondary">
               {items.length} items ready for export
             </p>
 
@@ -156,7 +152,7 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
           </div>
 
           {/* JSON Display */}
-          <div className="flex-1 border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="flex-1 border border-color-light rounded-lg overflow-hidden">
             <textarea
               value={jsonData}
               readOnly
@@ -174,8 +170,8 @@ const JSONExportModal = ({ isOpen, onClose, items = [] }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t text-center" style={{ borderColor: 'var(--border-light)' }}>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        <div className="p-4 border-t border-color-light text-center">
+          <p className="text-xs text-color-muted">
             This JSON contains all your pantry data including names, quantities, locations, and expiry dates.
             <br />
             You can paste this data into other applications or save it as a backup.

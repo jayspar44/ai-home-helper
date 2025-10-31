@@ -12,7 +12,10 @@ const logger = require('./utils/logger');
 const pinoHttp = require('pino-http');
 const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 const { parseShoppingListItem } = require('./services/shoppingListAI');
+const { generateRecipes } = require('./services/recipeAI');
+const { suggestPantryItem, getQuickDefaults, detectItemsFromImage } = require('./services/pantryAI');
 const { version } = require('../version.json');
+const { aiRateLimiter } = require('./middleware/rateLimiter');
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -225,7 +228,7 @@ app.post('/api/register', async (req, res) => {
     } else if (error.code === 'auth/invalid-password') {
         errorMessage = 'Password is not valid. It must be at least 6 characters long.';
     }
-    logger.error({ error: error, email: req.body.email }, 'User registration failed');
+    logger.error({ err: error, email: req.body.email }, 'User registration failed');
     res.status(400).json({ error: errorMessage });
   }
 });
@@ -278,7 +281,7 @@ app.get('/api/user/me', checkAuth, async (req, res) => {
         res.json(response);
 
     } catch (error) {
-        req.log.error({ error: error, userId: req.user.uid }, 'Error fetching user profile');
+        req.log.error({ err: error, userId: req.user.uid }, 'Error fetching user profile');
         res.status(500).json({
             error: 'Internal server error',
             message: error.message,
@@ -434,7 +437,7 @@ app.delete('/api/homes/:homeId/members/:memberId', checkAuth, async (req, res) =
         logger.info({ homeId, adminId, memberId }, 'Member removed from home');
         res.status(200).json({ message: 'Member removed successfully.' });
     } catch (error) {
-        logger.error({ error: error, homeId, memberId, adminId }, 'Error removing member');
+        logger.error({ err: error, homeId, memberId, adminId }, 'Error removing member');
         res.status(400).json({ error: error.message });
     }
 });
@@ -522,7 +525,7 @@ app.post('/api/recipes/list', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: req.user.uid, recipeCount: recipeList.length }, 'Recipes fetched successfully');
     res.json({ recipes: recipeList });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error fetching recipes');
+    req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error fetching recipes');
     res.status(500).json({ error: 'Failed to fetch recipes' });
   }
 });
@@ -535,12 +538,12 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: req.user.uid, recipeTitle: recipe.title, recipeId: docRef.id }, 'Recipe saved');
     res.status(201).json({ id: docRef.id, ...recipe });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
+    req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
     res.status(500).json({ error: 'Failed to save recipe' });
   }
 });
 
-app.post('/api/generate-recipe', checkAuth, async (req, res) => {
+app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {
     try {
         const {
             ingredients,
@@ -558,189 +561,35 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
         const startTime = Date.now();
         req.log.info({ userId: req.user.uid, ingredientCount: ingredients.length, recipeType, servingSize, generateCount }, 'Generating recipes with AI');
 
-        // If generating multiple recipes, create multiple prompts and run them
+        // Generate recipe(s) using AI service
+        const result = await generateRecipes({
+            ingredients,
+            servingSize,
+            dietaryRestrictions,
+            recipeType,
+            pantryItems,
+            generateCount
+        }, genAI, req.log);
+
+        const aiResponseTime = Date.now() - startTime;
+
+        // Handle multiple recipes
         if (generateCount > 1) {
-            const promises = [];
-
-            for (let i = 0; i < generateCount; i++) {
-                const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, i + 1);
-                
-                const promise = (async () => {
-                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-                    const result = await model.generateContent(prompt);
-                    const response = await result.response;
-                    const generatedText = response.text();
-                    return parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients);
-                })();
-                
-                promises.push(promise);
-            }
-            
-            const results = await Promise.all(promises);
-            
-            // Validate all recipes
-            const validRecipes = results.filter(recipe => 
-                recipe.title && recipe.ingredients && recipe.instructions
-            );
-            
-            if (validRecipes.length === 0) {
-                throw new Error('Failed to generate valid recipes');
-            }
-
-            req.log.info({ userId: req.user.uid, recipesGenerated: validRecipes.length, aiResponseTime: Date.now() - startTime }, 'Recipes generated');
-            return res.json(validRecipes);
+            req.log.info({ userId: req.user.uid, recipesGenerated: result.length, aiResponseTime }, 'Recipes generated');
+            return res.json(result);
         }
 
-        // Single recipe generation (existing logic enhanced)
-        const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems);
-
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const generatedText = response.text();
-
-        const recipe = parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients);
-
-        // Validate recipe structure
-        if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
-            req.log.error({ generatedText: generatedText.substring(0, 200) }, 'Invalid recipe format from AI');
-            throw new Error('Generated recipe has invalid format');
-        }
-
-        req.log.info({ userId: req.user.uid, recipeTitle: recipe.title, aiResponseTime: Date.now() - startTime }, 'Recipe generated');
-        res.json(recipe);
+        // Handle single recipe
+        req.log.info({ userId: req.user.uid, recipeTitle: result.title, aiResponseTime }, 'Recipe generated');
+        res.json(result);
     } catch (error) {
-        req.log.error({ error: error, userId: req.user.uid }, 'Error generating recipe');
+        req.log.error({ err: error, userId: req.user.uid }, 'Error generating recipe');
         res.status(500).json({
             error: 'Failed to generate recipe',
             details: error.message
         });
     }
 });
-
-// --- Helper Functions ---
-function createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType = 'quick', pantryItems = [], variationNumber = 1) {
-  const restrictionsText = dietaryRestrictions ? `\n- Follow these dietary restrictions: ${dietaryRestrictions}` : '';
-  
-  // Build pantry context
-  let pantryContext = '';
-  if (pantryItems && pantryItems.length > 0) {
-    const pantryIngredients = pantryItems.map(item => {
-      const expiry = item.daysUntilExpiry ? ` (${item.daysUntilExpiry} days until expiry)` : '';
-      return `${item.name}${item.quantity ? ` - ${item.quantity}` : ''}${expiry}`;
-    });
-    
-    pantryContext = `\n\nAVAILABLE PANTRY ITEMS:\n${pantryIngredients.join('\n')}\n- PRIORITIZE using pantry items that expire soon (3 days or less)\n- Mark which ingredients come from pantry vs need to be purchased`;
-  }
-  
-  // Recipe complexity guidance
-  const complexityGuidance = recipeType === 'sophisticated' 
-    ? `\n- CREATE A SOPHISTICATED RECIPE: Use advanced cooking techniques, complex flavor profiles, multiple cooking methods, longer prep/cook times (45+ minutes total), restaurant-quality presentation`
-    : `\n- CREATE A QUICK & EASY RECIPE: Simple techniques, minimal prep, 15-30 minute total time, accessible for home cooks, streamlined process`;
-  
-  // Variation guidance for multiple recipes
-  const variationText = variationNumber > 1 
-    ? `\n- This is variation #${variationNumber} - make it DISTINCTLY DIFFERENT from other variations in cooking method, cuisine style, or flavor profile`
-    : '';
-  
-  return `Create a complete recipe using these ingredients: ${ingredients.join(', ')}${pantryContext}
-
-Requirements:
-- Serves ${servingSize} people
-- Include prep time and cook time
-- Rate difficulty as Easy, Medium, or Hard
-- Provide a brief description${restrictionsText}${complexityGuidance}${variationText}
-
-Please format your response EXACTLY like this JSON structure:
-{
-  "title": "Recipe Name",
-  "description": "Brief appealing description",
-  "prepTime": "X minutes",
-  "cookTime": "X minutes", 
-  "difficulty": "Easy/Medium/Hard",
-  "ingredients": [
-    "ingredient with amount",
-    "another ingredient with amount"
-  ],
-  "instructions": [
-    "Step 1 instruction",
-    "Step 2 instruction"
-  ],
-  "tips": [
-    "Helpful cooking tip",
-    "Another useful tip"
-  ]
-}
-
-Make sure the recipe is practical, delicious, and uses the provided ingredients as the main components. Add common pantry staples as needed.`;
-}
-
-function parseRecipeResponse(text, servingSize, pantryItems = [], originalIngredients = []) {
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const jsonText = jsonMatch[0];
-      const parsed = JSON.parse(jsonText);
-      
-      // Identify which ingredients come from pantry and which are missing
-      const recipeIngredients = parsed.ingredients || [];
-      const pantryIngredients = [];
-      const missingIngredients = [];
-      
-      if (pantryItems && pantryItems.length > 0) {
-        const pantryNames = pantryItems.map(item => item.name.toLowerCase());
-        
-        recipeIngredients.forEach(ingredient => {
-          const ingredientLower = ingredient.toLowerCase();
-          const isFromPantry = pantryNames.some(pantryName => 
-            ingredientLower.includes(pantryName) || pantryName.includes(ingredientLower)
-          );
-          
-          if (isFromPantry) {
-            pantryIngredients.push(ingredient);
-          } else {
-            // Check if it's not in original ingredients either
-            const isOriginal = originalIngredients.some(orig => 
-              ingredientLower.includes(orig.toLowerCase()) || orig.toLowerCase().includes(ingredientLower)
-            );
-            if (!isOriginal) {
-              missingIngredients.push(ingredient);
-            }
-          }
-        });
-      }
-      
-      return {
-        title: parsed.title || "Delicious Recipe",
-        description: parsed.description || "A wonderful meal made with your ingredients",
-        prepTime: parsed.prepTime || "15 minutes",
-        cookTime: parsed.cookTime || "30 minutes",
-        servings: servingSize,
-        difficulty: parsed.difficulty || "Medium",
-        ingredients: recipeIngredients,
-        instructions: parsed.instructions || [],
-        tips: parsed.tips || ["Enjoy your meal!"],
-        pantryIngredients: pantryIngredients,
-        missingIngredients: missingIngredients
-      };
-    }
-  } catch (error) {
-    logger.error({ err: error }, 'Error parsing recipe response');
-  }
-  return {
-    title: "Custom Recipe",
-    description: "A delicious meal created just for you",
-    prepTime: "15 minutes",
-    cookTime: "30 minutes",
-    servings: servingSize,
-    difficulty: "Medium",
-    ingredients: ["Check server logs for full response"],
-    instructions: ["AI response parsing failed - check logs"],
-    tips: ["Recipe generation succeeded but formatting needs adjustment"],
-    pantryIngredients: [],
-    missingIngredients: []
-  };
-}
 
 // Add new member to home
 app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
@@ -800,7 +649,7 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
     req.log.info({ homeId, adminId: requesterUid, newMemberEmail: email, newMemberId }, 'Member added to home');
 
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, email: req.body.email, userId: req.user.uid }, 'Error adding member');
+    req.log.error({ err: error, homeId: req.params.homeId, email: req.body.email, userId: req.user.uid }, 'Error adding member');
     res.status(500).json({ error: 'Failed to add member' });
   }
 });
@@ -808,7 +657,7 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
 // --- Pantry API Routes ---
 
 // Suggest pantry item based on user input
-app.post('/api/pantry/suggest-item', checkAuth, async (req, res) => {
+app.post('/api/pantry/suggest-item', checkAuth, aiRateLimiter, async (req, res) => {
   try {
     const { itemName, homeId: _homeId } = req.body;
 
@@ -819,71 +668,8 @@ app.post('/api/pantry/suggest-item', checkAuth, async (req, res) => {
     const startTime = Date.now();
     req.log.debug({ userId: req.user.uid, itemName }, 'AI suggestions requested');
 
-    const prompt = `Analyze this food/pantry item name: "${itemName}"
-
-Your goal is to help users create specific, useful pantry entries. Provide suggestions based on confidence level:
-
-HIGH CONFIDENCE (>80%): Item is specific and clearly identifiable
-- Return ONE detailed suggestion with exact name, typical quantity, shelf life
-- Example: "eggs" → "Large white eggs, dozen, 21-28 days"
-
-MEDIUM CONFIDENCE (40-80%): Item is recognizable but vague/ambiguous  
-- Return 3-4 common specific variations
-- Include brand examples and common sizes
-- Encourage user to be more specific
-- Example: "chocolate" → ["Milk chocolate bar 1.5oz", "Dark chocolate chips 12oz", "Chocolate candy assorted 8oz"]
-
-LOW CONFIDENCE (<40%): Item is too vague, unclear, or non-food
-- Provide guidance on being more specific
-- Give examples of better alternatives
-- Suggest photo upload for unclear items
-- Example: "stuff" → guidance to be more specific
-
-Focus on:
-- Common grocery items and typical household sizes
-- Realistic shelf life estimates (in days)
-- Encouraging specificity over generic terms
-- Educational guidance for better entries
-
-Return JSON format:
-{
-  "confidence": 0.0-1.0,
-  "action": "accept" | "choose" | "specify",
-  "suggestions": [
-    {
-      "name": "Specific item name",
-      "quantity": "Amount with unit",
-      "shelfLife": "X days",
-      "location": "pantry" | "fridge" | "freezer",
-      "daysUntilExpiry": number
-    }
-  ],
-  "guidance": {
-    "message": "Helpful message",
-    "examples": ["example1", "example2"],
-    "reasoning": "Why this confidence level"
-  }
-}`;
-
-    // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parse AI response
-    let suggestionData;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/s);
-      if (jsonMatch) {
-        suggestionData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
-    } catch (parseError) {
-      req.log.error({ error: parseError, text: text.substring(0, 200) }, 'Error parsing AI response for suggest-item');
-      return res.status(500).json({ error: 'Failed to parse AI response' });
-    }
+    // Call AI service
+    const suggestionData = await suggestPantryItem(itemName, genAI, req.log);
 
     req.log.info({
       userId: req.user.uid,
@@ -896,7 +682,7 @@ Return JSON format:
     res.json(suggestionData);
 
   } catch (error) {
-    req.log.error({ error: error, userId: req.user.uid, itemName: req.body.itemName }, 'Error in suggest-item');
+    req.log.error({ err: error, userId: req.user.uid, homeId: req.body.homeId, itemName: req.body.itemName }, 'Error in suggest-item');
     res.status(500).json({
       error: 'Failed to generate suggestions',
       details: error.message
@@ -905,7 +691,7 @@ Return JSON format:
 });
 
 // Quick defaults for pantry items (fast location + expiry)
-app.post('/api/pantry/quick-defaults', checkAuth, async (req, res) => {
+app.post('/api/pantry/quick-defaults', checkAuth, aiRateLimiter, async (req, res) => {
   try {
     const { itemName, homeId: _homeId } = req.body;
 
@@ -916,47 +702,8 @@ app.post('/api/pantry/quick-defaults', checkAuth, async (req, res) => {
     const startTime = Date.now();
     req.log.debug({ userId: req.user.uid, itemName }, 'AI quick defaults requested');
 
-    const prompt = `For the food item "${itemName}", provide quick smart defaults for location and expiry days.
-
-Respond with ONLY this JSON format (no other text):
-{
-  "location": "pantry" | "fridge" | "freezer",
-  "daysUntilExpiry": number
-}
-
-Use these rules:
-- Fresh produce, dairy, meat → "fridge" 
-- Frozen items → "freezer"
-- Dry goods, canned items, snacks → "pantry"
-- Reasonable expiry days (1-3 for fresh, 7-30 for pantry items)`;
-
-    // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parse AI response
-    let defaultsData;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*?\}/s);
-      if (jsonMatch) {
-        defaultsData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
-    } catch (parseError) {
-      req.log.warn({ error: parseError, itemName }, 'Error parsing quick defaults, using fallback');
-      // Return sensible fallback
-      defaultsData = {
-        location: itemName.toLowerCase().includes('milk') ||
-                  itemName.toLowerCase().includes('yogurt') ||
-                  itemName.toLowerCase().includes('cheese') ||
-                  itemName.toLowerCase().includes('meat') ||
-                  itemName.toLowerCase().includes('fish') ? 'fridge' : 'pantry',
-        daysUntilExpiry: 7
-      };
-    }
+    // Call AI service (includes fallback logic)
+    const defaultsData = await getQuickDefaults(itemName, genAI, req.log);
 
     req.log.info({
       userId: req.user.uid,
@@ -968,7 +715,7 @@ Use these rules:
     res.json(defaultsData);
 
   } catch (error) {
-    req.log.warn({ error: error, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
+    req.log.warn({ err: error, userId: req.user.uid, homeId: req.body.homeId, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
     // Return sensible fallback on error
     res.json({
       location: 'pantry',
@@ -1011,7 +758,7 @@ app.get('/api/pantry/:homeId', checkAuth, async (req, res) => {
     req.log.debug({ homeId, userId: userUid, itemCount: items.length }, 'Pantry items fetched');
     return res.json(items);
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching pantry items');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching pantry items');
     return res.status(500).json({ error: 'Failed to fetch pantry items' });
   }
 });
@@ -1079,7 +826,7 @@ app.post('/api/pantry/:homeId', checkAuth, async (req, res) => {
     res.status(201).json(resultData);
 
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error adding pantry item');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error adding pantry item');
     res.status(500).json({ error: 'Failed to add pantry item' });
   }
 });
@@ -1145,7 +892,7 @@ app.put('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: userUid, itemId, itemName: name, location }, 'Pantry item updated');
     res.json(resultData);
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error updating pantry item');
+    req.log.error({ err: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error updating pantry item');
     res.status(500).json({ error: 'Failed to update pantry item' });
   }
 });
@@ -1178,7 +925,7 @@ app.delete('/api/pantry/:homeId/:itemId', checkAuth, async (req, res) => {
     req.log.info({ homeId, userId: userUid, itemId, itemName }, 'Pantry item deleted');
     res.json({ message: 'Item deleted' });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error deleting pantry item');
+    req.log.error({ err: error, homeId: req.params.homeId, itemId: req.params.itemId, userId: req.user.uid }, 'Error deleting pantry item');
     res.status(500).json({ error: 'Failed to delete pantry item' });
   }
 });
@@ -1217,7 +964,7 @@ const upload = multer({
 });
 
 // AI-powered pantry item detection endpoint
-app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), async (req, res) => {
+app.post('/api/pantry/:homeId/detect-items', checkAuth, aiRateLimiter, upload.single('image'), async (req, res) => {
   let filePath = null;
   
   try {
@@ -1247,82 +994,8 @@ app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), 
     const imageData = await fs.readFile(filePath);
     const base64Image = imageData.toString('base64');
 
-    // Create the AI prompt for food detection
-    const prompt = `You are an expert at identifying food items in images. Analyze this image and detect all food items visible.
-
-For each item detected, you MUST provide ALL fields:
-1. Name: Be specific (e.g., "Honeycrisp Apples" not just "apples", "Whole Wheat Bread" not just "bread")
-2. Quantity: Estimate based on visual cues (e.g., "3 apples", "1 loaf", "2 lbs", "1 carton")
-3. Location: ALWAYS determine storage location based on item type:
-   - Fresh produce, dairy, meat, leftovers → "fridge"
-   - Frozen items → "freezer" 
-   - Dry goods, canned items, snacks, spices → "pantry"
-4. Days until expiry: ALWAYS estimate realistic shelf life:
-   - Fresh produce: 3-10 days
-   - Dairy: 5-14 days
-   - Meat/fish: 1-5 days
-   - Bread: 3-7 days
-   - Pantry items: 30-365 days
-   - Consider visible freshness cues
-5. Confidence: Your confidence level (0.0-1.0) in this detection
-
-CRITICAL: Every item MUST have location and daysUntilExpiry fields filled with realistic values.
-
-Respond ONLY with a JSON array, no other text:
-[
-  {
-    "name": "Item name",
-    "quantity": "Amount with unit", 
-    "location": "pantry|fridge|freezer",
-    "daysUntilExpiry": number,
-    "confidence": 0.0-1.0
-  }
-]
-
-If no food items are detected, return an empty array: []`;
-
-    // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: req.file.mimetype,
-          data: base64Image
-        }
-      }
-    ]);
-
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parse AI response
-    let detectedItems = [];
-    try {
-      // Extract JSON from response (in case there's extra text)
-      const jsonMatch = text.match(/\[.*\]/s);
-      if (jsonMatch) {
-        detectedItems = JSON.parse(jsonMatch[0]);
-      }
-    } catch (parseError) {
-      req.log.error({ error: parseError, text: text.substring(0, 200) }, 'Error parsing AI detection response');
-      return res.status(500).json({ error: 'Failed to parse AI response' });
-    }
-
-    // Validate and format detected items
-    const formattedItems = detectedItems.map(item => {
-      const daysUntilExpiry = item.daysUntilExpiry || 7;
-      const expiresAt = new Date(Date.now() + daysUntilExpiry * 24 * 60 * 60 * 1000);
-
-      return {
-        name: item.name || 'Unknown Item',
-        quantity: item.quantity || '1 item',
-        location: ['pantry', 'fridge', 'freezer'].includes(item.location) ? item.location : 'pantry',
-        expiresAt,
-        confidence: typeof item.confidence === 'number' ? item.confidence : 0.7,
-        detectedBy: 'ai'
-      };
-    });
+    // Call AI service
+    const formattedItems = await detectItemsFromImage(base64Image, req.file.mimetype, genAI, req.log);
 
     // Clean up uploaded file
     await fs.unlink(filePath);
@@ -1336,14 +1009,14 @@ If no food items are detected, return an empty array: []`;
     res.json({ items: formattedItems });
 
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error in AI detection');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error in AI detection');
 
     // Clean up file if it exists
     if (filePath) {
       try {
         await fs.unlink(filePath);
       } catch (unlinkError) {
-        req.log.error({ error: unlinkError, filePath: path.basename(filePath) }, 'Error deleting uploaded file');
+        req.log.error({ err: unlinkError, filePath: path.basename(filePath) }, 'Error deleting uploaded file');
       }
     }
 
@@ -1407,7 +1080,7 @@ app.get('/api/planner/:homeId', checkAuth, async (req, res) => {
     }, 'Meal plans fetched');
     res.json(mealPlans);
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching meal plans');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error fetching meal plans');
     res.status(500).json({ error: 'Failed to fetch meal plans' });
   }
 });
@@ -1419,30 +1092,30 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
     const { date, mealType, planned } = req.body;
     const userUid = req.user.uid;
 
-    logger.debug('Planner POST Request', {
+    req.log.debug({
       homeId,
       date,
       mealType,
       planned: planned ? { recipeName: planned.recipeName, recipeId: planned.recipeId } : null,
       userUid
-    });
+    }, 'Planner POST Request');
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
     if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
-      logger.warn('Authorization failed: User not member of home', { userUid, homeId });
+      req.log.warn({ userUid, homeId }, 'Authorization failed: User not member of home');
       return res.status(403).json({ error: 'Not authorized' });
     }
 
     // Validate meal type
     if (!['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
-      logger.warn('Invalid meal type provided', { mealType, userUid });
+      req.log.warn({ mealType, userUid }, 'Invalid meal type provided');
       return res.status(400).json({ error: 'Invalid meal type' });
     }
 
     // Check if meal plan already exists for this date/meal type
     const queryDate = new Date(date);
-    logger.debug('Checking for existing meal plan', { date, queryDate, mealType });
+    req.log.debug({ date, queryDate, mealType }, 'Checking for existing meal plan');
 
     const existingQuery = await db.collection('homes')
       .doc(homeId)
@@ -1451,7 +1124,7 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       .where('mealType', '==', mealType)
       .get();
 
-    logger.debug('Existing query results', {
+    req.log.debug({
       isEmpty: existingQuery.empty,
       size: existingQuery.size,
       docs: existingQuery.docs.map(doc => ({
@@ -1459,10 +1132,10 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
         date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
         mealType: doc.data().mealType
       }))
-    });
+    }, 'Existing query results');
 
     if (!existingQuery.empty) {
-      logger.warn('Conflict: Meal plan already exists', { homeId, date, mealType });
+      req.log.warn({ homeId, date, mealType }, 'Conflict: Meal plan already exists');
       return res.status(409).json({ error: 'Meal plan already exists for this date and meal type' });
     }
 
@@ -1476,11 +1149,11 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    logger.debug('Creating meal plan', {
+    req.log.debug({
       date: queryDate,
       mealType,
       plannedRecipeName: planned?.recipeName
-    });
+    }, 'Creating meal plan');
 
     const docRef = await db.collection('homes')
       .doc(homeId)
@@ -1498,14 +1171,14 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null
     };
 
-    logger.success('Meal plan created successfully', {
+    req.log.info({
       id: docRef.id,
       recipeName: data.planned?.recipeName
-    });
+    }, 'Meal plan created successfully');
 
     res.status(201).json(response);
   } catch (error) {
-    logger.error('Error creating meal plan', error);
+    req.log.error({ err: error }, 'Error creating meal plan');
     res.status(500).json({ error: 'Failed to create meal plan' });
   }
 });
@@ -1584,7 +1257,7 @@ app.put('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
       completed
     }, 'Meal plan updated');
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error updating meal plan');
+    req.log.error({ err: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error updating meal plan');
     res.status(500).json({ error: 'Failed to update meal plan' });
   }
 });
@@ -1612,7 +1285,7 @@ app.delete('/api/planner/:homeId/:planId', checkAuth, async (req, res) => {
     req.log.info({ homeId: req.params.homeId, userId: req.user.uid, planId: req.params.planId }, 'Meal plan deleted');
     res.json({ success: true });
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error deleting meal plan');
+    req.log.error({ err: error, homeId: req.params.homeId, planId: req.params.planId, userId: req.user.uid }, 'Error deleting meal plan');
     res.status(500).json({ error: 'Failed to delete meal plan' });
   }
 });
@@ -1712,7 +1385,7 @@ app.post('/api/planner/:homeId/log-meal', checkAuth, async (req, res) => {
       });
     }
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error logging meal');
     res.status(500).json({ error: 'Failed to log meal' });
   }
 });
@@ -1792,7 +1465,7 @@ app.post('/api/pantry/:homeId/deduct', checkAuth, async (req, res) => {
       itemsDeducted: consumptionLogs.length
     }, 'Ingredients deducted from pantry');
   } catch (error) {
-    req.log.error({ error: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
+    req.log.error({ err: error, homeId: req.params.homeId, userId: req.user.uid }, 'Error deducting pantry ingredients');
     res.status(500).json({ error: 'Failed to deduct ingredients' });
   }
 });
@@ -1848,7 +1521,7 @@ app.get('/api/shopping-list/:homeId', checkAuth, async (req, res) => {
 });
 
 // POST - Add item to shopping list with AI parsing
-app.post('/api/shopping-list/:homeId/items', checkAuth, async (req, res) => {
+app.post('/api/shopping-list/:homeId/items', checkAuth, aiRateLimiter, async (req, res) => {
   try {
     const userUid = req.user.uid;
     const { homeId } = req.params;
@@ -1922,7 +1595,7 @@ app.post('/api/shopping-list/:homeId/items', checkAuth, async (req, res) => {
     });
 
   } catch (error) {
-    req.log.error({ err: error, userId: req.user.uid }, 'Error adding shopping list item');
+    req.log.error({ err: error, userId: req.user.uid, homeId: req.params.homeId }, 'Error adding shopping list item');
     res.status(500).json({ error: 'Failed to add item' });
   }
 });

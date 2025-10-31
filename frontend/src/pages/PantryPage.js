@@ -7,6 +7,7 @@ import { daysToExpiryDate } from '../utils/dateUtils';
 import AddItemSection from '../components/AddItemSection';
 import PantryToolbar from '../components/PantryToolbar';
 import UnifiedListView from '../components/UnifiedListView';
+import PantryCategory from '../components/PantryCategory';
 import FilterModal from '../components/FilterModal';
 import EditItemModal from '../components/EditItemModal';
 import JSONExportModal from '../components/JSONExportModal';
@@ -25,7 +26,6 @@ export default function PantryPage() {
 
   // Core state
   const [items, setItems] = useState([]);
-  const [viewMode, setViewMode] = useState('list');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingEnhancementIds, setProcessingEnhancementIds] = useState([]);
@@ -48,6 +48,10 @@ export default function PantryPage() {
     filters,
     setFilters,
     filteredItems,
+    itemsByGroup,
+    sortedGroups,
+    groupBy,
+    setGroupBy,
     activeFiltersCount,
     clearFilters
   } = usePantryFilters(items);
@@ -197,10 +201,10 @@ export default function PantryPage() {
       <div className="container-mobile lg:max-w-none lg:px-8">
         {/* Page Header */}
         <div className="animate-fade-in mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             🥫 Pantry Manager
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-color-muted">
             Keep track of your ingredients across pantry, fridge, and freezer
           </p>
         </div>
@@ -223,10 +227,10 @@ export default function PantryPage() {
           <PantryToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
             onOpenFilter={() => setShowFilterModal(true)}
             activeFiltersCount={activeFiltersCount}
+            groupBy={groupBy}
+            onGroupByChange={setGroupBy}
             onCreateRecipe={handleCreateRecipe}
             onExportJSON={handleExportJSON}
             totalItems={totalItems}
@@ -234,24 +238,20 @@ export default function PantryPage() {
 
           {/* Error Display */}
           {displayError && (
-            <div className="mb-6 p-4 rounded-lg" style={{ 
-              backgroundColor: 'var(--color-error-light)', 
-              borderLeft: '4px solid var(--color-error)',
-              color: 'var(--color-error)' 
-            }}>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="alert alert-error mb-6">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="alert-content">
                 <span>{displayError}</span>
-                <button 
-                  onClick={() => {
-                    setError('');
-                    setItemManagerError('');
-                  }}
-                  className="ml-auto text-sm underline"
-                >
-                  Dismiss
-                </button>
               </div>
+              <button
+                onClick={() => {
+                  setError('');
+                  setItemManagerError('');
+                }}
+                className="alert-dismiss text-sm underline"
+              >
+                Dismiss
+              </button>
             </div>
           )}
 
@@ -259,23 +259,33 @@ export default function PantryPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="animate-pulse h-20 bg-gray-200 rounded-lg" 
-                     style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-                </div>
+                <div key={i} className="skeleton-card"></div>
               ))}
             </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📦</div>
+              <h3 className="text-lg font-semibold mb-2 text-color-primary">
+                No items yet
+              </h3>
+              <p className="text-sm text-color-muted">
+                Add some items to your pantry to get started
+              </p>
+            </div>
           ) : (
-            <div className="animate-slide-up pantry-items">
-              <UnifiedListView
-                items={filteredItems}
-                viewMode={viewMode}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onApplyEnhancement={handleApplyEnhancement}
-                onDismissEnhancement={handleDismissEnhancement}
-                processingEnhancementIds={processingEnhancementIds}
-                isEmpty={filteredItems.length === 0}
-              />
+            <div className="shopping-list-categories">
+              {sortedGroups.map(group => (
+                <PantryCategory
+                  key={group}
+                  category={group}
+                  items={itemsByGroup[group]}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onApplyEnhancement={handleApplyEnhancement}
+                  onDismissEnhancement={handleDismissEnhancement}
+                  processingEnhancementIds={processingEnhancementIds}
+                />
+              ))}
             </div>
           )}
         </div>

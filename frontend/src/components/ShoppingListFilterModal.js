@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 
 /**
@@ -13,6 +13,23 @@ const ShoppingListFilterModal = ({
   onClearFilters,
   homeMembers = []
 }) => {
+  // ESC key handler
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCategoryChange = (category, checked) => {
@@ -63,22 +80,18 @@ const ShoppingListFilterModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div
-        className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--bg-card)' }}
-      >
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <div className="modal-header">
+          <h2 className="modal-title">
             Filter Items
           </h2>
           <div className="flex items-center gap-2">
             {isFilterActive() && (
               <button
                 onClick={onClearFilters}
-                className="p-2 rounded-lg hover:bg-opacity-80 transition-colors flex items-center gap-1 text-sm"
-                style={{ color: 'var(--text-muted)' }}
+                className="modal-close flex items-center gap-1 text-sm"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset
@@ -86,8 +99,7 @@ const ShoppingListFilterModal = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-opacity-80 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+              className="modal-close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -95,10 +107,10 @@ const ShoppingListFilterModal = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="modal-body space-y-6">
           {/* Category Filters */}
           <div>
-            <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="font-medium mb-3 text-color-primary">
               Category
             </h3>
             <div className="space-y-2">
@@ -121,7 +133,7 @@ const ShoppingListFilterModal = ({
                       color: 'var(--color-primary)'
                     }}
                   />
-                  <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                  <span className="text-color-secondary">{label}</span>
                 </label>
               ))}
             </div>
@@ -129,7 +141,7 @@ const ShoppingListFilterModal = ({
 
           {/* Status Filter */}
           <div>
-            <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="font-medium mb-3 text-color-primary">
               Status
             </h3>
             <div className="space-y-2">
@@ -150,7 +162,7 @@ const ShoppingListFilterModal = ({
                       color: 'var(--color-primary)'
                     }}
                   />
-                  <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                  <span className="text-color-secondary">{label}</span>
                 </label>
               ))}
             </div>
@@ -159,7 +171,7 @@ const ShoppingListFilterModal = ({
           {/* User Filter - only show if multiple members */}
           {homeMembers.length > 1 && (
             <div>
-              <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="font-medium mb-3 text-color-primary">
                 Added By
               </h3>
               <div className="space-y-2">
@@ -175,7 +187,7 @@ const ShoppingListFilterModal = ({
                         color: 'var(--color-primary)'
                       }}
                     />
-                    <span style={{ color: 'var(--text-secondary)' }}>{member.name}</span>
+                    <span className="text-color-secondary">{member.name}</span>
                   </label>
                 ))}
               </div>
@@ -184,7 +196,7 @@ const ShoppingListFilterModal = ({
 
           {/* Date Added Filter */}
           <div>
-            <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="font-medium mb-3 text-color-primary">
               Date Added
             </h3>
             <div className="space-y-2">
@@ -206,7 +218,7 @@ const ShoppingListFilterModal = ({
                       color: 'var(--color-primary)'
                     }}
                   />
-                  <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                  <span className="text-color-secondary">{label}</span>
                 </label>
               ))}
             </div>

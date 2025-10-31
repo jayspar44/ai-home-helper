@@ -242,7 +242,7 @@ export default function ManagePage() {
     return (
       <div className="section-padding">
         <div className="container-mobile">
-          <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
+          <p className="text-color-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -253,40 +253,36 @@ export default function ManagePage() {
       <div className="container-mobile lg:max-w-4xl">
         {/* Page Header */}
         <div className="animate-fade-in mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             ⚙️ Manage
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-color-muted">
             Manage your profile, home settings, and preferences
           </p>
         </div>
 
         {/* ===== SECTION 1: USER MANAGEMENT ===== */}
         <div className="card mb-6">
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="p-6 border-b border-color-light">
             <div className="flex items-center gap-2 mb-1">
               <UserIcon />
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="text-lg font-semibold text-color-primary">
                 User Management
               </h2>
             </div>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm text-color-secondary">
               Update your personal information and account settings
             </p>
           </div>
 
           {/* User Name */}
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="p-6 border-b border-color-light">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>Display Name</h3>
+              <h3 className="font-medium text-color-primary">Display Name</h3>
               {!isEditingUserName && (
                 <button
                   onClick={() => setIsEditingUserName(true)}
-                  className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors"
-                  style={{
-                    color: 'var(--color-primary)',
-                    backgroundColor: 'var(--bg-tertiary)'
-                  }}
+                  className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors icon-color-primary bg-tertiary"
                 >
                   <EditIcon />
                   Edit
@@ -325,16 +321,16 @@ export default function ManagePage() {
                 </div>
               </div>
             ) : (
-              <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg text-color-secondary">
                 {profile?.name || 'Not set'}
               </p>
             )}
           </div>
 
           {/* Email (read-only) */}
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-            <h3 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Email</h3>
-            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <div className="p-6 border-b border-color-light">
+            <h3 className="font-medium mb-2 text-color-primary">Email</h3>
+            <p className="text-lg text-color-secondary">
               {profile?.email}
             </p>
           </div>
@@ -343,20 +339,16 @@ export default function ManagePage() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="font-medium mb-1 text-color-primary">
                   Logout from Roscoe
                 </h3>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-sm text-color-muted">
                   Sign out of your account
                 </p>
               </div>
               <button
                 onClick={handleLogout}
-                className="btn-base font-semibold px-6 py-2 border hover:bg-opacity-10 transition-colors"
-                style={{
-                  color: 'var(--color-error)',
-                  borderColor: 'var(--color-error)'
-                }}
+                className="btn-base btn-error font-semibold px-6 py-2"
               >
                 Logout
               </button>
@@ -367,30 +359,26 @@ export default function ManagePage() {
         {/* ===== SECTION 2: HOME MANAGEMENT (Admin Only) ===== */}
         {isAdmin && (
           <div className="card mb-6">
-            <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="p-6 border-b border-color-light">
               <div className="flex items-center gap-2 mb-1">
                 <HomeIcon />
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                <h2 className="text-lg font-semibold text-color-primary">
                   Home Management
                 </h2>
               </div>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-sm text-color-secondary">
                 Manage your home settings and members
               </p>
             </div>
 
             {/* Home Name */}
-            <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="p-6 border-b border-color-light">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>Home Name</h3>
+                <h3 className="font-medium text-color-primary">Home Name</h3>
                 {!isEditingHomeName && (
                   <button
                     onClick={() => setIsEditingHomeName(true)}
-                    className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors"
-                    style={{
-                      color: 'var(--color-primary)',
-                      backgroundColor: 'var(--bg-tertiary)'
-                    }}
+                    className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors icon-color-primary bg-tertiary"
                   >
                     <EditIcon />
                     Edit
@@ -429,15 +417,15 @@ export default function ManagePage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-lg text-color-secondary">
                   {currentHome?.name || 'Not set'}
                 </p>
               )}
             </div>
 
             {/* Add Member */}
-            <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-              <h3 className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
+            <div className="p-6 border-b border-color-light">
+              <h3 className="font-medium mb-4 text-color-primary">
                 Add New Member
               </h3>
               <form onSubmit={handleInviteMember} className="flex gap-3">
@@ -461,24 +449,23 @@ export default function ManagePage() {
 
             {/* Members List */}
             <div className="p-6">
-              <h3 className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="font-medium mb-4 text-color-primary">
                 Home Members
               </h3>
 
               {isLoadingMembers ? (
                 <div className="text-center py-4">
-                  <p style={{ color: 'var(--text-muted)' }}>Loading members...</p>
+                  <p className="text-color-muted">Loading members...</p>
                 </div>
               ) : (
                 <ul className="space-y-3">
                   {members.map(member => (
                     <li
                       key={member.id}
-                      className="flex justify-between items-center p-4 rounded-lg"
-                      style={{ backgroundColor: 'var(--bg-tertiary)' }}
+                      className="flex justify-between items-center p-4 rounded-lg bg-tertiary"
                     >
                       <div>
-                        <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                        <p className="font-medium mb-1 text-color-primary">
                           {member.name}
                           <span
                             className="ml-2 text-xs font-mono px-2 py-0.5 rounded-full"
@@ -490,19 +477,14 @@ export default function ManagePage() {
                             {member.role}
                           </span>
                         </p>
-                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-sm text-color-muted">
                           {member.email}
                         </p>
                       </div>
                       {member.role !== 'admin' && member.id !== profile?.uid && (
                         <button
                           onClick={() => handleRemoveMember(member.id, member.name)}
-                          className="btn-base text-sm font-semibold px-4 py-2"
-                          style={{
-                            backgroundColor: 'var(--color-error)',
-                            color: 'white',
-                            borderColor: 'var(--color-error)'
-                          }}
+                          className="btn-base btn-error text-sm font-semibold px-4 py-2"
                         >
                           Remove
                         </button>
@@ -517,14 +499,14 @@ export default function ManagePage() {
 
         {/* ===== SECTION 3: SETTINGS ===== */}
         <div className="card">
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="p-6 border-b border-color-light">
             <div className="flex items-center gap-2 mb-1">
               <SettingsIcon />
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="text-lg font-semibold text-color-primary">
                 Settings
               </h2>
             </div>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm text-color-secondary">
               Customize your app experience
             </p>
           </div>
@@ -533,20 +515,16 @@ export default function ManagePage() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="font-medium mb-1 text-color-primary">
                   Appearance
                 </h3>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-sm text-color-muted">
                   Switch between light and dark mode
                 </p>
               </div>
               <button
                 onClick={toggleTheme}
-                className="btn-base flex items-center gap-2 px-4 py-2"
-                style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)'
-                }}
+                className="btn-base flex items-center gap-2 px-4 py-2 bg-tertiary text-color-primary"
               >
                 {isDark ? <SunIcon /> : <MoonIcon />}
                 <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
