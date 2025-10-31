@@ -1,5 +1,7 @@
 // pantryAI.js - AI pantry management service
 
+const { parseAIJsonResponse } = require('../utils/aiHelpers');
+
 /**
  * Suggests pantry items based on user input with confidence scoring
  * Uses AI to provide specific suggestions, variations, or guidance
@@ -66,22 +68,7 @@ Return JSON format:
     const text = response.text();
 
     // Parse AI response
-    let suggestionData;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/s);
-      if (jsonMatch) {
-        suggestionData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
-    } catch (parseError) {
-      logger.error({
-        err: parseError,
-        text: text.substring(0, 200),
-        itemName
-      }, 'Error parsing AI response for suggest-item');
-      throw new Error('Failed to parse AI response');
-    }
+    const suggestionData = parseAIJsonResponse(text, logger, { itemName, context: 'suggest-item' });
 
     logger.debug({
       itemName,
@@ -135,12 +122,7 @@ Use these rules:
     // Parse AI response
     let defaultsData;
     try {
-      const jsonMatch = text.match(/\{[\s\S]*?\}/s);
-      if (jsonMatch) {
-        defaultsData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
+      defaultsData = parseAIJsonResponse(text, logger, { itemName, context: 'quick-defaults' });
     } catch (parseError) {
       logger.warn({ err: parseError, itemName }, 'Error parsing quick defaults, using fallback');
       // Return sensible fallback
@@ -225,21 +207,8 @@ If no food items are detected, return an empty array: []`;
     const response = await result.response;
     const text = response.text();
 
-    // Parse AI response
-    let detectedItems = [];
-    try {
-      // Extract JSON from response (in case there's extra text)
-      const jsonMatch = text.match(/\[.*\]/s);
-      if (jsonMatch) {
-        detectedItems = JSON.parse(jsonMatch[0]);
-      }
-    } catch (parseError) {
-      logger.error({
-        err: parseError,
-        text: text.substring(0, 200)
-      }, 'Error parsing AI detection response');
-      throw new Error('Failed to parse AI response');
-    }
+    // Parse AI response (expects array of detected items)
+    const detectedItems = parseAIJsonResponse(text, logger, { context: 'detect-items' });
 
     // Validate and format detected items
     const formattedItems = detectedItems.map(item => {

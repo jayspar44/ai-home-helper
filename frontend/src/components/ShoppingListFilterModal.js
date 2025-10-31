@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 
 /**
@@ -13,6 +13,23 @@ const ShoppingListFilterModal = ({
   onClearFilters,
   homeMembers = []
 }) => {
+  // ESC key handler
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCategoryChange = (category, checked) => {
@@ -63,8 +80,8 @@ const ShoppingListFilterModal = ({
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-container">
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title">
@@ -93,7 +110,7 @@ const ShoppingListFilterModal = ({
         <div className="modal-body space-y-6">
           {/* Category Filters */}
           <div>
-            <h3 className="font-medium mb-3" className="text-color-primary">
+            <h3 className="font-medium mb-3 text-color-primary">
               Category
             </h3>
             <div className="space-y-2">
@@ -124,7 +141,7 @@ const ShoppingListFilterModal = ({
 
           {/* Status Filter */}
           <div>
-            <h3 className="font-medium mb-3" className="text-color-primary">
+            <h3 className="font-medium mb-3 text-color-primary">
               Status
             </h3>
             <div className="space-y-2">
@@ -154,7 +171,7 @@ const ShoppingListFilterModal = ({
           {/* User Filter - only show if multiple members */}
           {homeMembers.length > 1 && (
             <div>
-              <h3 className="font-medium mb-3" className="text-color-primary">
+              <h3 className="font-medium mb-3 text-color-primary">
                 Added By
               </h3>
               <div className="space-y-2">
@@ -179,7 +196,7 @@ const ShoppingListFilterModal = ({
 
           {/* Date Added Filter */}
           <div>
-            <h3 className="font-medium mb-3" className="text-color-primary">
+            <h3 className="font-medium mb-3 text-color-primary">
               Date Added
             </h3>
             <div className="space-y-2">

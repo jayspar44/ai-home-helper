@@ -60,10 +60,9 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
   return (
     <div className="relative">
       <div
-        className="list-item"
+        className="list-item bg-tertiary"
         onClick={handleRowClick}
         style={{
-          backgroundColor: 'var(--bg-tertiary)',
           borderLeftColor: item.checked ? 'var(--color-success)' : 'var(--border-light)'
         }}
       >
@@ -89,29 +88,25 @@ const ShoppingListItem = ({ item, onCheck, onEdit, onDelete, homeMembers = [] })
               textDecoration: item.checked ? 'line-through' : 'none'
             }}>
               {item.name}
-              <span className="text-xs font-normal ml-2" style={{ color: 'var(--text-muted)' }}>
+              <span className="text-xs font-normal ml-2 text-color-muted">
                 {item.quantity} {item.unit}
               </span>
               {item.source?.name && (
-                <span className="text-xs ml-2 font-normal italic" style={{ color: 'var(--text-muted)' }}>
+                <span className="text-xs ml-2 font-normal italic text-color-muted">
                   (from {item.source.name})
                 </span>
               )}
             </div>
             {/* Metadata (time + user) */}
             {item.addedAt && (
-              <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+              <div className="section-meta mt-1">
                 {getMetadataText()}
               </div>
             )}
           </div>
 
           {/* Category badge (matching pantry location badge styling) */}
-          <div className="text-xs px-2 py-1 rounded-full" style={{
-            backgroundColor: 'var(--bg-card)',
-            color: 'var(--text-muted)',
-            border: '1px solid var(--border-light)'
-          }}>
+          <div className="badge badge-category text-xs">
             {getCategoryEmoji(item.category)}
           </div>
         </div>

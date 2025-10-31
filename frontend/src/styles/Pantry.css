@@ -2,18 +2,5 @@
    PANTRY-SPECIFIC STYLES
    ======================================== */
 
-/* === ENHANCEMENT OVERLAY === */
-/* This is unique to pantry items - AI enhancement suggestions */
-.pantry-item-enhancement {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-md);
-  border-width: 2px;
-  border-style: dashed;
-  z-index: 10;
-}
-
-[data-theme="dark"] .pantry-item-enhancement {
-  background: rgba(30, 30, 30, 0.95);
-}
+/* Currently no pantry-specific styles needed */
+/* All styling handled through shared utilities in index.css */

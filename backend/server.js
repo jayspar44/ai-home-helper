@@ -682,7 +682,7 @@ app.post('/api/pantry/suggest-item', checkAuth, aiRateLimiter, async (req, res) 
     res.json(suggestionData);
 
   } catch (error) {
-    req.log.error({ err: error, userId: req.user.uid, itemName: req.body.itemName }, 'Error in suggest-item');
+    req.log.error({ err: error, userId: req.user.uid, homeId: req.body.homeId, itemName: req.body.itemName }, 'Error in suggest-item');
     res.status(500).json({
       error: 'Failed to generate suggestions',
       details: error.message
@@ -715,7 +715,7 @@ app.post('/api/pantry/quick-defaults', checkAuth, aiRateLimiter, async (req, res
     res.json(defaultsData);
 
   } catch (error) {
-    req.log.warn({ err: error, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
+    req.log.warn({ err: error, userId: req.user.uid, homeId: req.body.homeId, itemName: req.body.itemName }, 'Error in quick-defaults, using fallback');
     // Return sensible fallback on error
     res.json({
       location: 'pantry',
@@ -1595,7 +1595,7 @@ app.post('/api/shopping-list/:homeId/items', checkAuth, aiRateLimiter, async (re
     });
 
   } catch (error) {
-    req.log.error({ err: error, userId: req.user.uid }, 'Error adding shopping list item');
+    req.log.error({ err: error, userId: req.user.uid, homeId: req.params.homeId }, 'Error adding shopping list item');
     res.status(500).json({ error: 'Failed to add item' });
   }
 });

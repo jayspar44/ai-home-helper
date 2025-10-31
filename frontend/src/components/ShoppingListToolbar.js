@@ -33,7 +33,7 @@ const ShoppingListToolbar = ({
           {/* Search Bar */}
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
+              <Search className="h-4 w-4 icon-color-muted" />
             </div>
             <input
               type="text"
@@ -47,7 +47,7 @@ const ShoppingListToolbar = ({
 
           {/* Item Count Badge */}
           {totalItems > 0 && (
-            <div className="shopping-list-item-count">
+            <div className="item-count-badge">
               {totalItems} item{totalItems !== 1 ? 's' : ''}
             </div>
           )}
@@ -63,10 +63,7 @@ const ShoppingListToolbar = ({
             <Filter className="w-4 h-4" />
             Filters
             {activeFiltersCount > 0 && (
-              <span
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
+              <span className="notification-badge">
                 {activeFiltersCount}
               </span>
             )}
@@ -77,10 +74,12 @@ const ShoppingListToolbar = ({
             <select
               value={groupBy}
               onChange={(e) => onGroupByChange(e.target.value)}
-              className="btn-base btn-ghost px-4 py-2.5 pr-8 appearance-none cursor-pointer"
+              className="btn-base btn-ghost px-4 py-2.5 appearance-none cursor-pointer"
               style={{
                 backgroundImage: 'none',
-                lineHeight: '1.5'
+                lineHeight: '1.5',
+                paddingRight: '2.5rem',
+                minWidth: '160px'
               }}
             >
               {groupByOptions.map(option => (
@@ -90,8 +89,7 @@ const ShoppingListToolbar = ({
               ))}
             </select>
             <ChevronDown
-              className="w-4 h-4 absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
-              style={{ color: 'var(--text-muted)' }}
+              className="w-4 h-4 icon-color-muted absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
             />
           </div>
 
@@ -99,12 +97,7 @@ const ShoppingListToolbar = ({
           {checkedItems > 0 && (
             <button
               onClick={onClearChecked}
-              className="btn-base px-4 py-2 text-sm font-medium flex items-center gap-2 transition-all ml-auto"
-              style={{
-                backgroundColor: 'var(--color-error)',
-                color: 'white',
-                border: 'none'
-              }}
+              className="btn-base btn-error px-4 py-2 text-sm font-medium flex items-center gap-2 transition-all ml-auto"
             >
               <Trash2 size={16} />
               Clear {checkedItems} Checked

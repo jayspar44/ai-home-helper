@@ -2,17 +2,26 @@
 
 const rateLimit = require('express-rate-limit');
 
+// Environment-based configuration with defaults
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || (60 * 60 * 1000); // 1 hour default
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX) || 100; // 100 requests default
+
 /**
  * Rate limiter for AI endpoints
- * Limits requests to 100 per hour per user (based on Firebase UID)
+ * Configurable via environment variables (defaults: 100 requests per hour per user)
  * Prevents abuse and runaway scripts while allowing generous legitimate use
+ *
+ * Environment Variables:
+ * - RATE_LIMIT_WINDOW_MS: Window duration in milliseconds (default: 3600000 = 1 hour)
+ * - RATE_LIMIT_MAX: Maximum requests per window (default: 100)
+ * - NODE_ENV: Controls rate limit header visibility (production = hidden)
  *
  * Usage: Apply to AI endpoints that call Gemini API
  * Example: app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {...})
  */
 const aiRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour window
-  max: 100, // Limit each user to 100 requests per hour
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_MAX,
 
   // Use Firebase UID as the key for per-user rate limiting
   keyGenerator: (req, res) => {
@@ -33,8 +42,9 @@ const aiRateLimiter = rateLimit({
   // Return 429 status code
   statusCode: 429,
 
-  // Standard headers for rate limit info
-  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  // Rate limit headers: Disabled in production to prevent attackers from monitoring limits
+  // Enabled in development for debugging legitimate user experience
+  standardHeaders: process.env.NODE_ENV !== 'production', // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
 
   // Skip successful requests that don't consume resources

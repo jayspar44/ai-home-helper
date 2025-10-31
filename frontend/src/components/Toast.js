@@ -44,18 +44,10 @@ const Toast = ({ message, action, onAction, onDismiss, type = 'success', duratio
   const Icon = style.icon;
 
   return (
-    <div 
-      className={`toast fixed top-4 right-4 z-50 transition-all duration-200 ${
+    <div
+      className={`toast ${type === 'error' ? 'toast-error' : type === 'info' ? 'toast-info' : ''} transition-all duration-200 ${
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
-      style={{
-        backgroundColor: style.background,
-        color: 'white',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-lg)',
-        maxWidth: '400px',
-        minWidth: '300px'
-      }}
     >
       <div className="flex items-center gap-3 p-4">
         <Icon className="w-5 h-5 flex-shrink-0" />

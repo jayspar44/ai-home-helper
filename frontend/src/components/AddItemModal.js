@@ -24,37 +24,25 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
   if (action === 'accept') {
     const suggestion = suggestions[0];
     return (
-      <div className="card p-4 mt-4" style={{ 
-        backgroundColor: 'var(--color-success-light)', 
-        borderLeft: '4px solid var(--color-success)' 
-      }}>
+      <div className="card suggestion-panel suggestion-panel-success p-4 mt-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h4 className="font-semibold mb-1" style={{ color: 'var(--color-success)' }}>{suggestion.name}</h4>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+            <h4 className="font-semibold mb-1 icon-color-success">{suggestion.name}</h4>
+            <p className="text-sm mb-1 text-color-secondary">
               Quantity: {suggestion.quantity} • Shelf Life: {suggestion.shelfLife}
             </p>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>AI Confidence: {Math.round(confidence * 100)}%</p>
+            <p className="text-xs text-color-muted">AI Confidence: {Math.round(confidence * 100)}%</p>
           </div>
           <div className="flex flex-col gap-2">
-            <button 
-              onClick={() => onDirectAdd(suggestion)} 
-              className="btn-base px-4 py-2 text-sm"
-              style={{ 
-                backgroundColor: 'var(--color-success)', 
-                color: 'white',
-                borderColor: 'var(--color-success)'
-              }}
+            <button
+              onClick={() => onDirectAdd(suggestion)}
+              className="btn-base btn-success px-4 py-2 text-sm"
             >
               Use This
             </button>
-            <button 
-              onClick={() => onCustomize(suggestion)} 
-              className="btn-base btn-ghost px-4 py-2 text-sm"
-              style={{ 
-                borderColor: 'var(--color-success)',
-                color: 'var(--color-success)'
-              }}
+            <button
+              onClick={() => onCustomize(suggestion)}
+              className="btn-base btn-ghost px-4 py-2 text-sm icon-color-success border-color-success"
             >
               Customize
             </button>
@@ -66,13 +54,10 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 
   if (action === 'choose') {
     return (
-      <div className="card p-4 mt-4" style={{ 
-        backgroundColor: 'var(--color-warning-light)', 
-        borderLeft: '4px solid var(--color-warning)' 
-      }}>
+      <div className="card suggestion-panel suggestion-panel-warning p-4 mt-4">
         <div className="mb-3">
-          <h4 className="font-semibold" style={{ color: 'var(--color-warning)' }}>"{inputQuery}" could be several things:</h4>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{guidance.message}</p>
+          <h4 className="font-semibold icon-color-warning">"{inputQuery}" could be several things:</h4>
+          <p className="text-sm mt-1 text-color-secondary">{guidance.message}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {suggestions.map((option, idx) => (
@@ -80,19 +65,18 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
               key={idx}
               type="button"
               onClick={() => onDirectAdd(option)}
-              className="text-left p-3 card-interactive transition-colors"
-              style={{ borderColor: 'var(--border-light)' }}
+              className="text-left p-3 card-interactive transition-colors border border-color-light"
             >
-              <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{option.name}</div>
-              <div className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{option.quantity}</div>
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>~{option.shelfLife}</div>
+              <div className="font-medium mb-1 text-color-primary">{option.name}</div>
+              <div className="text-sm mb-1 text-color-secondary">{option.quantity}</div>
+              <div className="text-xs text-color-muted">~{option.shelfLife}</div>
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
-          <button onClick={onTryAgain} className="hover:underline text-sm" style={{ color: 'var(--color-primary)' }}>✏️ Try a more specific name</button>
-          <button onClick={onOpenPhotoModal} className="hover:underline text-sm" style={{ color: 'var(--color-success)' }}>📷 Upload photo instead</button>
-          <button onClick={onProceed} className="hover:underline text-sm" style={{ color: 'var(--text-muted)' }}>Enter manually anyway</button>
+        <div className="flex flex-wrap gap-2 pt-3 border-t border-color-light">
+          <button onClick={onTryAgain} className="hover:underline text-sm icon-color-primary">✏️ Try a more specific name</button>
+          <button onClick={onOpenPhotoModal} className="hover:underline text-sm icon-color-success">📷 Upload photo instead</button>
+          <button onClick={onProceed} className="hover:underline text-sm text-color-muted">Enter manually anyway</button>
         </div>
       </div>
     );
@@ -100,41 +84,32 @@ const SuggestionPanel = ({ suggestionResult, onDirectAdd, onCustomize, onTryAgai
 
   if (action === 'specify') {
     return (
-      <div className="card p-4 mt-4" style={{ 
-        backgroundColor: 'var(--color-error-light)', 
-        borderLeft: '4px solid var(--color-error)' 
-      }}>
+      <div className="card suggestion-panel suggestion-panel-error p-4 mt-4">
         <div className="text-center">
-          <h4 className="font-semibold mb-2" style={{ color: 'var(--color-error)' }}>Need more details about "{inputQuery}"</h4>
-          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>{guidance.message}</p>
-          <div className="card p-3 mb-4" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <div className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
+          <h4 className="font-semibold mb-2 text-color-error">Need more details about "{inputQuery}"</h4>
+          <p className="mb-4 text-color-secondary">{guidance.message}</p>
+          <div className="card bg-card p-3 mb-4">
+            <div className="text-sm space-y-1 text-color-secondary">
               {guidance.examples.map((ex, i) => <div key={i}>{ex}</div>)}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button 
-              onClick={onTryAgain} 
+            <button
+              onClick={onTryAgain}
               className="btn-base btn-primary px-6 py-2"
             >
               ✏️ Be More Specific
             </button>
-            <button 
-              onClick={onOpenPhotoModal} 
-              className="btn-base px-6 py-2"
-              style={{ 
-                backgroundColor: 'var(--color-success)', 
-                color: 'white',
-                borderColor: 'var(--color-success)'
-              }}
+            <button
+              onClick={onOpenPhotoModal}
+              className="btn-base btn-success px-6 py-2"
             >
               📷 Upload Photo
             </button>
           </div>
-          <button 
-            onClick={onProceed} 
-            className="hover:underline text-sm mt-3 block mx-auto" 
-            style={{ color: 'var(--text-muted)' }}
+          <button
+            onClick={onProceed}
+            className="hover:underline text-sm mt-3 block mx-auto text-color-muted"
           >
             Skip suggestions and enter manually
           </button>
@@ -292,16 +267,15 @@ const AddItemModal = ({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'var(--bg-card)' }}>
+        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-card">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <div className="flex items-center justify-between p-6 border-b border-color-light">
+            <h2 className="text-xl font-semibold text-color-primary">
               Add New Item
             </h2>
             <button
               onClick={handleClose}
-              className="p-2 rounded-lg hover:bg-opacity-80 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+              className="p-2 rounded-lg hover:bg-opacity-80 transition-colors text-color-muted"
             >
               <X className="w-5 h-5" />
             </button>
@@ -309,19 +283,17 @@ const AddItemModal = ({
 
           {/* Show tabs only for photo mode */}
           {activeTab === 'photo' && (
-            <div className="flex border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="flex border-b border-color-light">
               <button
                 onClick={() => setActiveTab('ai')}
-                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:bg-gray-50"
-                style={{ color: 'var(--text-muted)' }}
+                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:bg-gray-50 text-color-muted"
               >
                 <Bot className="w-4 h-4" />
                 Back to AI Suggestions
               </button>
               <button
-                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2"
-                style={{ 
-                  color: 'var(--color-primary)',
+                className="flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2 icon-color-primary"
+                style={{
                   borderBottomColor: 'var(--color-primary)'
                 }}
               >
@@ -336,7 +308,7 @@ const AddItemModal = ({
             {activeTab === 'ai' && (
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="aiItemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  <label htmlFor="aiItemName" className="block text-sm font-medium mb-2 text-color-secondary">
                     What item would you like to add?
                   </label>
                   <input
@@ -356,20 +328,20 @@ const AddItemModal = ({
 
                 {isLoadingSuggestions && (
                   <div className="text-center py-8">
-                    <div className="animate-pulse text-lg mb-2" style={{ color: 'var(--color-primary)' }}>
+                    <div className="animate-pulse text-lg mb-2 icon-color-primary">
                       Getting AI suggestions...
                     </div>
-                    <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <div className="text-sm text-color-muted">
                       Analyzing "{formData.name}"
                     </div>
                   </div>
                 )}
 
                 {error && !suggestionResult && (
-                  <div className="mt-4 p-4 rounded-lg" style={{ 
-                    backgroundColor: 'var(--color-error-light)', 
+                  <div className="mt-4 p-4 rounded-lg" style={{
+                    backgroundColor: 'var(--color-error-light)',
                     borderLeft: '4px solid var(--color-error)',
-                    color: 'var(--color-error)' 
+                    color: 'var(--color-error)'
                   }}>
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -392,47 +364,47 @@ const AddItemModal = ({
                   <form onSubmit={handleManualSubmit} className="mt-6 space-y-4 animate-slide-up">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Quantity</label>
-                        <input 
-                          type="text" 
-                          value={formData.quantity} 
+                        <label htmlFor="quantity" className="block text-sm font-medium mb-2 text-color-secondary">Quantity</label>
+                        <input
+                          type="text"
+                          value={formData.quantity}
                           onChange={e => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                          className="input-base focus-ring w-full" 
+                          className="input-base focus-ring w-full"
                           placeholder="e.g., 1 dozen"
                         />
                       </div>
                       <div>
-                        <label htmlFor="expiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Expires on</label>
+                        <label htmlFor="expiresAt" className="block text-sm font-medium mb-2 text-color-secondary">Expires on</label>
                         <input
                           type="date"
                           id="expiresAt"
                           value={formData.expiresAt}
                           onChange={e => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
-                          className="input-base focus-ring w-full" 
+                          className="input-base focus-ring w-full"
                           placeholder="e.g., 7"
                         />
                       </div>
                       <div>
-                        <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Location</label>
+                        <label htmlFor="location" className="block text-sm font-medium mb-2 text-color-secondary">Location</label>
                         <LocationSelect 
                           value={formData.location} 
                           onChange={value => setFormData(prev => ({ ...prev, location: value }))}
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-                      <button 
-                        type="button" 
+                    <div className="flex justify-end gap-3 pt-4 border-t border-color-light">
+                      <button
+                        type="button"
                         onClick={() => {
                           setShowManualForm(false);
                           setSuggestionResult(null);
-                        }} 
+                        }}
                         className="btn-base btn-ghost"
                       >
                         Back
                       </button>
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         className="btn-base btn-primary"
                       >
                         Add Item
@@ -443,12 +415,11 @@ const AddItemModal = ({
 
                 {/* Manual Add Option */}
                 {!showManualForm && !isLoadingSuggestions && (
-                  <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
-                    <button 
+                  <div className="text-center pt-4 border-t border-color-light">
+                    <button
                       type="button"
                       onClick={() => setShowManualForm(true)}
-                      className="text-sm underline hover:no-underline"
-                      style={{ color: 'var(--text-muted)' }}
+                      className="text-sm underline hover:no-underline text-color-muted"
                     >
                       Enter details manually instead
                     </button>
@@ -461,7 +432,7 @@ const AddItemModal = ({
               <form onSubmit={handleManualSubmit}>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="itemName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <label htmlFor="itemName" className="block text-sm font-medium mb-2 text-color-secondary">
                       Item Name *
                     </label>
                     <input
@@ -475,24 +446,24 @@ const AddItemModal = ({
                       required
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label htmlFor="quantity" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      <label htmlFor="quantity" className="block text-sm font-medium mb-2 text-color-secondary">
                         Quantity
                       </label>
-                      <input 
-                        type="text" 
-                        id="quantity" 
-                        value={formData.quantity} 
+                      <input
+                        type="text"
+                        id="quantity"
+                        value={formData.quantity}
                         onChange={e => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                        className="input-base focus-ring w-full" 
+                        className="input-base focus-ring w-full"
                         placeholder="e.g., 1 dozen"
                       />
                     </div>
-                    
+
                     <div>
-                      <label htmlFor="expiresAt" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      <label htmlFor="expiresAt" className="block text-sm font-medium mb-2 text-color-secondary">
                         Expires on
                       </label>
                       <input
@@ -506,26 +477,26 @@ const AddItemModal = ({
                     </div>
                     
                     <div>
-                      <label htmlFor="location" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      <label htmlFor="location" className="block text-sm font-medium mb-2 text-color-secondary">
                         Location
                       </label>
-                      <LocationSelect 
-                        value={formData.location} 
+                      <LocationSelect
+                        value={formData.location}
                         onChange={value => setFormData(prev => ({ ...prev, location: value }))}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end gap-3 pt-4">
-                    <button 
-                      type="button" 
-                      onClick={handleClose} 
+                    <button
+                      type="button"
+                      onClick={handleClose}
                       className="btn-base btn-ghost"
                     >
                       Cancel
                     </button>
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       className="btn-base btn-primary"
                     >
                       Add Item
@@ -538,14 +509,14 @@ const AddItemModal = ({
 
             {activeTab === 'photo' && (
               <div className="text-center py-8">
-                <Camera className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Camera className="w-16 h-16 mx-auto mb-4 icon-color-muted" />
+                <h3 className="text-lg font-semibold mb-2 text-color-primary">
                   Upload Photo for AI Detection
                 </h3>
-                <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+                <p className="mb-6 text-color-secondary">
                   Take or upload a photo of your items and let AI detect and add them automatically.
                 </p>
-                <button 
+                <button
                   onClick={() => setShowAIModal(true)}
                   className="btn-base btn-primary px-8 py-3"
                 >
@@ -556,10 +527,10 @@ const AddItemModal = ({
             )}
 
             {error && suggestionResult && (
-              <div className="mt-4 p-4 rounded-lg" style={{ 
-                backgroundColor: 'var(--color-error-light)', 
+              <div className="mt-4 p-4 rounded-lg" style={{
+                backgroundColor: 'var(--color-error-light)',
                 borderLeft: '4px solid var(--color-error)',
-                color: 'var(--color-error)' 
+                color: 'var(--color-error)'
               }}>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />

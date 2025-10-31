@@ -135,10 +135,10 @@ const AddItemSection = ({
           {/* Camera Upload Card - Visually Prominent but Compact */}
           <div
             onClick={() => setShowAIModal(true)}
-            className="card cursor-pointer hover-lift transition-all duration-200 p-4 relative overflow-hidden"
+            className="card cursor-pointer hover-lift transition-all duration-200 p-4 relative overflow-hidden border-2"
             style={{
               backgroundColor: 'var(--color-primary-light)',
-              border: '2px solid var(--color-primary)'
+              borderColor: 'var(--color-primary)'
             }}
           >
             {/* Gradient overlay for visual interest */}
@@ -150,25 +150,21 @@ const AddItemSection = ({
             />
 
             <div className="relative z-10 flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
+              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-color-primary">
                 <Camera className="w-6 h-6 text-white" />
               </div>
 
               <div className="flex-1">
-                <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="text-base font-semibold mb-1 text-color-primary">
                   Snap to Add
                 </h3>
 
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-sm text-color-secondary">
                   Take a photo to add items instantly with AI
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0"
-                   style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 bg-color-primary text-white">
                 <Sparkles className="w-3 h-3" />
                 AI Powered
               </div>
@@ -177,7 +173,7 @@ const AddItemSection = ({
 
           {/* Text Entry Card - Compact */}
           <div className="card p-4">
-            <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="text-base font-semibold mb-3 text-color-primary">
               Quick Add by Name
             </h3>
 

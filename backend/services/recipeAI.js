@@ -1,5 +1,7 @@
 // recipeAI.js - AI recipe generation service
 
+const { parseAIJsonResponse } = require('../utils/aiHelpers');
+
 /**
  * Generates one or more recipes based on provided ingredients and preferences
  * Uses Google Gemini AI to create detailed recipes with pantry integration
@@ -167,53 +169,49 @@ Make sure the recipe is practical, delicious, and uses the provided ingredients 
  */
 function parseRecipeResponse(text, servingSize, pantryItems = [], originalIngredients = [], logger) {
   try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const jsonText = jsonMatch[0];
-      const parsed = JSON.parse(jsonText);
+    const parsed = parseAIJsonResponse(text, logger, { context: 'parse-recipe' });
 
-      // Identify which ingredients come from pantry and which are missing
-      const recipeIngredients = parsed.ingredients || [];
-      const pantryIngredients = [];
-      const missingIngredients = [];
+    // Identify which ingredients come from pantry and which are missing
+    const recipeIngredients = parsed.ingredients || [];
+    const pantryIngredients = [];
+    const missingIngredients = [];
 
-      if (pantryItems && pantryItems.length > 0) {
-        const pantryNames = pantryItems.map(item => item.name.toLowerCase());
+    if (pantryItems && pantryItems.length > 0) {
+      const pantryNames = pantryItems.map(item => item.name.toLowerCase());
 
-        recipeIngredients.forEach(ingredient => {
-          const ingredientLower = ingredient.toLowerCase();
-          const isFromPantry = pantryNames.some(pantryName =>
-            ingredientLower.includes(pantryName) || pantryName.includes(ingredientLower)
+      recipeIngredients.forEach(ingredient => {
+        const ingredientLower = ingredient.toLowerCase();
+        const isFromPantry = pantryNames.some(pantryName =>
+          ingredientLower.includes(pantryName) || pantryName.includes(ingredientLower)
+        );
+
+        if (isFromPantry) {
+          pantryIngredients.push(ingredient);
+        } else {
+          // Check if it's not in original ingredients either
+          const isOriginal = originalIngredients.some(orig =>
+            ingredientLower.includes(orig.toLowerCase()) || orig.toLowerCase().includes(ingredientLower)
           );
-
-          if (isFromPantry) {
-            pantryIngredients.push(ingredient);
-          } else {
-            // Check if it's not in original ingredients either
-            const isOriginal = originalIngredients.some(orig =>
-              ingredientLower.includes(orig.toLowerCase()) || orig.toLowerCase().includes(ingredientLower)
-            );
-            if (!isOriginal) {
-              missingIngredients.push(ingredient);
-            }
+          if (!isOriginal) {
+            missingIngredients.push(ingredient);
           }
-        });
-      }
-
-      return {
-        title: parsed.title || "Delicious Recipe",
-        description: parsed.description || "A wonderful meal made with your ingredients",
-        prepTime: parsed.prepTime || "15 minutes",
-        cookTime: parsed.cookTime || "30 minutes",
-        servings: servingSize,
-        difficulty: parsed.difficulty || "Medium",
-        ingredients: recipeIngredients,
-        instructions: parsed.instructions || [],
-        tips: parsed.tips || ["Enjoy your meal!"],
-        pantryIngredients: pantryIngredients,
-        missingIngredients: missingIngredients
-      };
+        }
+      });
     }
+
+    return {
+      title: parsed.title || "Delicious Recipe",
+      description: parsed.description || "A wonderful meal made with your ingredients",
+      prepTime: parsed.prepTime || "15 minutes",
+      cookTime: parsed.cookTime || "30 minutes",
+      servings: servingSize,
+      difficulty: parsed.difficulty || "Medium",
+      ingredients: recipeIngredients,
+      instructions: parsed.instructions || [],
+      tips: parsed.tips || ["Enjoy your meal!"],
+      pantryIngredients: pantryIngredients,
+      missingIngredients: missingIngredients
+    };
   } catch (error) {
     logger.error({ err: error }, 'Error parsing recipe response');
   }

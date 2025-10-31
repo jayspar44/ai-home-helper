@@ -123,10 +123,10 @@ const ShoppingList = () => {
       <div className="container-mobile lg:max-w-none lg:px-8">
         {/* Page Header */}
         <div className="animate-fade-in mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             🛒 Shopping List
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-color-muted">
             Add items with natural language like "2 lbs chicken" or "milk"
           </p>
         </div>

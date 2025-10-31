@@ -941,6 +941,63 @@ input, textarea, select {
   margin-right: 6px;
 }
 
+/* === BADGE VARIANTS === */
+/* Recipe badge - primary brand color for recipes from library */
+.badge-recipe {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* Location badge - neutral for pantry locations */
+.badge-location {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
+/* Category badge - neutral for shopping/pantry categories */
+.badge-category {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
+/* Manual entry badge - muted for user-entered items */
+.badge-manual {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* AI badge - primary brand color for AI-detected items */
+.badge-ai {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Expired badge - error color for expired items */
+.badge-expired {
+  background: var(--color-error);
+  color: white;
+}
+
+/* Expiring soon badge - warning color for items expiring soon */
+.badge-expiring {
+  background: var(--color-warning);
+  color: white;
+}
+
+/* Checked item badge - success color */
+.badge-checked {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+/* Unchecked item badge - neutral */
+.badge-unchecked {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
 /* === EMPTY STATES === */
 .empty-state {
   display: flex;
@@ -1184,4 +1241,280 @@ input, textarea, select {
 
 .bg-card {
   background-color: var(--bg-card);
+}
+
+.bg-overlay {
+  background-color: var(--bg-overlay);
+}
+
+.bg-color-primary {
+  background-color: var(--color-primary);
+}
+
+.backdrop-blur {
+  backdrop-filter: blur(10px);
+}
+
+/* === TOAST COMPONENT === */
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  background-color: var(--color-success);
+  color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+  min-width: 300px;
+  transition: all var(--transition-fast);
+}
+
+.toast-error {
+  background-color: var(--color-error);
+}
+
+.toast-info {
+  background-color: var(--color-primary);
+}
+
+/* === COUNT BADGES === */
+.item-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--text-xs);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+/* === BUTTON VARIANTS === */
+.btn-error {
+  background: var(--color-error);
+  color: white;
+  border: none;
+}
+
+.btn-error:hover:not(:disabled) {
+  background: #DC2626;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: white;
+  border: none;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #D97706;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: white;
+  border: none;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* === SUGGESTION PANELS === */
+.suggestion-panel {
+  padding: var(--spacing-2);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid;
+}
+
+.suggestion-panel-success {
+  background: var(--color-success-light);
+  border-left-color: var(--color-success);
+}
+
+.suggestion-panel-warning {
+  background: var(--color-warning-light);
+  border-left-color: var(--color-warning);
+}
+
+.suggestion-panel-error {
+  background: var(--color-error-light);
+  border-left-color: var(--color-error);
+}
+
+/* === ICON COLORS === */
+.icon-color-primary {
+  color: var(--color-primary);
+}
+
+.icon-color-muted {
+  color: var(--text-muted);
+}
+
+.icon-color-error {
+  color: var(--color-error);
+}
+
+.icon-color-success {
+  color: var(--color-success);
+}
+
+.icon-color-warning {
+  color: var(--color-warning);
+}
+
+/* === AVATAR === */
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  border-radius: 50%;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-sm);
+}
+
+.avatar-md {
+  width: 40px;
+  height: 40px;
+  font-size: var(--text-base);
+}
+
+.avatar-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* === FORM UTILITIES === */
+/* Consistent form input styling using design tokens */
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-tertiary);
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: all var(--transition-fast);
+  resize: none;
+  font-family: inherit;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.1);
+}
+
+.form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.form-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: all var(--transition-fast);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.1);
+}
+
+.form-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-tertiary);
+}
+
+/* === SECTION UTILITIES === */
+/* Info box for displaying contextual information */
+.section-info-box {
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-secondary);
+}
+
+/* Metadata text styling (time, user, etc.) */
+.section-meta {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Section header with consistent spacing */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2);
+  border-bottom: 1px solid var(--border-light);
 }

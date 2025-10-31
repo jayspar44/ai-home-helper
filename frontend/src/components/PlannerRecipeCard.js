@@ -31,12 +31,11 @@ export default function PlannerRecipeCard({
     return (
       <div
         onClick={onClick}
-        className="recipe-card-compact p-2 rounded-lg cursor-pointer transition-colors hover:bg-opacity-80"
-        style={{ backgroundColor: 'var(--bg-tertiary)' }}
+        className="recipe-card-compact bg-tertiary p-2 rounded-lg cursor-pointer transition-colors hover:bg-opacity-80"
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+            <div className="font-medium text-sm truncate text-color-primary">
               {recipeName}
             </div>
             {ingredientStatus && (
@@ -55,7 +54,7 @@ export default function PlannerRecipeCard({
             )}
           </div>
           {servings && (
-            <div className="flex items-center gap-1 text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
+            <div className="flex items-center gap-1 text-xs ml-2 text-color-muted">
               <UsersIcon />
               <span>{servings}</span>
             </div>
@@ -68,20 +67,16 @@ export default function PlannerRecipeCard({
   return (
     <div
       onClick={onClick}
-      className="recipe-card p-3 rounded-lg cursor-pointer transition-colors hover:bg-opacity-80 border"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        borderColor: 'var(--border-light)'
-      }}
+      className="recipe-card bg-card p-3 rounded-lg cursor-pointer transition-colors hover:bg-opacity-80 border border-color-light"
     >
       {/* Recipe Header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="font-semibold text-sm truncate text-color-primary">
             {recipeName}
           </h3>
           {recipe?.description && (
-            <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs mt-1 line-clamp-2 text-color-secondary">
               {recipe.description}
             </p>
           )}
@@ -91,13 +86,13 @@ export default function PlannerRecipeCard({
       {/* Recipe Meta Info */}
       <div className="flex items-center gap-3 mb-2">
         {servings && (
-          <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex items-center gap-1 text-xs text-color-muted">
             <UsersIcon />
             <span>{servings}</span>
           </div>
         )}
         {cookingTime && (
-          <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex items-center gap-1 text-xs text-color-muted">
             <ClockIcon />
             <span>{cookingTime}</span>
           </div>
@@ -108,7 +103,7 @@ export default function PlannerRecipeCard({
       {ingredientStatus && showIngredientStatus && (
         <div className="ingredient-status">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-xs font-medium text-color-secondary">
               Ingredients
             </span>
             <div className="flex items-center gap-1">
@@ -126,10 +121,7 @@ export default function PlannerRecipeCard({
           </div>
 
           {/* Progress bar */}
-          <div
-            className="w-full h-1 rounded-full overflow-hidden"
-            style={{ backgroundColor: 'var(--border-light)' }}
-          >
+          <div className="w-full h-1 rounded-full overflow-hidden bg-tertiary">
             <div
               className="h-full transition-all"
               style={{
@@ -146,10 +138,10 @@ export default function PlannerRecipeCard({
           {/* Missing ingredients warning */}
           {ingredientStatus.missing.length > 0 && (
             <div className="mt-2">
-              <div className="text-xs font-medium mb-1" style={{ color: 'var(--color-error)' }}>
+              <div className="text-xs font-medium mb-1 text-color-error">
                 Missing:
               </div>
-              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <div className="text-xs text-color-secondary">
                 {ingredientStatus.missing.slice(0, 3).join(', ')}
                 {ingredientStatus.missing.length > 3 && ` +${ingredientStatus.missing.length - 3} more`}
               </div>
@@ -161,7 +153,7 @@ export default function PlannerRecipeCard({
       {/* Key Ingredients Preview */}
       {recipe?.ingredients && recipe.ingredients.length > 0 && !showIngredientStatus && (
         <div className="key-ingredients">
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-xs text-color-muted">
             {recipe.ingredients.slice(0, 3).map(ing => ing.name || ing).join(', ')}
             {recipe.ingredients.length > 3 && ` +${recipe.ingredients.length - 3} more`}
           </div>

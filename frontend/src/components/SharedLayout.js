@@ -85,14 +85,14 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
-      
+    <div className="min-h-screen bg-secondary text-color-primary">
+
       {/* ===== DESKTOP SIDEBAR ===== */}
-      <aside className="desktop-only fixed left-0 top-0 h-full z-30" style={{ width: 'var(--sidebar-width)', backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border-light)' }}>
+      <aside className="desktop-only fixed left-0 top-0 h-full z-30 bg-card border-r border-color-light" style={{ width: 'var(--sidebar-width)' }}>
         <div className="flex flex-col h-full">
-          
+
           {/* Sidebar Header */}
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="p-6 border-b border-color-light">
             <div className="flex items-center gap-3 mb-2">
               {/* Roscoe Logo */}
               <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,55 +100,52 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
                 <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
               </svg>
               <div>
-                <h1 className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Roscoe</h1>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Home Helper</p>
+                <h1 className="font-bold text-xl text-color-primary">Roscoe</h1>
+                <p className="text-xs text-color-muted">Home Helper</p>
               </div>
             </div>
             <VersionDisplay />
           </div>
-          
+
           {/* User Profile */}
-          <div className="p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="p-4 border-b border-color-light">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
+              <div className="avatar avatar-md avatar-primary">
                 {profile.name?.charAt(0) || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{profile.name}</p>
-                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{profile?.email}</p>
+                <p className="font-medium truncate text-color-primary">{profile.name}</p>
+                <p className="text-xs truncate text-color-muted">{profile?.email}</p>
               </div>
             </div>
           </div>
-          
+
           {/* Home Selector */}
           {profile?.homes && profile.homes.length > 0 && (
-            <div className="p-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="p-4 border-b border-color-light">
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowHomeDropdown(!showHomeDropdown)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-opacity-80"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                  className="w-full flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-opacity-80 bg-tertiary text-color-primary"
                 >
                   <span className="font-medium">{currentHome?.name || 'Select Home'}</span>
                   <ChevronDownIcon />
                 </button>
-                
+
                 {showHomeDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-lg shadow-lg border z-50" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-medium)' }}>
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-lg shadow-lg border border-color-medium z-50 bg-card">
                     <div className="py-2">
                       {profile.homes.map(home => (
                         <button
                           key={home.id}
                           onClick={() => handleHomeChange(home.id)}
-                          className="w-full text-left px-4 py-3 hover:bg-opacity-80 flex items-center justify-between transition-colors"
-                          style={{ 
-                            backgroundColor: selectedHomeId === home.id ? 'var(--bg-tertiary)' : 'transparent',
-                            ':hover': { backgroundColor: 'var(--bg-tertiary)' }
-                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-opacity-80 flex items-center justify-between transition-colors ${
+                            selectedHomeId === home.id ? 'bg-tertiary' : ''
+                          }`}
                         >
                           <div>
-                            <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{home.name}</div>
-                            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Role: {home.role}</div>
+                            <div className="font-medium text-color-primary">{home.name}</div>
+                            <div className="text-xs text-color-muted">Role: {home.role}</div>
                           </div>
                           {selectedHomeId === home.id && <CheckIcon />}
                         </button>
@@ -169,14 +166,9 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
                   to={path}
                   className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${
                     isActive
-                      ? 'text-white shadow-sm'
-                      : 'hover:bg-opacity-80'
+                      ? 'bg-color-primary text-white shadow-sm'
+                      : 'text-color-primary hover:bg-tertiary'
                   }`}
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
-                    color: isActive ? 'white' : 'var(--text-primary)',
-                    ':hover': { backgroundColor: isActive ? 'var(--color-primary)' : 'var(--bg-tertiary)' }
-                  })}
                   end
                 >
                   <span className="text-xl">{emoji}</span>
@@ -190,10 +182,7 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
       </aside>
 
       {/* ===== MOBILE HEADER ===== */}
-      <header className="mobile-only sticky top-0 z-20 border-b" style={{
-        backgroundColor: 'var(--bg-overlay)',
-        borderColor: 'var(--border-light)',
-        backdropFilter: 'blur(10px)',
+      <header className="mobile-only sticky top-0 z-20 border-b bg-overlay backdrop-blur border-color-light" style={{
         height: 'var(--header-height)'
       }}>
         <div className="flex items-center justify-between h-full px-4">
@@ -207,7 +196,7 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
                 <path d="M50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80V20Z" fill="#A7F3D0"/>
               </svg>
               <div className="flex flex-col">
-                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Roscoe</span>
+                <span className="font-bold text-lg text-color-primary">Roscoe</span>
                 <VersionDisplay />
               </div>
             </div>
@@ -221,9 +210,7 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
       </main>
 
       {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
-      <nav className="mobile-only fixed bottom-0 left-0 right-0 border-t z-10" style={{
-        backgroundColor: 'var(--bg-card)',
-        borderColor: 'var(--border-light)',
+      <nav className="mobile-only fixed bottom-0 left-0 right-0 border-t z-10 bg-card border-color-light" style={{
         height: 'var(--bottom-nav-height)'
       }}>
         <div className="flex justify-around items-center h-full px-2">
@@ -232,12 +219,8 @@ export default function SharedLayout({ profile, onLogout, userToken, refreshProf
               key={path}
               to={path}
               className={({ isActive }) => `flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-lg transition-all min-w-0 flex-1 ${
-                isActive ? 'text-white' : ''
+                isActive ? 'bg-color-primary text-white' : 'text-color-muted'
               }`}
-              style={({ isActive }) => ({
-                backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
-                color: isActive ? 'white' : 'var(--text-muted)'
-              })}
               end
             >
               <span className="text-xl">{emoji}</span>
