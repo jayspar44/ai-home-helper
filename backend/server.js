@@ -12,7 +12,10 @@ const logger = require('./utils/logger');
 const pinoHttp = require('pino-http');
 const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 const { parseShoppingListItem } = require('./services/shoppingListAI');
+const { generateRecipes } = require('./services/recipeAI');
+const { suggestPantryItem, getQuickDefaults, detectItemsFromImage } = require('./services/pantryAI');
 const { version } = require('../version.json');
+const { aiRateLimiter } = require('./middleware/rateLimiter');
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -540,7 +543,7 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
   }
 });
 
-app.post('/api/generate-recipe', checkAuth, async (req, res) => {
+app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {
     try {
         const {
             ingredients,
@@ -558,189 +561,35 @@ app.post('/api/generate-recipe', checkAuth, async (req, res) => {
         const startTime = Date.now();
         req.log.info({ userId: req.user.uid, ingredientCount: ingredients.length, recipeType, servingSize, generateCount }, 'Generating recipes with AI');
 
-        // If generating multiple recipes, create multiple prompts and run them
+        // Generate recipe(s) using AI service
+        const result = await generateRecipes({
+            ingredients,
+            servingSize,
+            dietaryRestrictions,
+            recipeType,
+            pantryItems,
+            generateCount
+        }, genAI, req.log);
+
+        const aiResponseTime = Date.now() - startTime;
+
+        // Handle multiple recipes
         if (generateCount > 1) {
-            const promises = [];
-
-            for (let i = 0; i < generateCount; i++) {
-                const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems, i + 1);
-                
-                const promise = (async () => {
-                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-                    const result = await model.generateContent(prompt);
-                    const response = await result.response;
-                    const generatedText = response.text();
-                    return parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients);
-                })();
-                
-                promises.push(promise);
-            }
-            
-            const results = await Promise.all(promises);
-            
-            // Validate all recipes
-            const validRecipes = results.filter(recipe => 
-                recipe.title && recipe.ingredients && recipe.instructions
-            );
-            
-            if (validRecipes.length === 0) {
-                throw new Error('Failed to generate valid recipes');
-            }
-
-            req.log.info({ userId: req.user.uid, recipesGenerated: validRecipes.length, aiResponseTime: Date.now() - startTime }, 'Recipes generated');
-            return res.json(validRecipes);
+            req.log.info({ userId: req.user.uid, recipesGenerated: result.length, aiResponseTime }, 'Recipes generated');
+            return res.json(result);
         }
 
-        // Single recipe generation (existing logic enhanced)
-        const prompt = createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType, pantryItems);
-
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const generatedText = response.text();
-
-        const recipe = parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients);
-
-        // Validate recipe structure
-        if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
-            req.log.error({ generatedText: generatedText.substring(0, 200) }, 'Invalid recipe format from AI');
-            throw new Error('Generated recipe has invalid format');
-        }
-
-        req.log.info({ userId: req.user.uid, recipeTitle: recipe.title, aiResponseTime: Date.now() - startTime }, 'Recipe generated');
-        res.json(recipe);
+        // Handle single recipe
+        req.log.info({ userId: req.user.uid, recipeTitle: result.title, aiResponseTime }, 'Recipe generated');
+        res.json(result);
     } catch (error) {
-        req.log.error({ error: error, userId: req.user.uid }, 'Error generating recipe');
+        req.log.error({ err: error, userId: req.user.uid }, 'Error generating recipe');
         res.status(500).json({
             error: 'Failed to generate recipe',
             details: error.message
         });
     }
 });
-
-// --- Helper Functions ---
-function createRecipePrompt(ingredients, servingSize, dietaryRestrictions, recipeType = 'quick', pantryItems = [], variationNumber = 1) {
-  const restrictionsText = dietaryRestrictions ? `\n- Follow these dietary restrictions: ${dietaryRestrictions}` : '';
-  
-  // Build pantry context
-  let pantryContext = '';
-  if (pantryItems && pantryItems.length > 0) {
-    const pantryIngredients = pantryItems.map(item => {
-      const expiry = item.daysUntilExpiry ? ` (${item.daysUntilExpiry} days until expiry)` : '';
-      return `${item.name}${item.quantity ? ` - ${item.quantity}` : ''}${expiry}`;
-    });
-    
-    pantryContext = `\n\nAVAILABLE PANTRY ITEMS:\n${pantryIngredients.join('\n')}\n- PRIORITIZE using pantry items that expire soon (3 days or less)\n- Mark which ingredients come from pantry vs need to be purchased`;
-  }
-  
-  // Recipe complexity guidance
-  const complexityGuidance = recipeType === 'sophisticated' 
-    ? `\n- CREATE A SOPHISTICATED RECIPE: Use advanced cooking techniques, complex flavor profiles, multiple cooking methods, longer prep/cook times (45+ minutes total), restaurant-quality presentation`
-    : `\n- CREATE A QUICK & EASY RECIPE: Simple techniques, minimal prep, 15-30 minute total time, accessible for home cooks, streamlined process`;
-  
-  // Variation guidance for multiple recipes
-  const variationText = variationNumber > 1 
-    ? `\n- This is variation #${variationNumber} - make it DISTINCTLY DIFFERENT from other variations in cooking method, cuisine style, or flavor profile`
-    : '';
-  
-  return `Create a complete recipe using these ingredients: ${ingredients.join(', ')}${pantryContext}
-
-Requirements:
-- Serves ${servingSize} people
-- Include prep time and cook time
-- Rate difficulty as Easy, Medium, or Hard
-- Provide a brief description${restrictionsText}${complexityGuidance}${variationText}
-
-Please format your response EXACTLY like this JSON structure:
-{
-  "title": "Recipe Name",
-  "description": "Brief appealing description",
-  "prepTime": "X minutes",
-  "cookTime": "X minutes", 
-  "difficulty": "Easy/Medium/Hard",
-  "ingredients": [
-    "ingredient with amount",
-    "another ingredient with amount"
-  ],
-  "instructions": [
-    "Step 1 instruction",
-    "Step 2 instruction"
-  ],
-  "tips": [
-    "Helpful cooking tip",
-    "Another useful tip"
-  ]
-}
-
-Make sure the recipe is practical, delicious, and uses the provided ingredients as the main components. Add common pantry staples as needed.`;
-}
-
-function parseRecipeResponse(text, servingSize, pantryItems = [], originalIngredients = []) {
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const jsonText = jsonMatch[0];
-      const parsed = JSON.parse(jsonText);
-      
-      // Identify which ingredients come from pantry and which are missing
-      const recipeIngredients = parsed.ingredients || [];
-      const pantryIngredients = [];
-      const missingIngredients = [];
-      
-      if (pantryItems && pantryItems.length > 0) {
-        const pantryNames = pantryItems.map(item => item.name.toLowerCase());
-        
-        recipeIngredients.forEach(ingredient => {
-          const ingredientLower = ingredient.toLowerCase();
-          const isFromPantry = pantryNames.some(pantryName => 
-            ingredientLower.includes(pantryName) || pantryName.includes(ingredientLower)
-          );
-          
-          if (isFromPantry) {
-            pantryIngredients.push(ingredient);
-          } else {
-            // Check if it's not in original ingredients either
-            const isOriginal = originalIngredients.some(orig => 
-              ingredientLower.includes(orig.toLowerCase()) || orig.toLowerCase().includes(ingredientLower)
-            );
-            if (!isOriginal) {
-              missingIngredients.push(ingredient);
-            }
-          }
-        });
-      }
-      
-      return {
-        title: parsed.title || "Delicious Recipe",
-        description: parsed.description || "A wonderful meal made with your ingredients",
-        prepTime: parsed.prepTime || "15 minutes",
-        cookTime: parsed.cookTime || "30 minutes",
-        servings: servingSize,
-        difficulty: parsed.difficulty || "Medium",
-        ingredients: recipeIngredients,
-        instructions: parsed.instructions || [],
-        tips: parsed.tips || ["Enjoy your meal!"],
-        pantryIngredients: pantryIngredients,
-        missingIngredients: missingIngredients
-      };
-    }
-  } catch (error) {
-    logger.error({ err: error }, 'Error parsing recipe response');
-  }
-  return {
-    title: "Custom Recipe",
-    description: "A delicious meal created just for you",
-    prepTime: "15 minutes",
-    cookTime: "30 minutes",
-    servings: servingSize,
-    difficulty: "Medium",
-    ingredients: ["Check server logs for full response"],
-    instructions: ["AI response parsing failed - check logs"],
-    tips: ["Recipe generation succeeded but formatting needs adjustment"],
-    pantryIngredients: [],
-    missingIngredients: []
-  };
-}
 
 // Add new member to home
 app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
@@ -808,7 +657,7 @@ app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
 // --- Pantry API Routes ---
 
 // Suggest pantry item based on user input
-app.post('/api/pantry/suggest-item', checkAuth, async (req, res) => {
+app.post('/api/pantry/suggest-item', checkAuth, aiRateLimiter, async (req, res) => {
   try {
     const { itemName, homeId: _homeId } = req.body;
 
@@ -819,71 +668,8 @@ app.post('/api/pantry/suggest-item', checkAuth, async (req, res) => {
     const startTime = Date.now();
     req.log.debug({ userId: req.user.uid, itemName }, 'AI suggestions requested');
 
-    const prompt = `Analyze this food/pantry item name: "${itemName}"
-
-Your goal is to help users create specific, useful pantry entries. Provide suggestions based on confidence level:
-
-HIGH CONFIDENCE (>80%): Item is specific and clearly identifiable
-- Return ONE detailed suggestion with exact name, typical quantity, shelf life
-- Example: "eggs" → "Large white eggs, dozen, 21-28 days"
-
-MEDIUM CONFIDENCE (40-80%): Item is recognizable but vague/ambiguous  
-- Return 3-4 common specific variations
-- Include brand examples and common sizes
-- Encourage user to be more specific
-- Example: "chocolate" → ["Milk chocolate bar 1.5oz", "Dark chocolate chips 12oz", "Chocolate candy assorted 8oz"]
-
-LOW CONFIDENCE (<40%): Item is too vague, unclear, or non-food
-- Provide guidance on being more specific
-- Give examples of better alternatives
-- Suggest photo upload for unclear items
-- Example: "stuff" → guidance to be more specific
-
-Focus on:
-- Common grocery items and typical household sizes
-- Realistic shelf life estimates (in days)
-- Encouraging specificity over generic terms
-- Educational guidance for better entries
-
-Return JSON format:
-{
-  "confidence": 0.0-1.0,
-  "action": "accept" | "choose" | "specify",
-  "suggestions": [
-    {
-      "name": "Specific item name",
-      "quantity": "Amount with unit",
-      "shelfLife": "X days",
-      "location": "pantry" | "fridge" | "freezer",
-      "daysUntilExpiry": number
-    }
-  ],
-  "guidance": {
-    "message": "Helpful message",
-    "examples": ["example1", "example2"],
-    "reasoning": "Why this confidence level"
-  }
-}`;
-
-    // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parse AI response
-    let suggestionData;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/s);
-      if (jsonMatch) {
-        suggestionData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
-      }
-    } catch (parseError) {
-      req.log.error({ error: parseError, text: text.substring(0, 200) }, 'Error parsing AI response for suggest-item');
-      return res.status(500).json({ error: 'Failed to parse AI response' });
-    }
+    // Call AI service
+    const suggestionData = await suggestPantryItem(itemName, genAI, req.log);
 
     req.log.info({
       userId: req.user.uid,
@@ -896,7 +682,7 @@ Return JSON format:
     res.json(suggestionData);
 
   } catch (error) {
-    req.log.error({ error: error, userId: req.user.uid, itemName: req.body.itemName }, 'Error in suggest-item');
+    req.log.error({ err: error, userId: req.user.uid, itemName: req.body.itemName }, 'Error in suggest-item');
     res.status(500).json({
       error: 'Failed to generate suggestions',
       details: error.message
@@ -905,7 +691,7 @@ Return JSON format:
 });
 
 // Quick defaults for pantry items (fast location + expiry)
-app.post('/api/pantry/quick-defaults', checkAuth, async (req, res) => {
+app.post('/api/pantry/quick-defaults', checkAuth, aiRateLimiter, async (req, res) => {
   try {
     const { itemName, homeId: _homeId } = req.body;
 
@@ -1217,7 +1003,7 @@ const upload = multer({
 });
 
 // AI-powered pantry item detection endpoint
-app.post('/api/pantry/:homeId/detect-items', checkAuth, upload.single('image'), async (req, res) => {
+app.post('/api/pantry/:homeId/detect-items', checkAuth, aiRateLimiter, upload.single('image'), async (req, res) => {
   let filePath = null;
   
   try {
@@ -1419,30 +1205,30 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
     const { date, mealType, planned } = req.body;
     const userUid = req.user.uid;
 
-    logger.debug('Planner POST Request', {
+    req.log.debug({
       homeId,
       date,
       mealType,
       planned: planned ? { recipeName: planned.recipeName, recipeId: planned.recipeId } : null,
       userUid
-    });
+    }, 'Planner POST Request');
 
     // Verify user belongs to home
     const homeDoc = await db.collection('homes').doc(homeId).get();
     if (!homeDoc.exists || homeDoc.data().members[userUid] === undefined) {
-      logger.warn('Authorization failed: User not member of home', { userUid, homeId });
+      req.log.warn({ userUid, homeId }, 'Authorization failed: User not member of home');
       return res.status(403).json({ error: 'Not authorized' });
     }
 
     // Validate meal type
     if (!['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
-      logger.warn('Invalid meal type provided', { mealType, userUid });
+      req.log.warn({ mealType, userUid }, 'Invalid meal type provided');
       return res.status(400).json({ error: 'Invalid meal type' });
     }
 
     // Check if meal plan already exists for this date/meal type
     const queryDate = new Date(date);
-    logger.debug('Checking for existing meal plan', { date, queryDate, mealType });
+    req.log.debug({ date, queryDate, mealType }, 'Checking for existing meal plan');
 
     const existingQuery = await db.collection('homes')
       .doc(homeId)
@@ -1451,7 +1237,7 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       .where('mealType', '==', mealType)
       .get();
 
-    logger.debug('Existing query results', {
+    req.log.debug({
       isEmpty: existingQuery.empty,
       size: existingQuery.size,
       docs: existingQuery.docs.map(doc => ({
@@ -1459,10 +1245,10 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
         date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
         mealType: doc.data().mealType
       }))
-    });
+    }, 'Existing query results');
 
     if (!existingQuery.empty) {
-      logger.warn('Conflict: Meal plan already exists', { homeId, date, mealType });
+      req.log.warn({ homeId, date, mealType }, 'Conflict: Meal plan already exists');
       return res.status(409).json({ error: 'Meal plan already exists for this date and meal type' });
     }
 
@@ -1476,11 +1262,11 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    logger.debug('Creating meal plan', {
+    req.log.debug({
       date: queryDate,
       mealType,
       plannedRecipeName: planned?.recipeName
-    });
+    }, 'Creating meal plan');
 
     const docRef = await db.collection('homes')
       .doc(homeId)
@@ -1498,14 +1284,14 @@ app.post('/api/planner/:homeId', checkAuth, async (req, res) => {
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null
     };
 
-    logger.success('Meal plan created successfully', {
+    req.log.info({
       id: docRef.id,
       recipeName: data.planned?.recipeName
-    });
+    }, 'Meal plan created successfully');
 
     res.status(201).json(response);
   } catch (error) {
-    logger.error('Error creating meal plan', error);
+    req.log.error({ err: error }, 'Error creating meal plan');
     res.status(500).json({ error: 'Failed to create meal plan' });
   }
 });
@@ -1848,7 +1634,7 @@ app.get('/api/shopping-list/:homeId', checkAuth, async (req, res) => {
 });
 
 // POST - Add item to shopping list with AI parsing
-app.post('/api/shopping-list/:homeId/items', checkAuth, async (req, res) => {
+app.post('/api/shopping-list/:homeId/items', checkAuth, aiRateLimiter, async (req, res) => {
   try {
     const userUid = req.user.uid;
     const { homeId } = req.params;

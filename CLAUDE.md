@@ -194,6 +194,47 @@ logger.error('Failed to load recipes:', error); // Always visible
 - GCP automatically maps Pino severity levels to Cloud Logging
 - View logs: `npm run gcp:logs:prod` or GCP Console → App Engine → Logs
 
+## Rate Limiting Protocol
+
+**Purpose**: Protect AI endpoints from abuse and prevent runaway scripts while allowing generous legitimate use.
+
+**Implementation**:
+- **Library**: `express-rate-limit` (in-memory store)
+- **Middleware**: [backend/middleware/rateLimiter.js](backend/middleware/rateLimiter.js)
+- **Strategy**: Per-user rate limiting based on Firebase UID
+- **Limit**: 100 AI requests per hour per user
+- **Response**: HTTP 429 with helpful error message
+
+**Protected AI Endpoints**:
+1. `POST /api/generate-recipe` - Recipe generation with Gemini
+2. `POST /api/pantry/suggest-item` - AI item suggestions
+3. `POST /api/pantry/quick-defaults` - AI quick defaults for location/expiry
+4. `POST /api/pantry/:homeId/detect-items` - AI image detection
+5. `POST /api/shopping-list/:homeId/items` - AI shopping list parsing
+
+**Error Response** (when limit exceeded):
+```json
+{
+  "error": "Too many AI requests",
+  "message": "You've reached the limit of 100 AI requests per hour. Please try again later.",
+  "retryAfter": "1 hour"
+}
+```
+
+**Usage Pattern**:
+```javascript
+// Apply to AI endpoints after checkAuth middleware
+app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {
+  // AI endpoint logic
+});
+```
+
+**Future Enhancements**:
+- Different limits per endpoint tier (e.g., image detection = 10/hour, text parsing = 100/hour)
+- Redis-backed store for distributed rate limiting across multiple servers
+- Admin bypass for specific users
+- Detailed rate limit violation logging and monitoring
+
 ## Code Style
 - Use functional React components with hooks
 - Follow existing CSS custom property patterns

@@ -1,6 +1,6 @@
 {
-  "version": "2.21.0",
-  "lastUpdated": "2025-10-28T04:39:20.829Z",
+  "version": "2.22.0",
+  "lastUpdated": "2025-10-31T01:26:18.262Z",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -266,6 +266,11 @@
       "description": "Convert shopping list to modal-based editing with pantry-matching design",
       "timestamp": "2025-10-28T04:39:20.829Z",
       "date": "October 28, 2025"
+    },
+    "2.22.0": {
+      "description": "Add rate limiting for AI endpoints: per-user rate limiter (100 requests/hour) protects 5 AI endpoints from abuse, express-rate-limit middleware with Firebase UID tracking, helpful error messages on limit exceeded, comprehensive test script for verification, and full documentation in CLAUDE.md",
+      "timestamp": "2025-10-31T01:26:18.262Z",
+      "date": "October 30, 2025"
     }
   }
 }
