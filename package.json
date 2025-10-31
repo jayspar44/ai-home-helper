@@ -28,8 +28,7 @@
     "gcp:instances:count": "gcloud app instances list --format='table(service,version,id)' | tail -n +2 | wc -l",
     "gcp:setup:secrets": "node scripts/gcp-setup-secrets.js",
     "gcp:setup:cache": "node scripts/gcp-setup-cache.js",
-    "gcp:check:ready": "node scripts/gcp-check-deployment.js",
-    "worktree:setup": "bash scripts/setup-worktree.sh"
+    "gcp:check:ready": "node scripts/gcp-check-deployment.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.120",
