@@ -35,14 +35,6 @@ const WeekView = ({ mealPlans = [], initialWeekStart, onDayClick, onWeekChange }
     return days;
   }, [displayWeekStart]);
 
-  // Format date to YYYY-MM-DD for comparison
-  const formatDateForComparison = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   // Get meal counts by state for a day
   const getDayMealCounts = (date) => {
     if (!date) return { planned: 0, completed: 0 };
@@ -165,7 +157,7 @@ const WeekView = ({ mealPlans = [], initialWeekStart, onDayClick, onWeekChange }
               {hasMeals && (
                 <div className="meal-dots">
                   {/* Show up to 4 dots total, mixing planned and completed */}
-                  {Array.from({ length: Math.min(mealCounts.planned, 4) }).map((_, dotIndex) => (
+                  {Array.from({ length: Math.min(mealCounts.planned, MAX_MEAL_DOTS) }).map((_, dotIndex) => (
                     <div key={`planned-${dotIndex}`} className="meal-dot planned" />
                   ))}
                   {Array.from({ length: Math.min(mealCounts.completed, MAX_MEAL_DOTS - mealCounts.planned) }).map((_, dotIndex) => (

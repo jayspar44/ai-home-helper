@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import MealCard from './MealCard';
+import { formatDateForAPI, getMealTypeByTime } from '../utils/dateUtils';
 
 /**
  * DaySection - Display a day's meals with progressive disclosure
@@ -18,14 +19,6 @@ const DaySection = forwardRef(({
   onEditMeal,
   onCompleteMeal
 }, ref) => {
-  // Format date for comparison
-  const formatDateForAPI = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const dayNum = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${dayNum}`;
-  };
-
   const dayString = formatDateForAPI(day);
 
   // Get meals for this day and sort by meal type order
@@ -57,12 +50,7 @@ const DaySection = forwardRef(({
   // Handle empty day click
   const handleEmptyDayClick = () => {
     // Suggest meal type based on time of day
-    const now = new Date();
-    const currentHour = now.getHours();
-    let suggestedMealType = 'snacks';
-    if (currentHour < 10) suggestedMealType = 'breakfast';
-    else if (currentHour < 15) suggestedMealType = 'lunch';
-    else if (currentHour < 21) suggestedMealType = 'dinner';
+    const suggestedMealType = getMealTypeByTime();
 
     onAddMeal(day, suggestedMealType);
   };

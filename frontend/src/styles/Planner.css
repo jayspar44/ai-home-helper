@@ -1,5 +1,40 @@
 /* ========================================
    ROSCOE MEAL PLANNER - COMPONENT STYLES
+   ========================================
+
+   Component Hierarchy:
+   - PlannerPage (main container)
+     ├── PlannerSidebar (desktop only, lg+)
+     │   ├── WeekView (calendar with meal dots)
+     │   └── Stats/Actions sections
+     ├── WeekView (mobile only, <1024px)
+     └── DaySection (meal feed, scrollable)
+         └── MealCard (individual meal entries)
+
+   Responsive Breakpoints:
+   - Mobile: < 1024px (lg)
+     - Stacked layout: WeekView → DaySection
+     - WeekView gets card styling
+     - Floating action button (FAB) for add
+
+   - Desktop: ≥ 1024px (lg+)
+     - Sidebar layout: PlannerSidebar (30%) | DaySection (70%)
+     - WeekView inside PlannerSidebar card
+     - Add button in sidebar
+
+   Design Tokens Used:
+   - Colors: --bg-card, --bg-primary/secondary/tertiary
+   - Spacing: --spacing-1 through --spacing-4
+   - Borders: --border-light, --radius-md/lg
+   - Transitions: --transition-fast
+
+   State-Based Styling:
+   - .is-today: Highlighted current day
+   - .has-meals: Days with scheduled meals
+   - .meal-dot.planned: Planned meal indicator
+   - .meal-dot.completed: Completed meal indicator
+   - .empty-day-card: Empty state with hover effect
+
    ======================================== */
 
 /* ===== WEEK VIEW CALENDAR ===== */

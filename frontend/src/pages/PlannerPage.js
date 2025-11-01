@@ -15,10 +15,22 @@ import '../styles/Planner.css';
 export default function PlannerPage() {
   const context = useOutletContext();
   const { userToken, activeHomeId } = context || {};
+  const { showToast } = useToast();
 
-  // State
+  // State Management
+  // Week navigation: These two states track different aspects of the UI
+  // - currentWeekStart: The week displayed in the main feed (DaySection list) and used for data fetching
+  // - calendarWeekStart: The week displayed in the calendar widget (WeekView)
+  // 
+  // Design Note: While these are currently kept in sync (see handleCalendarWeekChange),
+  // they're maintained as separate states to allow potential future features like:
+  // - Browsing future weeks in calendar without changing the main feed
+  // - Independent calendar navigation for planning ahead
+  // 
+  // Current behavior: When calendar navigates (arrows/day click), both are updated together
+  // to keep the feed and calendar synchronized.
   const [currentWeekStart, setCurrentWeekStart] = useState(null);
-  const [calendarWeekStart, setCalendarWeekStart] = useState(null); // Track which week calendar is showing
+  const [calendarWeekStart, setCalendarWeekStart] = useState(null);
   const [mealPlans, setMealPlans] = useState([]);
   const [pantryItems, setPantryItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +42,7 @@ export default function PlannerPage() {
 
   // Refs for day sections (for scrolling)
   const daySectionRefs = useRef({});
+  const scrollTimeoutRef = useRef(null);
 
   // Initialize current week
   useEffect(() => {
@@ -66,15 +79,31 @@ export default function PlannerPage() {
     // Update the main feed's week
     setCurrentWeekStart(weekStart);
 
+    // Clear any existing scroll timeout to prevent memory leaks
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
     // After state updates, scroll to the day (use setTimeout to ensure DOM is updated)
-    setTimeout(() => {
+    scrollTimeoutRef.current = setTimeout(() => {
       const dateString = formatDateForAPI(date);
       const daySection = daySectionRefs.current[dateString];
       if (daySection) {
         daySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+      scrollTimeoutRef.current = null; // Clear ref after execution
     }, 100);
   };
+
+
+  // Cleanup scroll timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Auth headers callback
   const getAuthHeaders = useCallback(() => ({
@@ -217,6 +246,7 @@ export default function PlannerPage() {
       }
     } catch (err) {
       logger.error('Error completing meal:', err);
+      showToast('An error occurred while completing the meal', 'error');
     }
   };
 

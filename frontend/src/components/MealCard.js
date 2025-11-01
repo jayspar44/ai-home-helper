@@ -67,8 +67,22 @@ const MealCard = ({ meal, day, onEdit, onComplete }) => {
   // Handle quick complete
   const handleCompleteClick = (e) => {
     e.stopPropagation();
-    if (onComplete) {
+
+    // Defensive checks
+    if (!onComplete) {
+      console.warn('MealCard: onComplete callback is not defined');
+      return;
+    }
+
+    if (!meal || !meal.id) {
+      console.error('MealCard: Invalid meal data for completion');
+      return;
+    }
+
+    try {
       onComplete(meal);
+    } catch (error) {
+      console.error('MealCard: Error calling onComplete:', error);
     }
   };
 
