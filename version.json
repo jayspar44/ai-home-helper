@@ -1,6 +1,6 @@
 {
-  "version": "2.25.0",
-  "lastUpdated": "2025-10-31T06:05:37.903Z",
+  "version": "2.25.1",
+  "lastUpdated": "2025-11-01T13:08:08.521Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -317,6 +317,11 @@
       "description": "feat: Meal Planner redesign with progressive disclosure, week calendar navigation, and streamlined UI",
       "timestamp": "2025-10-31T06:05:37.903Z",
       "date": "October 31, 2025"
+    },
+    "2.25.1": {
+      "description": "UI refinements: standardize HomePage button colors, improve meal state visual distinction (grey planned/green completed), add Next up heading, remove redundant FAB buttons",
+      "timestamp": "2025-11-01T13:08:08.521Z",
+      "date": "November 1, 2025"
     }
   }
 }
