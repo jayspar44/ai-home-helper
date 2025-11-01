@@ -184,3 +184,34 @@ export const formatRelativeTime = (date) => {
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
   return `${Math.floor(diffDays / 365)} years ago`;
 };
+/**
+ * Format a date for API calls (YYYY-MM-DD)
+ * Used for timezone-independent date handling in meal planner
+ * @param {Date} date - The date to format
+ * @returns {string} - Date string in YYYY-MM-DD format
+ */
+export const formatDateForAPI = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * Get suggested meal type based on current time of day
+ * Uses time boundaries to intelligently suggest appropriate meal types
+ * @returns {string} - One of 'breakfast', 'lunch', 'dinner', or 'snacks'
+ */
+export const getMealTypeByTime = () => {
+  const currentHour = new Date().getHours();
+  
+  // Import constants inline to avoid circular dependencies
+  const BREAKFAST_CUTOFF = 10;
+  const LUNCH_CUTOFF = 15;
+  const DINNER_CUTOFF = 21;
+  
+  if (currentHour < BREAKFAST_CUTOFF) return 'breakfast';
+  if (currentHour < LUNCH_CUTOFF) return 'lunch';
+  if (currentHour < DINNER_CUTOFF) return 'dinner';
+  return 'snacks';
+};

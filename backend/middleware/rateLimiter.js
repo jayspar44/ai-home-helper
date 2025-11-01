@@ -24,9 +24,12 @@ const aiRateLimiter = rateLimit({
   max: RATE_LIMIT_MAX,
 
   // Use Firebase UID as the key for per-user rate limiting
-  keyGenerator: (req) => {
-    // Fallback to IP if user not authenticated (shouldn't happen for protected routes)
-    return req.user?.uid || req.ip;
+  keyGenerator: (req, res) => {
+    if (req.user?.uid) {
+      return req.user.uid;
+    }
+    // Use library's built-in IPv6-safe key generator as fallback
+    return rateLimit.defaultConfig.keyGenerator(req, res);
   },
 
   // Custom error message
