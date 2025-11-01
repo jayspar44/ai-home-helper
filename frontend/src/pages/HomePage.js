@@ -36,7 +36,7 @@ export default function HomePage() {
       description: "Never forget an item",
       emoji: "🛒",
       path: "/shopping-list",
-      color: "var(--color-success)"
+      color: "var(--color-primary)"
     },
     {
       title: "Recipe Generator",
@@ -104,15 +104,6 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-
-
-        {/* ===== FLOATING ACTION BUTTON (Mobile) ===== */}
-        <Link
-          to="/pantry"
-          className="mobile-only fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 z-10 text-3xl bg-color-primary text-white"
-        >
-          +
-        </Link>
       </div>
     </div>
   );
