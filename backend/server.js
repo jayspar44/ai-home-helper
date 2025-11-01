@@ -12,10 +12,14 @@ const logger = require('./utils/logger');
 const pinoHttp = require('pino-http');
 const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 const { parseShoppingListItem } = require('./services/shoppingListAI');
-const { generateRecipes } = require('./services/recipeAI');
+const { generateRecipes, generateRoscoesChoiceRecipe, generateCustomRecipe, matchIngredientsToPantry } = require('./services/recipeAI');
 const { suggestPantryItem, getQuickDefaults, detectItemsFromImage } = require('./services/pantryAI');
 const { version } = require('../version.json');
 const { aiRateLimiter } = require('./middleware/rateLimiter');
+const { v4: uuidv4 } = require('uuid');
+
+// --- Constants ---
+const MAX_AI_PROMPT_LENGTH = 250; // Prevent prompt injection and timeout
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -62,8 +66,6 @@ if (process.env.NODE_ENV === 'production') {
   // Disable x-powered-by header for security
   app.disable('x-powered-by');
 }
-
-// CORS will be configured after initialization (see startServer function)
 
 // Request parsing middleware
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
@@ -559,7 +561,7 @@ app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {
         }
 
         const startTime = Date.now();
-        req.log.info({ userId: req.user.uid, ingredientCount: ingredients.length, recipeType, servingSize, generateCount }, 'Generating recipes with AI');
+        req.log.info({ userId: req.user.uid, ingredientCount: ingredients.length, recipeType, servingSize, generateCount }, 'Generating recipes with AI (legacy endpoint)');
 
         // Generate recipe(s) using AI service
         const result = await generateRecipes({
@@ -589,6 +591,243 @@ app.post('/api/generate-recipe', checkAuth, aiRateLimiter, async (req, res) => {
             details: error.message
         });
     }
+});
+
+// Roscoe's Choice - Pantry-focused recipe generation
+app.post('/api/generate-recipe/roscoes-choice', checkAuth, aiRateLimiter, async (req, res) => {
+  try {
+    const {
+      homeId,
+      mode,
+      numberOfPeople,
+      quickMealsOnly,
+      prioritizeExpiring,
+      numberOfRecipes
+    } = req.body;
+
+    const userUid = req.user.uid;
+
+    if (!homeId) {
+      return res.status(400).json({ error: 'homeId is required' });
+    }
+
+    if (!mode || !['pantry_only', 'pantry_plus_shopping'].includes(mode)) {
+      return res.status(400).json({ error: 'mode must be "pantry_only" or "pantry_plus_shopping"' });
+    }
+
+    // Fetch ALL pantry items for the home
+    const pantrySnapshot = await db.collection('homes')
+      .doc(homeId)
+      .collection('pantry_items')
+      .get();
+
+    const pantryItems = [];
+    pantrySnapshot.forEach(doc => {
+      const data = doc.data();
+      const daysUntilExpiry = data.expiresAt
+        ? Math.ceil((data.expiresAt.toDate() - new Date()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      pantryItems.push({
+        id: doc.id,
+        name: data.name,
+        quantity: data.quantity,
+        location: data.location,
+        expiresAt: data.expiresAt,
+        daysUntilExpiry
+      });
+    });
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      mode,
+      pantryItemCount: pantryItems.length,
+      numberOfRecipes: numberOfRecipes || 1
+    }, 'Generating Roscoe\'s Choice recipe(s)');
+
+    const result = await generateRoscoesChoiceRecipe({
+      pantryItems,
+      mode,
+      numberOfPeople: numberOfPeople || 2,
+      quickMealsOnly: quickMealsOnly || false,
+      prioritizeExpiring: prioritizeExpiring || false,
+      numberOfRecipes: numberOfRecipes || 1
+    }, genAI, req.log);
+
+    // Handle refusal
+    if (result.success === false) {
+      return res.status(400).json({
+        error: 'Recipe generation refused',
+        reason: result.refusalReason,
+        suggestions: result.suggestions
+      });
+    }
+
+    // Handle multiple recipes
+    if (Array.isArray(result)) {
+      const variationFamily = uuidv4();
+
+      const recipes = result.map((recipe, index) => ({
+        ...recipe,
+        createdBy: userUid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        homeId,
+        generationMode: 'roscoes_choice',
+        generationParams: {
+          mode,
+          numberOfPeople: numberOfPeople || 2,
+          quickMealsOnly: quickMealsOnly || false,
+          prioritizeExpiring: prioritizeExpiring || false,
+          numberOfRecipes: numberOfRecipes || 1
+        },
+        variationNumber: index + 1,
+        variationFamily
+      }));
+
+      return res.json(recipes);
+    }
+
+    // Single recipe
+    const recipe = {
+      ...result,
+      createdBy: userUid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      homeId,
+      generationMode: 'roscoes_choice',
+      generationParams: {
+        mode,
+        numberOfPeople: numberOfPeople || 2,
+        quickMealsOnly: quickMealsOnly || false,
+        prioritizeExpiring: prioritizeExpiring || false
+      }
+    };
+
+    res.json(recipe);
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error in Roscoe\'s Choice generation');
+    res.status(500).json({ error: 'Failed to generate recipe' });
+  }
+});
+
+// Customize - User-driven recipe generation with constraints
+app.post('/api/generate-recipe/customize', checkAuth, aiRateLimiter, async (req, res) => {
+  try {
+    const {
+      homeId,
+      aiPrompt,
+      cuisines,
+      proteins,
+      preferences,
+      numberOfRecipes,
+      servingSize,
+      specificIngredients,
+      pantryMode
+    } = req.body;
+
+    const userUid = req.user.uid;
+
+    if (!homeId) {
+      return res.status(400).json({ error: 'homeId is required' });
+    }
+
+    // Validate aiPrompt length to prevent prompt injection and timeout
+    if (aiPrompt && aiPrompt.length > MAX_AI_PROMPT_LENGTH) {
+      return res.status(400).json({
+        error: `AI prompt exceeds maximum length of ${MAX_AI_PROMPT_LENGTH} characters`
+      });
+    }
+
+    // Default to ignore_pantry if not specified
+    const mode = pantryMode || 'ignore_pantry';
+
+    // Fetch pantry items (needed for all modes except ignore_pantry for full isolation)
+    let pantryItems = [];
+
+    if (mode !== 'ignore_pantry') {
+      const pantrySnapshot = await db.collection('homes')
+        .doc(homeId)
+        .collection('pantry_items')
+        .get();
+
+      pantrySnapshot.forEach(doc => {
+        const data = doc.data();
+        const daysUntilExpiry = data.expiresAt
+          ? Math.ceil((data.expiresAt.toDate() - new Date()) / (1000 * 60 * 60 * 24))
+          : null;
+
+        pantryItems.push({
+          id: doc.id,
+          name: data.name,
+          quantity: data.quantity,
+          daysUntilExpiry
+        });
+      });
+    }
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      pantryMode: mode,
+      numberOfRecipes: numberOfRecipes || 1,
+      aiPrompt: aiPrompt || '(none)',
+      hasCuisines: !!(cuisines && cuisines.length > 0),
+      hasProteins: !!(proteins && proteins.length > 0)
+    }, 'Generating custom recipe(s)');
+
+    const result = await generateCustomRecipe({
+      aiPrompt,
+      cuisines: cuisines || [],
+      proteins: proteins || [],
+      preferences: preferences || [],
+      numberOfRecipes: numberOfRecipes || 1,
+      servingSize: servingSize || 2,
+      pantryItems,
+      specificIngredients: specificIngredients || [],
+      pantryMode: mode
+    }, genAI, req.log);
+
+    // Handle refusal
+    if (result.success === false) {
+      return res.status(400).json({
+        error: 'Recipe generation refused',
+        reason: result.refusalReason,
+        suggestions: result.suggestions
+      });
+    }
+
+    // Handle multiple recipes (always array for customize)
+    const variationFamily = (numberOfRecipes || 1) > 1 ? uuidv4() : null;
+
+    const recipes = Array.isArray(result) ? result : [result];
+
+    const enhancedRecipes = recipes.map((recipe, index) => ({
+      ...recipe,
+      createdBy: userUid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      homeId,
+      generationMode: 'customize',
+      generationParams: {
+        aiPrompt,
+        cuisines: cuisines || [],
+        proteins: proteins || [],
+        preferences: preferences || [],
+        numberOfRecipes: numberOfRecipes || 1,
+        servingSize: servingSize || 2,
+        pantryMode: mode,
+        specificIngredients: specificIngredients || []
+      },
+      ...(variationFamily && {
+        variationNumber: index + 1,
+        variationFamily
+      })
+    }));
+
+    res.json(enhancedRecipes);
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error in Customize generation');
+    res.status(500).json({ error: 'Failed to generate recipe' });
+  }
 });
 
 // Add new member to home
@@ -1845,7 +2084,12 @@ app.delete('/api/shopping-list/:homeId/checked', checkAuth, async (req, res) => 
 
 // Global error handler for unhandled errors
 app.use((error, req, res, _next) => {
-  req.log.error({ err: error }, 'Unhandled error');
+  // Log error if logger is available (may not be for certain requests)
+  if (req.log) {
+    req.log.error({ err: error }, 'Unhandled error');
+  } else {
+    console.error('Unhandled error (no logger):', error);
+  }
 
   // Don't expose internal errors in production
   const errorResponse = process.env.NODE_ENV === 'production'
@@ -1866,16 +2110,17 @@ const startServer = async () => {
     // Initialize services first (load secrets, connect to Firebase, etc.)
     await initializeServices();
 
-    // Configure CORS with dynamic allowed origins
-    logger.info('Configuring CORS');
+    // Configure CORS after services are initialized
     const allowedOrigins = [
       'http://localhost:3000',
       'http://127.0.0.1:3000',
       'https://localhost:3000',
-      'https://127.0.0.1:3000'
+      'https://127.0.0.1:3000',
+      'http://localhost:3001',  // Allow proxy origin for development (webpack dev server)
+      'http://127.0.0.1:3001'
     ];
 
-    // Add GCP URLs if running on GCP (covers both prod and dev services)
+    // Add GCP URLs if running on GCP
     if (isGCP()) {
       try {
         const projectId = getProjectId();
@@ -1891,10 +2136,13 @@ const startServer = async () => {
 
     const corsOptions = {
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Normalize origin by removing trailing slash for comparison
+        const normalizedOrigin = origin ? origin.replace(/\/$/, '') : origin;
+
+        if (!origin || allowedOrigins.includes(normalizedOrigin)) {
           callback(null, true);
         } else {
-          logger.warn({ origin }, 'CORS blocked origin');
+          logger.warn({ origin, normalizedOrigin, allowedOrigins }, 'CORS blocked origin');
           callback(new Error('Not allowed by CORS'));
         }
       },

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
-import { Calendar, Search, ChevronDown } from 'lucide-react';
+import { Calendar, Search, ChevronDown, Sparkles, Palette, ArrowLeft, ChefHat } from 'lucide-react';
 import { calculateRemainingDays } from '../utils/dateUtils';
 import RecipeSelector from '../components/RecipeSelector';
 import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
@@ -82,6 +82,83 @@ function RecipeCard({ recipe, onSave, isSaved, onSchedule }) {
         <ol className="space-y-4">{recipe.instructions.map((step, i) => <li key={i} className="flex gap-4"><span className="flex-shrink-0 w-7 h-7 text-white rounded-full flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--color-primary)' }}>{i + 1}</span><span className="pt-0.5" style={{ color: 'var(--text-secondary)' }}>{step}</span></li>)}</ol>
       </div>
 
+      {/* Pantry Items Used Section */}
+      {recipe.pantryItemsUsed && recipe.pantryItemsUsed.length > 0 && (
+        <div className="card p-6 border-l-4" style={{ borderLeftColor: 'var(--color-success)', backgroundColor: 'var(--color-success-light)' }}>
+          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-success)' }}>
+            <span>✓</span> Pantry Items Used
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recipe.pantryItemsUsed.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white">
+                <span className="text-xl">🥫</span>
+                <div className="flex-1">
+                  <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {item.itemName}
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {item.quantity}
+                    {item.daysUntilExpiry !== null && item.daysUntilExpiry <= 3 && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{
+                        backgroundColor: 'var(--color-warning-light)',
+                        color: 'var(--color-warning)'
+                      }}>
+                        Expires soon
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Shopping List Section */}
+      {recipe.shoppingListItems && recipe.shoppingListItems.length > 0 && (
+        <div className="card p-6 border-l-4" style={{ borderLeftColor: 'var(--color-accent)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <span>🛒</span> Shopping List
+            </h3>
+            <button
+              onClick={() => {/* TODO: Implement add to shopping list */}}
+              className="btn-base btn-primary px-4 py-2 text-sm flex items-center gap-2"
+            >
+              Add All to List
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recipe.shoppingListItems.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-secondary">
+                <span className="text-xl">
+                  {item.category === 'produce' ? '🥬' :
+                   item.category === 'dairy' ? '🥛' :
+                   item.category === 'meat' ? '🥩' :
+                   item.category === 'pantry' ? '🥫' : '📦'}
+                </span>
+                <div className="flex-1">
+                  <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {item.name}
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {item.quantity}
+                    {item.priority === 'essential' && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{
+                        backgroundColor: 'var(--color-primary-light)',
+                        color: 'var(--color-primary)'
+                      }}>
+                        Essential
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Action Buttons */}
       {onSchedule && (
         <div className="pt-4 border-t" style={{ borderColor: 'var(--border-light)' }}>
@@ -107,11 +184,23 @@ export default function RecipeGenerator() {
   const userToken = context?.userToken;
   const activeHomeId = context?.activeHomeId;
   
+  // View state management
+  const [view, setView] = useState('menu'); // 'menu' | 'roscoes-choice' | 'customize' | 'results' | 'loading'
+
   const [ingredients, setIngredients] = useState([]);
   const [ingredientText, setIngredientText] = useState('');
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [generatedRecipes, setGeneratedRecipes] = useState([]); // For multiple recipes
   const [savedRecipes, setSavedRecipes] = useState([]);
+  const [recentRecipes, setRecentRecipes] = useState(() => {
+    // Load recent recipes from localStorage on mount
+    try {
+      const stored = localStorage.getItem('recentRecipes');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -133,10 +222,38 @@ export default function RecipeGenerator() {
   const [showRecipeSchedulingModal, setShowRecipeSchedulingModal] = useState(false);
   const [recipeToDirectSchedule, setRecipeToDirectSchedule] = useState(null);
 
+  // Roscoe's Choice state
+  const [pantryMode, setPantryMode] = useState('pantry_only'); // 'pantry_only' | 'pantry_plus_shopping'
+  const [numberOfRecipes, setNumberOfRecipes] = useState(1);
+  const [numberOfPeople, setNumberOfPeople] = useState(2);
+  const [quickMealsOnly, setQuickMealsOnly] = useState(false);
+  const [prioritizeExpiring, setPrioritizeExpiring] = useState(false);
+  const [aiRefusal, setAiRefusal] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Customize state
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [selectedCuisines, setSelectedCuisines] = useState([]);
+  const [selectedProteins, setSelectedProteins] = useState([]);
+  const [selectedPreferences, setSelectedPreferences] = useState([]);
+  const [servingSize, setServingSize] = useState(2);
+  const [specificIngredients, setSpecificIngredients] = useState([]);
+  const [customizePantryMode, setCustomizePantryMode] = useState('ignore_pantry'); // 'use_pantry_supplement' | 'use_pantry_only' | 'ignore_pantry'
+  const [showPantrySelector, setShowPantrySelector] = useState(false);
+
   const getAuthHeaders = useCallback(() => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${userToken}`,
   }), [userToken]);
+
+  // Save recent recipes to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('recentRecipes', JSON.stringify(recentRecipes));
+    } catch (err) {
+      console.error('Failed to save recent recipes to localStorage:', err);
+    }
+  }, [recentRecipes]);
 
   useEffect(() => {
     if (!userToken || !activeHomeId) return;
@@ -289,6 +406,9 @@ export default function RecipeGenerator() {
 
   const handleViewRecipe = useCallback((recipeToView) => {
     setGeneratedRecipe(recipeToView);
+    setGeneratedRecipes([recipeToView]); // Single recipe array
+    setCurrentRecipeIndex(0);
+    setView('results');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -310,6 +430,183 @@ export default function RecipeGenerator() {
     // Optionally show success message
     logger.debug('Recipe scheduled directly:', scheduledMeal);
   }, []);
+
+  // View navigation handlers
+  const handleStartRoscoesChoice = useCallback(() => {
+    setView('roscoes-choice');
+    setError('');
+  }, []);
+
+  const handleStartCustomize = useCallback(() => {
+    setView('customize');
+    setError('');
+  }, []);
+
+  const handleBackToMenu = useCallback(() => {
+    setView('menu');
+    setError('');
+    setGeneratedRecipe(null);
+    setGeneratedRecipes([]);
+    setAiRefusal(null);
+  }, []);
+
+  const handleUseLegacy = useCallback(() => {
+    setView('legacy');
+    setError('');
+  }, []);
+
+  // Roscoe's Choice recipe generation
+  const handleGenerateRoscoesChoice = useCallback(async () => {
+    if (!userToken || !activeHomeId) {
+      setError('Authentication required');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError('');
+    setAiRefusal(null);
+    setGeneratedRecipe(null);
+    setGeneratedRecipes([]);
+
+    try {
+      const response = await fetch('/api/generate-recipe/roscoes-choice', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          homeId: activeHomeId,
+          mode: pantryMode,
+          numberOfPeople,
+          quickMealsOnly,
+          prioritizeExpiring,
+          numberOfRecipes
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle AI refusal (400 status)
+        if (response.status === 400 && data.reason) {
+          setAiRefusal({
+            reason: data.reason,
+            suggestions: data.suggestions || []
+          });
+          logger.info('AI refused to generate recipe:', data.reason);
+          return;
+        }
+
+        // Handle rate limit error
+        if (response.status === 429) {
+          setError(data.message || 'Too many requests. Please try again later.');
+          return;
+        }
+
+        throw new Error(data.error || 'Failed to generate recipe');
+      }
+
+      // Handle successful generation
+      if (Array.isArray(data)) {
+        // Multiple recipes
+        setGeneratedRecipes(data);
+        setGeneratedRecipe(data[0]); // Set first recipe for display
+        setCurrentRecipeIndex(0);
+        setRecentRecipes(prev => [...data, ...prev].slice(0, 10)); // Keep last 10
+        logger.info(`Generated ${data.length} recipes with Roscoe's Choice`);
+      } else {
+        // Single recipe
+        setGeneratedRecipe(data);
+        setRecentRecipes(prev => [data, ...prev].slice(0, 10));
+        logger.info('Generated recipe with Roscoe\'s Choice:', data.title);
+      }
+
+      // Switch to results view
+      setView('results');
+
+    } catch (error) {
+      logger.error('Error generating Roscoe\'s Choice recipe:', error);
+      setError(error.message || 'Failed to generate recipe. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [userToken, activeHomeId, pantryMode, numberOfPeople, quickMealsOnly, prioritizeExpiring, numberOfRecipes, getAuthHeaders]);
+
+  // Customize recipe generation
+  const handleGenerateCustomize = useCallback(async () => {
+    if (!userToken || !activeHomeId) {
+      setError('Authentication required');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError('');
+    setAiRefusal(null);
+    setGeneratedRecipe(null);
+    setGeneratedRecipes([]);
+
+    try {
+      const response = await fetch('/api/generate-recipe/customize', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          homeId: activeHomeId,
+          aiPrompt: aiPrompt.trim() || undefined,
+          cuisines: selectedCuisines.length > 0 ? selectedCuisines : undefined,
+          proteins: selectedProteins.length > 0 ? selectedProteins : undefined,
+          preferences: selectedPreferences.length > 0 ? selectedPreferences : undefined,
+          numberOfRecipes,
+          servingSize,
+          specificIngredients: specificIngredients.length > 0 ? specificIngredients : undefined,
+          pantryMode: customizePantryMode
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle AI refusal (400 status)
+        if (response.status === 400 && data.reason) {
+          setAiRefusal({
+            reason: data.reason,
+            suggestions: data.suggestions || []
+          });
+          logger.info('AI refused to generate custom recipe:', data.reason);
+          return;
+        }
+
+        // Handle rate limit error
+        if (response.status === 429) {
+          setError(data.message || 'Too many requests. Please try again later.');
+          return;
+        }
+
+        throw new Error(data.error || 'Failed to generate recipe');
+      }
+
+      // Handle successful generation
+      if (Array.isArray(data)) {
+        // Multiple recipes
+        setGeneratedRecipes(data);
+        setGeneratedRecipe(data[0]); // Set first recipe for display
+        setCurrentRecipeIndex(0);
+        setRecentRecipes(prev => [...data, ...prev].slice(0, 10));
+        logger.info(`Generated ${data.length} custom recipes`);
+      } else {
+        // Single recipe
+        setGeneratedRecipe(data);
+        setRecentRecipes(prev => [data, ...prev].slice(0, 10));
+        logger.info('Generated custom recipe:', data.title);
+      }
+
+      // Switch to results view
+      setView('results');
+
+    } catch (error) {
+      logger.error('Error generating custom recipe:', error);
+      setError(error.message || 'Failed to generate recipe. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [userToken, activeHomeId, aiPrompt, selectedCuisines, selectedProteins, selectedPreferences, numberOfRecipes, servingSize, specificIngredients, customizePantryMode, getAuthHeaders]);
 
   const isRecipeSaved = generatedRecipe && savedRecipes.some(r => r.title === generatedRecipe.title);
 
@@ -342,15 +639,158 @@ export default function RecipeGenerator() {
       <div className="container-mobile lg:max-w-none lg:px-8">
         {/* Page Header */}
         <div className="animate-fade-in mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-color-primary">
             🍽️ Recipe Generator
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>
-            Turn your ingredients into delicious meals with AI assistance
+          <p className="text-color-muted">
+            {view === 'menu' ? 'What would you like to cook today?' : 'Turn your ingredients into delicious meals with AI assistance'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Main Menu View */}
+        {view === 'menu' && (
+          <>
+            {/* Mode Selection Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Roscoe's Choice Card */}
+              <div className="card relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1" style={{
+                  background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))'
+                }}></div>
+                <div className="p-8">
+                  <div className="text-5xl mb-4">🎯</div>
+                  <h2 className="text-2xl font-bold mb-2 text-color-primary">Roscoe's Choice</h2>
+                  <p className="text-color-secondary mb-6">
+                    Let Roscoe analyze your pantry and create smart, personalized recipes for you
+                  </p>
+                  <button
+                    onClick={handleStartRoscoesChoice}
+                    className="btn-base btn-primary w-full py-3 font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Generate Recipes
+                  </button>
+                </div>
+              </div>
+
+              {/* Customize Card */}
+              <div className="card relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1" style={{
+                  background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))'
+                }}></div>
+                <div className="p-8">
+                  <div className="text-5xl mb-4">🎨</div>
+                  <h2 className="text-2xl font-bold mb-2 text-color-primary">Customize Selections</h2>
+                  <p className="text-color-secondary mb-6">
+                    Choose cuisine styles, proteins, or tell us exactly what you're craving
+                  </p>
+                  <button
+                    onClick={handleStartCustomize}
+                    className="btn-base btn-secondary w-full py-3 font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Palette className="w-5 h-5" />
+                    Start Customizing
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Saved & Recent Recipes */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Saved Recipes */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-color-primary flex items-center gap-2">
+                    <ChefHat className="w-5 h-5" />
+                    Saved Recipes
+                  </h3>
+                  <span className="text-sm text-color-muted bg-secondary px-3 py-1 rounded-full">
+                    {savedRecipes.length}
+                  </span>
+                </div>
+                {savedRecipes.length > 0 ? (
+                  <div className="space-y-2">
+                    {savedRecipes.slice(0, 5).map(recipe => (
+                      <div
+                        key={recipe.id}
+                        onClick={() => handleViewRecipe(recipe)}
+                        className="card card-interactive p-4 hover-lift cursor-pointer flex items-center justify-between"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-color-primary truncate">{recipe.title}</h4>
+                          <p className="text-sm text-color-muted">
+                            {recipe.difficulty} • {recipe.servings} servings
+                          </p>
+                        </div>
+                        <ArrowLeft className="w-4 h-4 text-color-muted transform rotate-180" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-color-muted text-center py-8">No saved recipes yet</p>
+                )}
+              </div>
+
+              {/* Recent Recipes */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-color-primary flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Recent
+                  </h3>
+                  <span className="text-sm text-color-muted bg-secondary px-3 py-1 rounded-full">
+                    {recentRecipes.length}
+                  </span>
+                </div>
+                {recentRecipes.length > 0 ? (
+                  <div className="space-y-2">
+                    {recentRecipes.slice(0, 10).map((recipe, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleViewRecipe(recipe)}
+                        className="card card-interactive p-4 hover-lift cursor-pointer flex items-center justify-between"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-color-primary truncate">{recipe.title}</h4>
+                          <p className="text-sm text-color-muted">
+                            {recipe.difficulty} • {recipe.servings} servings
+                          </p>
+                        </div>
+                        <ArrowLeft className="w-4 h-4 text-color-muted transform rotate-180" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-color-muted text-center py-8">No recent recipes</p>
+                )}
+              </div>
+            </div>
+
+            {/* Legacy Generator Link */}
+            <div className="mt-8 text-center">
+              <button
+                onClick={handleUseLegacy}
+                className="btn-base btn-ghost text-color-muted hover:text-color-primary"
+              >
+                Use Legacy Generator
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Legacy View (Existing UI) - Keep for now */}
+        {view === 'legacy' && (
+          <>
+            {/* Back to Menu Button */}
+            <button
+              onClick={handleBackToMenu}
+              className="btn-base btn-ghost mb-6 flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Menu
+            </button>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <section className="card p-6 space-y-6 lg:col-span-1">
                 {/* Pantry Items Panel */}
                 <div className="pb-6 mb-6" style={{ borderBottom: '1px solid var(--border-light)' }}>
@@ -629,26 +1069,587 @@ export default function RecipeGenerator() {
                   </div>
                 )}
             </section>
-        </div>
 
-        <section className="mt-12">
-            <h2 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>My Saved Recipes</h2>
-            {savedRecipes.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {savedRecipes.map(recipe => (
-                    <div key={recipe.id} className="card card-interactive p-6 hover-lift cursor-pointer" onClick={() => handleViewRecipe(recipe)}>
-                      <h3 className="text-xl font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{recipe.title}</h3>
-                      <p className="text-sm mt-2 h-10 overflow-hidden" style={{ color: 'var(--text-secondary)' }}>{recipe.description}</p>
-                      <div className="text-xs mt-4 flex items-center justify-between" style={{ color: 'var(--text-muted)' }}>
-                        <span>{recipe.difficulty}</span>
-                        <span>Serves {recipe.servings}</span>
-                      </div>
+            {/* Saved Recipes (Legacy View) */}
+            <section className="mt-12">
+                <h2 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>My Saved Recipes</h2>
+                {savedRecipes.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {savedRecipes.map(recipe => (
+                        <div key={recipe.id} className="card card-interactive p-6 hover-lift cursor-pointer" onClick={() => handleViewRecipe(recipe)}>
+                          <h3 className="text-xl font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{recipe.title}</h3>
+                          <p className="text-sm mt-2 h-10 overflow-hidden" style={{ color: 'var(--text-secondary)' }}>{recipe.description}</p>
+                          <div className="text-xs mt-4 flex items-center justify-between" style={{ color: 'var(--text-muted)' }}>
+                            <span>{recipe.difficulty}</span>
+                            <span>Serves {recipe.servings}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                ) : (<p className="card p-6" style={{ color: 'var(--text-muted)' }}>You haven't saved any recipes yet.</p>)}
+            </section>
+          </div>
+          </>
+        )}
+
+
+      {/* Roscoe's Choice View */}
+      {view === 'roscoes-choice' && (
+        <div className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <button
+            onClick={handleBackToMenu}
+            className="btn-base btn-ghost mb-6 flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Menu
+          </button>
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🎯</div>
+            <h2 className="text-3xl font-bold mb-2 text-color-primary">Roscoe's Choice</h2>
+            <p className="text-color-secondary">
+              Let me analyze your pantry and create personalized recipes just for you
+            </p>
+          </div>
+
+          {/* Configuration Card */}
+          <div className="card p-8 mb-6">
+            {/* Pantry Mode Toggle */}
+            <div className="mb-6 pb-6 border-b border-color-light">
+              <label className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-color-primary">Pantry Mode</span>
+              </label>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setPantryMode('pantry_only')}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                    pantryMode === 'pantry_only'
+                      ? 'bg-primary text-white'
+                      : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">🥘</div>
+                  Pantry Only
+                </button>
+                <button
+                  onClick={() => setPantryMode('pantry_plus_shopping')}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                    pantryMode === 'pantry_plus_shopping'
+                      ? 'bg-primary text-white'
+                      : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">🛒</div>
+                  Pantry + Shopping
+                </button>
+              </div>
+              <p className="text-sm text-color-muted mt-2">
+                {pantryMode === 'pantry_only'
+                  ? 'Use only ingredients from your pantry'
+                  : 'Use pantry items and add a few shopping list items'}
+              </p>
+            </div>
+
+            {/* Number of Recipes */}
+            <div className="mb-6 pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Number of Recipes
+              </label>
+              <div className="flex gap-3">
+                {[1, 3, 5].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => setNumberOfRecipes(num)}
+                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                      numberOfRecipes === num
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Number of People */}
+            <div className="mb-6 pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Number of People
+              </label>
+              <div className="flex gap-3">
+                {[1, 2, 4, 6].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => setNumberOfPeople(num)}
+                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                      numberOfPeople === num
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Options */}
+            <div className="mb-6">
+              <label className="block font-semibold text-color-primary mb-3">
+                Quick Options
+              </label>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-4 rounded-lg bg-secondary cursor-pointer hover:bg-color-primary hover:bg-opacity-10 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={quickMealsOnly}
+                    onChange={(e) => setQuickMealsOnly(e.target.checked)}
+                    className="w-5 h-5"
+                  />
+                  <div>
+                    <div className="font-medium text-color-primary">Quick Meals Only</div>
+                    <div className="text-sm text-color-muted">Recipes ready in 30 minutes or less</div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 rounded-lg bg-secondary cursor-pointer hover:bg-color-primary hover:bg-opacity-10 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={prioritizeExpiring}
+                    onChange={(e) => setPrioritizeExpiring(e.target.checked)}
+                    className="w-5 h-5"
+                  />
+                  <div>
+                    <div className="font-medium text-color-primary">Prioritize Expiring Items</div>
+                    <div className="text-sm text-color-muted">Use ingredients expiring soon first</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Generate Button */}
+            <button
+              onClick={handleGenerateRoscoesChoice}
+              disabled={isGenerating || pantryItems.length === 0}
+              className="btn-base btn-primary w-full py-4 text-lg font-semibold flex items-center justify-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Generate Recipes
+                </>
+              )}
+            </button>
+
+            {pantryItems.length === 0 && (
+              <p className="text-sm text-color-muted text-center mt-3">
+                Add some items to your pantry first to generate recipes
+              </p>
+            )}
+          </div>
+
+          {/* AI Refusal Message */}
+          {aiRefusal && (
+            <div className="card p-6 mb-6 border-l-4" style={{ borderLeftColor: 'var(--color-warning)' }}>
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-color-primary mb-2">Unable to Generate Recipe</h3>
+                  <p className="text-color-secondary mb-3">{aiRefusal.reason}</p>
+                  {aiRefusal.suggestions && aiRefusal.suggestions.length > 0 && (
+                    <div>
+                      <p className="font-medium text-color-primary mb-2">Suggestions:</p>
+                      <ul className="list-disc list-inside space-y-1 text-color-secondary">
+                        {aiRefusal.suggestions.map((suggestion, index) => (
+                          <li key={index}>{suggestion}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-            ) : (<p className="card p-6" style={{ color: 'var(--text-muted)' }}>You haven't saved any recipes yet.</p>)}
-        </section>
-      </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Customize View */}
+      {view === 'customize' && (
+        <div className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <button
+            onClick={handleBackToMenu}
+            className="btn-base btn-ghost mb-6 flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Menu
+          </button>
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🎨</div>
+            <h2 className="text-3xl font-bold mb-2 text-color-primary">Customize Your Recipe</h2>
+            <p className="text-color-secondary">
+              Tell me what you're craving, choose cuisines, proteins, and preferences
+            </p>
+          </div>
+
+          {/* Configuration Card */}
+          <div className="card p-8 mb-6 space-y-6">
+            {/* AI Prompt Section */}
+            <div className="pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-2">
+                What are you craving? (Optional)
+              </label>
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="E.g., Something spicy with coconut milk, or a hearty winter stew, or quick pasta under 20 minutes..."
+                className="w-full p-4 rounded-lg bg-secondary text-color-primary border border-color-light focus:border-color-primary outline-none resize-none"
+                rows={3}
+              />
+              <p className="text-sm text-color-muted mt-2">
+                Describe what you want in natural language - be as specific or vague as you like!
+              </p>
+            </div>
+
+            {/* Cuisines Section */}
+            <div className="pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Cuisines (Optional)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {['Italian', 'Mexican', 'Asian', 'Indian', 'Mediterranean', 'American', 'French', 'Thai'].map(cuisine => (
+                  <button
+                    key={cuisine}
+                    onClick={() => {
+                      if (selectedCuisines.includes(cuisine)) {
+                        setSelectedCuisines(selectedCuisines.filter(c => c !== cuisine));
+                      } else {
+                        setSelectedCuisines([...selectedCuisines, cuisine]);
+                      }
+                    }}
+                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                      selectedCuisines.includes(cuisine)
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {cuisine}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Proteins Section */}
+            <div className="pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Proteins (Optional)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {['Chicken', 'Beef', 'Pork', 'Fish', 'Shrimp', 'Tofu', 'Beans', 'Eggs'].map(protein => (
+                  <button
+                    key={protein}
+                    onClick={() => {
+                      if (selectedProteins.includes(protein)) {
+                        setSelectedProteins(selectedProteins.filter(p => p !== protein));
+                      } else {
+                        setSelectedProteins([...selectedProteins, protein]);
+                      }
+                    }}
+                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                      selectedProteins.includes(protein)
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {protein}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preferences Section */}
+            <div className="pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Preferences (Optional)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {['Quick', 'Healthy', 'Comfort', 'Easy'].map(pref => (
+                  <button
+                    key={pref}
+                    onClick={() => {
+                      if (selectedPreferences.includes(pref)) {
+                        setSelectedPreferences(selectedPreferences.filter(p => p !== pref));
+                      } else {
+                        setSelectedPreferences([...selectedPreferences, pref]);
+                      }
+                    }}
+                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                      selectedPreferences.includes(pref)
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {pref}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Number of Recipes */}
+            <div className="pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Number of Recipes
+              </label>
+              <div className="flex gap-3">
+                {[1, 3, 5].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => setNumberOfRecipes(num)}
+                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                      numberOfRecipes === num
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Serving Size */}
+            <div className="pb-6 border-b border-color-light">
+              <label className="block font-semibold text-color-primary mb-3">
+                Serving Size
+              </label>
+              <div className="flex gap-3">
+                {[1, 2, 4, 6].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => setServingSize(num)}
+                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                      servingSize === num
+                        ? 'bg-primary text-white'
+                        : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pantry Integration Mode */}
+            <div className="pb-6 border-b border-color-light">
+              <div className="font-semibold text-color-primary mb-3">Pantry Integration</div>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 p-4 rounded-lg bg-secondary cursor-pointer hover:bg-color-primary hover:bg-opacity-10 transition-all">
+                  <input
+                    type="radio"
+                    name="pantryMode"
+                    value="ignore_pantry"
+                    checked={customizePantryMode === 'ignore_pantry'}
+                    onChange={(e) => setCustomizePantryMode(e.target.value)}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div>
+                    <div className="font-medium text-color-primary">Don't Be Constrained by Pantry</div>
+                    <div className="text-sm text-color-muted">Prioritize your preferences. Will still check and match pantry items if available.</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 p-4 rounded-lg bg-secondary cursor-pointer hover:bg-color-primary hover:bg-opacity-10 transition-all">
+                  <input
+                    type="radio"
+                    name="pantryMode"
+                    value="use_pantry_supplement"
+                    checked={customizePantryMode === 'use_pantry_supplement'}
+                    onChange={(e) => setCustomizePantryMode(e.target.value)}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div>
+                    <div className="font-medium text-color-primary">Use Pantry + Shopping List</div>
+                    <div className="text-sm text-color-muted">Use pantry items as base and add items to shopping list to complete the meal.</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 p-4 rounded-lg bg-secondary cursor-pointer hover:bg-color-primary hover:bg-opacity-10 transition-all">
+                  <input
+                    type="radio"
+                    name="pantryMode"
+                    value="use_pantry_only"
+                    checked={customizePantryMode === 'use_pantry_only'}
+                    onChange={(e) => setCustomizePantryMode(e.target.value)}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div>
+                    <div className="font-medium text-color-primary">Use Pantry Only</div>
+                    <div className="text-sm text-color-muted">Only use ingredients from your pantry. No shopping list.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Specific Ingredients (Collapsible) */}
+            {customizePantryMode !== 'ignore_pantry' && (
+              <div className="pb-6 border-b border-color-light">
+                <button
+                  onClick={() => setShowPantrySelector(!showPantrySelector)}
+                  className="w-full flex items-center justify-between font-semibold text-color-primary mb-3"
+                >
+                  <span>Specific Ingredients (Optional)</span>
+                  <ChevronDown className={`w-5 h-5 transition-transform ${showPantrySelector ? 'rotate-180' : ''}`} />
+                </button>
+                {showPantrySelector && (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {pantryItems.length > 0 ? (
+                      pantryItems.map(item => (
+                        <label
+                          key={item.id}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-secondary cursor-pointer hover:bg-color-primary hover:bg-opacity-10 transition-all"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={specificIngredients.includes(item.name)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSpecificIngredients([...specificIngredients, item.name]);
+                              } else {
+                                setSpecificIngredients(specificIngredients.filter(i => i !== item.name));
+                              }
+                            }}
+                            className="w-5 h-5"
+                          />
+                          <span className="text-color-primary">{item.name}</span>
+                          {item.quantity && <span className="text-sm text-color-muted">({item.quantity})</span>}
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-color-muted text-center py-4">No pantry items available</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Generate Button */}
+            <button
+              onClick={handleGenerateCustomize}
+              disabled={isGenerating}
+              className="btn-base btn-primary w-full py-4 text-lg font-semibold flex items-center justify-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Generate Custom Recipe
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* AI Refusal Message */}
+          {aiRefusal && (
+            <div className="card p-6 mb-6 border-l-4" style={{ borderLeftColor: 'var(--color-warning)' }}>
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-color-primary mb-2">Unable to Generate Recipe</h3>
+                  <p className="text-color-secondary mb-3">{aiRefusal.reason}</p>
+                  {aiRefusal.suggestions && aiRefusal.suggestions.length > 0 && (
+                    <div>
+                      <p className="font-medium text-color-primary mb-2">Suggestions:</p>
+                      <ul className="list-disc list-inside space-y-1 text-color-secondary">
+                        {aiRefusal.suggestions.map((suggestion, index) => (
+                          <li key={index}>{suggestion}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Results View */}
+      {view === 'results' && (
+        <div className="max-w-5xl mx-auto">
+          {/* Back Button */}
+          <button
+            onClick={handleBackToMenu}
+            className="btn-base btn-ghost mb-6 flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Menu
+          </button>
+
+          {/* Recipe Display */}
+          {generatedRecipe && (
+            <div>
+              {/* Recipe Navigation for Multiple Recipes */}
+              {generatedRecipes.length > 1 && (
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-color-light">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-color-secondary">Recipe Options:</span>
+                    <div className="flex gap-1">
+                      {generatedRecipes.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleRecipeNavigation(index)}
+                          className={`w-8 h-8 rounded-full text-sm font-semibold transition-all ${
+                            index === currentRecipeIndex
+                              ? 'bg-primary text-white'
+                              : 'bg-secondary text-color-secondary hover:bg-color-primary hover:bg-opacity-10'
+                          }`}
+                        >
+                          {index + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleRecipeNavigation(Math.max(0, currentRecipeIndex - 1))}
+                      disabled={currentRecipeIndex === 0}
+                      className="px-3 py-1 text-sm btn-base btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ← Previous
+                    </button>
+                    <button
+                      onClick={() => handleRecipeNavigation(Math.min(generatedRecipes.length - 1, currentRecipeIndex + 1))}
+                      disabled={currentRecipeIndex === generatedRecipes.length - 1}
+                      className="px-3 py-1 text-sm btn-base btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Recipe Card */}
+              <RecipeCard
+                recipe={generatedRecipe}
+                onSave={() => handleSaveRecipe(generatedRecipe)}
+                isSaved={isRecipeSaved}
+                onSchedule={() => handleScheduleRecipe(generatedRecipe)}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Recipe Selector for scheduling */}
       {recipeToSchedule && (
@@ -680,6 +1681,7 @@ export default function RecipeGenerator() {
           activeHomeId={activeHomeId}
         />
       )}
+    </div>
     </div>
   );
 }
