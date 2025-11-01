@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import WeekView from './WeekView';
+import { formatDateForAPI } from '../utils/dateUtils';
 
 /**
  * PlannerSidebar - Desktop sidebar with calendar, stats, and quick actions
@@ -39,14 +40,14 @@ const PlannerSidebar = ({
       return `${year}-${month}-${day}`;
     };
 
-    const weekStartStr = formatDate(calendarWeekStart);
-    const weekEndStr = formatDate(weekEnd);
+    const weekStartStr = formatDateForAPI(calendarWeekStart);
+    const weekEndStr = formatDateForAPI(weekEnd);
 
     // Filter meals in calendar's week
     const weekMeals = mealPlans.filter(plan => {
       const planDate = typeof plan.date === 'string'
         ? plan.date.split('T')[0]
-        : formatDate(new Date(plan.date));
+        : formatDateForAPI(new Date(plan.date));
       return planDate >= weekStartStr && planDate <= weekEndStr;
     });
 
@@ -55,7 +56,7 @@ const PlannerSidebar = ({
       weekMeals.map(plan => {
         return typeof plan.date === 'string'
           ? plan.date.split('T')[0]
-          : formatDate(new Date(plan.date));
+          : formatDateForAPI(new Date(plan.date));
       })
     );
 
@@ -90,7 +91,7 @@ const PlannerSidebar = ({
       return `${year}-${month}-${day}`;
     };
 
-    const todayStr = formatDate(today);
+    const todayStr = formatDateForAPI(today);
 
     // Meal type order for today (based on current time)
     const mealTypeOrder = {
@@ -112,7 +113,7 @@ const PlannerSidebar = ({
         ...plan,
         dateStr: typeof plan.date === 'string'
           ? plan.date.split('T')[0]
-          : formatDate(new Date(plan.date)),
+          : formatDateForAPI(new Date(plan.date)),
         dateObj: typeof plan.date === 'string'
           ? new Date(plan.date.split('T')[0])
           : new Date(plan.date)
@@ -151,9 +152,9 @@ const PlannerSidebar = ({
       return `${year}-${month}-${day}`;
     };
 
-    const mealDateStr = meal.dateStr || formatDate(meal.dateObj);
-    const todayStr = formatDate(today);
-    const tomorrowStr = formatDate(tomorrow);
+    const mealDateStr = meal.dateStr || formatDateForAPI(meal.dateObj);
+    const todayStr = formatDateForAPI(today);
+    const tomorrowStr = formatDateForAPI(tomorrow);
 
     const mealTypeLabels = {
       breakfast: 'Breakfast',

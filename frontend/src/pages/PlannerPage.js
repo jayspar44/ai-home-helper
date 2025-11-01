@@ -1,20 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
 import { Plus } from 'lucide-react';
 import UnifiedMealModal from '../components/UnifiedMealModal';
 import PlannerSidebar from '../components/PlannerSidebar';
 import DaySection from '../components/DaySection';
 import WeekView from '../components/WeekView';
 import logger from '../utils/logger';
+import { formatDateForAPI, getMealTypeByTime } from '../utils/dateUtils';
+import { MEAL_FETCH_WINDOW, MEAL_TIME_BOUNDARIES } from '../constants/plannerConstants';
 import '../styles/Planner.css';
 
-// Date formatting utility - date-only format to avoid timezone conversion
-const formatDateForAPI = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 export default function PlannerPage() {
   const context = useOutletContext();

@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatDateForAPI } from '../utils/dateUtils';
+import { MAX_MEAL_DOTS } from '../constants/plannerConstants';
 
 /**
  * WeekView - Compact week view calendar with meal indicators
@@ -44,12 +46,12 @@ const WeekView = ({ mealPlans = [], initialWeekStart, onDayClick, onWeekChange }
   // Get meal counts by state for a day
   const getDayMealCounts = (date) => {
     if (!date) return { planned: 0, completed: 0 };
-    const dateString = formatDateForComparison(date);
+    const dateString = formatDateForAPI(date);
     const dayMeals = mealPlans.filter(plan => {
       // Handle both date string formats
       const planDate = typeof plan.date === 'string'
         ? plan.date.split('T')[0]
-        : formatDateForComparison(new Date(plan.date));
+        : formatDateForAPI(new Date(plan.date));
       return planDate === dateString;
     });
 
@@ -166,7 +168,7 @@ const WeekView = ({ mealPlans = [], initialWeekStart, onDayClick, onWeekChange }
                   {Array.from({ length: Math.min(mealCounts.planned, 4) }).map((_, dotIndex) => (
                     <div key={`planned-${dotIndex}`} className="meal-dot planned" />
                   ))}
-                  {Array.from({ length: Math.min(mealCounts.completed, 4 - mealCounts.planned) }).map((_, dotIndex) => (
+                  {Array.from({ length: Math.min(mealCounts.completed, MAX_MEAL_DOTS - mealCounts.planned) }).map((_, dotIndex) => (
                     <div key={`completed-${dotIndex}`} className="meal-dot completed" />
                   ))}
                 </div>
