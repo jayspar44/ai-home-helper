@@ -16,6 +16,10 @@ const { generateRecipes, generateRoscoesChoiceRecipe, generateCustomRecipe, matc
 const { suggestPantryItem, getQuickDefaults, detectItemsFromImage } = require('./services/pantryAI');
 const { version } = require('../version.json');
 const { aiRateLimiter } = require('./middleware/rateLimiter');
+const { v4: uuidv4 } = require('uuid');
+
+// --- Constants ---
+const MAX_AI_PROMPT_LENGTH = 250; // Prevent prompt injection and timeout
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -662,7 +666,6 @@ app.post('/api/generate-recipe/roscoes-choice', checkAuth, aiRateLimiter, async 
 
     // Handle multiple recipes
     if (Array.isArray(result)) {
-      const { v4: uuidv4 } = require('uuid');
       const variationFamily = uuidv4();
 
       const recipes = result.map((recipe, index) => ({
@@ -728,6 +731,13 @@ app.post('/api/generate-recipe/customize', checkAuth, aiRateLimiter, async (req,
       return res.status(400).json({ error: 'homeId is required' });
     }
 
+    // Validate aiPrompt length to prevent prompt injection and timeout
+    if (aiPrompt && aiPrompt.length > MAX_AI_PROMPT_LENGTH) {
+      return res.status(400).json({
+        error: `AI prompt exceeds maximum length of ${MAX_AI_PROMPT_LENGTH} characters`
+      });
+    }
+
     // Default to ignore_pantry if not specified
     const mode = pantryMode || 'ignore_pantry';
 
@@ -787,7 +797,6 @@ app.post('/api/generate-recipe/customize', checkAuth, aiRateLimiter, async (req,
     }
 
     // Handle multiple recipes (always array for customize)
-    const { v4: uuidv4 } = require('uuid');
     const variationFamily = (numberOfRecipes || 1) > 1 ? uuidv4() : null;
 
     const recipes = Array.isArray(result) ? result : [result];

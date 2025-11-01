@@ -2,6 +2,11 @@
 
 const { parseAIJsonResponse } = require('../utils/aiHelpers');
 
+// --- Constants ---
+const MAX_AI_RETRY_ATTEMPTS = 3; // Maximum number of retry attempts for AI generation
+const MIN_QUALITY_SCORE = 50; // Minimum acceptable quality score for recipes
+const EXPIRING_SOON_THRESHOLD_DAYS = 3; // Items expiring within this many days are considered expiring soon
+
 /**
  * Generates one or more recipes based on provided ingredients and preferences
  * Uses Google Gemini AI to create detailed recipes with pantry integration
@@ -259,15 +264,15 @@ async function generateRoscoesChoiceRecipe(options, genAI, logger) {
 
   const startTime = Date.now();
   let attempts = 0;
-  const maxAttempts = 3;
+  const maxAttempts = MAX_AI_RETRY_ATTEMPTS;
 
   // Build pantry context with expiry priority
-  const expiringItems = pantryItems.filter(item => item.daysUntilExpiry && item.daysUntilExpiry <= 3);
-  const regularItems = pantryItems.filter(item => !item.daysUntilExpiry || item.daysUntilExpiry > 3);
+  const expiringItems = pantryItems.filter(item => item.daysUntilExpiry && item.daysUntilExpiry <= EXPIRING_SOON_THRESHOLD_DAYS);
+  const regularItems = pantryItems.filter(item => !item.daysUntilExpiry || item.daysUntilExpiry > EXPIRING_SOON_THRESHOLD_DAYS);
 
   let pantryContext = '';
   if (expiringItems.length > 0) {
-    pantryContext += '\n\nEXPIRING SOON (≤3 days):\n';
+    pantryContext += `\n\nEXPIRING SOON (≤${EXPIRING_SOON_THRESHOLD_DAYS} days):\n`;
     pantryContext += expiringItems.map(item =>
       `- ${item.name} (${item.quantity || 'unknown qty'}) - expires in ${item.daysUntilExpiry} days`
     ).join('\n');
@@ -389,8 +394,8 @@ async function generateSingleRoscoesRecipe(prompt, genAI, pantryItems, logger, m
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
 
-      // Quality check - reject if score < 50
-      if (parsed.qualityScore < 50) {
+      // Quality check - reject if score below minimum threshold
+      if (parsed.qualityScore < MIN_QUALITY_SCORE) {
         logger.warn({
           qualityScore: parsed.qualityScore,
           title: parsed.title
@@ -403,7 +408,7 @@ async function generateSingleRoscoesRecipe(prompt, genAI, pantryItems, logger, m
         // Return as refusal
         return {
           success: false,
-          refusalReason: 'Unable to create a quality recipe with available ingredients (score below 50)',
+          refusalReason: `Unable to create a quality recipe with available ingredients (score below ${MIN_QUALITY_SCORE})`,
           suggestions: [
             'Try "Pantry + shopping list" mode to add a few items',
             'Add more complementary ingredients to your pantry',
@@ -484,7 +489,7 @@ function createRoscoesChoicePrompt(options) {
     : '\n- Time: Flexible';
 
   const expiryPriority = prioritizeExpiring
-    ? '\n- CRITICAL: MUST use items expiring in ≤3 days prominently in the recipe'
+    ? `\n- CRITICAL: MUST use items expiring in ≤${EXPIRING_SOON_THRESHOLD_DAYS} days prominently in the recipe`
     : '';
 
   const variationGuidance = totalVariations > 1
@@ -619,7 +624,7 @@ async function generateCustomRecipe(options, genAI, logger) {
         totalVariations: numberOfRecipes
       });
 
-      const promise = generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, 3);
+      const promise = generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, MAX_AI_RETRY_ATTEMPTS);
       promises.push(promise);
     }
 
@@ -656,7 +661,7 @@ async function generateCustomRecipe(options, genAI, logger) {
     pantryMode
   });
 
-  const result = await generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, 3);
+  const result = await generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, MAX_AI_RETRY_ATTEMPTS);
 
   logger.info({
     success: result.success !== false,
@@ -716,7 +721,7 @@ async function generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, ma
       }
 
       // Quality check
-      if (parsed.qualityScore < 50) {
+      if (parsed.qualityScore < MIN_QUALITY_SCORE) {
         logger.warn({
           qualityScore: parsed.qualityScore,
           title: parsed.title
@@ -728,7 +733,7 @@ async function generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, ma
 
         return {
           success: false,
-          refusalReason: 'Unable to create a quality recipe matching your constraints (score below 50)',
+          refusalReason: `Unable to create a quality recipe matching your constraints (score below ${MIN_QUALITY_SCORE})`,
           suggestions: [
             'Try adjusting your constraints',
             'Add more specific ingredients',
