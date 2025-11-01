@@ -1,6 +1,7 @@
 {
-  "version": "2.24.0",
-  "lastUpdated": "2025-10-31T05:37:02.512Z",
+  "version": "2.25.0",
+  "lastUpdated": "2025-10-31T06:05:37.903Z",
+  "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
       "description": "Initial release with AI recipe generation, pantry management, and multi-user home administration",
@@ -310,6 +311,11 @@
     "2.24.0": {
       "description": "Add grouping functionality to Pantry page with collapsible categories (Location, Expiration, No Grouping); fix dropdown arrow UI issue in shopping list toolbar; improve UX consistency between Pantry and Shopping List pages",
       "timestamp": "2025-10-31T05:37:02.512Z",
+      "date": "October 31, 2025"
+    },
+    "2.25.0": {
+      "description": "feat: Meal Planner redesign with progressive disclosure, week calendar navigation, and streamlined UI",
+      "timestamp": "2025-10-31T06:05:37.903Z",
       "date": "October 31, 2025"
     }
   }

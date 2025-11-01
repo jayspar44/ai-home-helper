@@ -599,16 +599,34 @@ input, textarea, select {
 .btn-icon-desktop {
   width: var(--button-size-small);
   height: var(--button-size-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-icon-mobile {
   width: var(--button-size-medium);
   height: var(--button-size-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-icon-fab {
   width: var(--button-size-large);
   height: var(--button-size-large);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
 }
 
 /* ===== ICON SIZE UTILITIES ===== */
