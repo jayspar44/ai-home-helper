@@ -209,6 +209,7 @@ const PlannerSidebar = ({
       {/* Upcoming Meals - Fourth */}
       {upcomingMeals.length > 0 && (
         <div className="sidebar-section">
+          <div className="sidebar-section-title">Next up</div>
           <div className="sidebar-card">
             <div className="upcoming-meals">
               {upcomingMeals.map((meal, index) => {

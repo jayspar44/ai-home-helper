@@ -193,6 +193,11 @@ logger.error('Failed to load recipes:', error); // Always visible
 
 **Important**: Always use `err` as the key name for error objects in Pino logs (not `error`). This triggers Pino's built-in error serializer which includes stack traces and proper error formatting.
 
+**ESLint Enforcement**: The `no-restricted-syntax` rule in [eslint.config.mjs](eslint.config.mjs) automatically enforces this convention:
+- Catches patterns like `logger.error({ error: ... })` or `req.log.error({ error: ... })`
+- Triggers ESLint error with helpful message: "Use 'err:' instead of 'error:' in Pino logs"
+- Prevents logging inconsistencies from being committed to the codebase
+
 **Configuration**:
 - Set `LOG_LEVEL` environment variable to override (debug|info|warn|error)
 - GCP automatically maps Pino severity levels to Cloud Logging

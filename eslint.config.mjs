@@ -26,7 +26,15 @@ export default [
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
         "caughtErrors": "none"
-      }]
+      }],
+      // Enforce Pino logging convention: use 'err' not 'error' for error objects
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name=/^(error|warn|info)$/] > ObjectExpression.arguments:first-child > Property[key.name='error']",
+          message: "Use 'err:' instead of 'error:' in Pino logs to trigger the built-in error serializer. Example: logger.error({ err: error }, 'message')"
+        }
+      ]
     }
   },
   // Frontend React/JSX files

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
-import { Plus } from 'lucide-react';
 import UnifiedMealModal from '../components/UnifiedMealModal';
 import PlannerSidebar from '../components/PlannerSidebar';
 import DaySection from '../components/DaySection';
@@ -297,21 +296,6 @@ export default function PlannerPage() {
     setEditingMeal(null);
   };
 
-  const handleQuickAddFAB = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-
-    let suggestedMealType = 'snacks';
-    if (currentHour < 10) suggestedMealType = 'breakfast';
-    else if (currentHour < 15) suggestedMealType = 'lunch';
-    else if (currentHour < 21) suggestedMealType = 'dinner';
-
-    setSelectedDate(now);
-    setSelectedMealType(suggestedMealType);
-    setEditingMeal(null);
-    setShowUnifiedMealModal(true);
-  };
-
   const handleSidebarAddMeal = () => {
     const now = new Date();
     const currentHour = now.getHours();
@@ -408,16 +392,6 @@ export default function PlannerPage() {
           </div>
         </div>
       </div>
-
-      {/* Floating Action Button (Mobile Only) */}
-      <button
-        className="mobile-only fixed bottom-20 right-4 btn-icon-fab rounded-full shadow-lg flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95"
-        style={{ backgroundColor: 'var(--color-primary)' }}
-        onClick={handleQuickAddFAB}
-        aria-label="Add new meal"
-      >
-        <Plus className="icon-large" />
-      </button>
 
       {/* Unified Meal Modal */}
       <UnifiedMealModal

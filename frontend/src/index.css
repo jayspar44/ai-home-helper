@@ -30,6 +30,7 @@
   /* ===== SEMANTIC COLORS ===== */
   --color-success: #047857;        /* green-700 - darker for better contrast */
   --color-success-light: #D1FAE5;
+  --bg-success-subtle: rgba(34, 197, 94, 0.12);  /* green with 12% opacity - subtle tint */
   --color-warning: #F59E0B;
   --color-warning-light: #FEF3C7;
   --color-error: #EF4444;
