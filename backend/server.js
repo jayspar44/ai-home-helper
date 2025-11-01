@@ -63,57 +63,6 @@ if (process.env.NODE_ENV === 'production') {
   app.disable('x-powered-by');
 }
 
-// Configure CORS early (before routes)
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://localhost:3000',
-  'https://127.0.0.1:3000',
-  'http://localhost:3001',  // Allow proxy origin for development (webpack dev server)
-  'http://127.0.0.1:3001'
-];
-
-// Add GCP URLs if running on GCP
-if (isGCP()) {
-  try {
-    const projectId = getProjectId();
-    allowedOrigins.push(
-      `https://${projectId}.uc.r.appspot.com`,           // Production (default service)
-      `https://dev-dot-${projectId}.uc.r.appspot.com`    // Dev service
-    );
-    logger.info({ projectId }, 'CORS configured for GCP project');
-  } catch (error) {
-    logger.warn({ err: error }, 'Could not determine project ID for CORS');
-  }
-}
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Normalize origin by removing trailing slash for comparison
-    const normalizedOrigin = origin ? origin.replace(/\/$/, '') : origin;
-
-    // Debug logging
-    console.log('[CORS Debug]', {
-      originalOrigin: origin,
-      normalizedOrigin,
-      allowedOrigins,
-      isAllowed: !origin || allowedOrigins.includes(normalizedOrigin)
-    });
-
-    if (!origin || allowedOrigins.includes(normalizedOrigin)) {
-      callback(null, true);
-    } else {
-      logger.warn({ origin, normalizedOrigin, allowedOrigins }, 'CORS blocked origin');
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-logger.info({ originCount: allowedOrigins.length }, 'CORS enabled');
-
 // Request parsing middleware
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -2151,6 +2100,49 @@ const startServer = async () => {
   try {
     // Initialize services first (load secrets, connect to Firebase, etc.)
     await initializeServices();
+
+    // Configure CORS after services are initialized
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'https://localhost:3000',
+      'https://127.0.0.1:3000',
+      'http://localhost:3001',  // Allow proxy origin for development (webpack dev server)
+      'http://127.0.0.1:3001'
+    ];
+
+    // Add GCP URLs if running on GCP
+    if (isGCP()) {
+      try {
+        const projectId = getProjectId();
+        allowedOrigins.push(
+          `https://${projectId}.uc.r.appspot.com`,           // Production (default service)
+          `https://dev-dot-${projectId}.uc.r.appspot.com`    // Dev service
+        );
+        logger.info({ projectId }, 'CORS configured for GCP project');
+      } catch (error) {
+        logger.warn({ err: error }, 'Could not determine project ID for CORS');
+      }
+    }
+
+    const corsOptions = {
+      origin: (origin, callback) => {
+        // Normalize origin by removing trailing slash for comparison
+        const normalizedOrigin = origin ? origin.replace(/\/$/, '') : origin;
+
+        if (!origin || allowedOrigins.includes(normalizedOrigin)) {
+          callback(null, true);
+        } else {
+          logger.warn({ origin, normalizedOrigin, allowedOrigins }, 'CORS blocked origin');
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+      optionsSuccessStatus: 200
+    };
+
+    app.use(cors(corsOptions));
+    logger.info({ originCount: allowedOrigins.length }, 'CORS enabled');
 
     // Serve static files AFTER all API routes
     app.use(express.static(path.join(__dirname, '../frontend/build')));
