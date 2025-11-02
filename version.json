@@ -1,6 +1,6 @@
 {
-  "version": "2.27.0",
-  "lastUpdated": "2025-11-01T20:19:29.304Z",
+  "version": "2.27.1",
+  "lastUpdated": "2025-11-02T16:16:45.938Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -332,6 +332,11 @@
       "description": "Add Recipe V3 with Roscoe's Choice and Customize modes, view-based navigation, enhanced pantry integration, and new AI generation endpoints",
       "timestamp": "2025-11-01T20:19:29.304Z",
       "date": "November 1, 2025"
+    },
+    "2.27.1": {
+      "description": "UI refinements for recipe generator: restructured cards with new button layouts and icons, improved mobile ordering, fixed light mode button styling, added Load More for saved recipes, more compact options panels",
+      "timestamp": "2025-11-02T16:16:45.938Z",
+      "date": "November 2, 2025"
     }
   }
 }

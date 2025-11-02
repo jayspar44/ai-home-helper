@@ -830,6 +830,62 @@ app.post('/api/generate-recipe/customize', checkAuth, aiRateLimiter, async (req,
   }
 });
 
+// Regenerate recipe with user feedback
+app.post('/api/generate-recipe/regenerate', checkAuth, aiRateLimiter, async (req, res) => {
+  try {
+    const { homeId, originalRecipe, feedback } = req.body;
+    const userId = req.user.uid;
+
+    // Validate required fields
+    if (!homeId || !originalRecipe || !feedback) {
+      req.log.warn({ userId, homeId }, 'Missing required fields for recipe regeneration');
+      return res.status(400).json({ error: 'Missing required fields: homeId, originalRecipe, feedback' });
+    }
+
+    // Validate feedback length (prevent prompt injection)
+    if (feedback.length > 500) {
+      req.log.warn({ userId, feedbackLength: feedback.length }, 'Feedback too long');
+      return res.status(400).json({ error: 'Feedback must be less than 500 characters' });
+    }
+
+    req.log.info({ userId, homeId, originalTitle: originalRecipe.title, feedback: feedback.substring(0, 100) }, 'Regenerating recipe with feedback');
+
+    // Fetch pantry items for the home
+    const pantrySnapshot = await db.collection('pantryItems')
+      .where('homeId', '==', homeId)
+      .get();
+
+    const pantryItems = pantrySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Call regeneration service
+    const { regenerateRecipeWithFeedback } = require('./services/recipeAI');
+    const regeneratedRecipe = await regenerateRecipeWithFeedback(
+      {
+        originalRecipe,
+        feedback,
+        pantryItems
+      },
+      genAI,
+      req.log
+    );
+
+    req.log.info({
+      userId,
+      homeId,
+      newTitle: regeneratedRecipe.title,
+      pantryItemsUsed: regeneratedRecipe.pantryItemsUsed?.length || 0
+    }, 'Recipe successfully regenerated');
+
+    res.json(regeneratedRecipe);
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error regenerating recipe');
+    res.status(500).json({ error: 'Failed to regenerate recipe' });
+  }
+});
+
 // Add new member to home
 app.post('/api/homes/:homeId/members', checkAuth, async (req, res) => {
   try {

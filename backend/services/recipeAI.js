@@ -493,7 +493,13 @@ function createRoscoesChoicePrompt(options) {
     : '';
 
   const variationGuidance = totalVariations > 1
-    ? `\n- This is variation #${variationNumber} of ${totalVariations} - make it DISTINCTLY DIFFERENT in cooking method, cuisine style, or flavor profile from other variations`
+    ? `\n- MEAL VARIETY REQUIREMENT: This is meal #${variationNumber} of ${totalVariations}. Each meal MUST be distinctly different:
+  * Use DIFFERENT proteins (chicken vs beef vs fish vs vegetarian)
+  * Use DIFFERENT cuisines (Italian vs Asian vs Mexican vs Mediterranean, etc.)
+  * Use DIFFERENT taste profiles (spicy vs mild vs tangy vs savory)
+  * Use DIFFERENT cooking methods (baked vs stir-fried vs grilled vs sautéed)
+  * DO NOT repeat similar meals (e.g., no multiple chicken stir-fries or pasta dishes)
+  * Goal: Maximum variety so the user has truly different options to choose from`
     : '';
 
   return `You are Roscoe, an expert home chef AI. Your goal is to create DELICIOUS, PRACTICAL meals.
@@ -820,7 +826,13 @@ function createCustomRecipePrompt(options) {
   }
 
   const variationGuidance = totalVariations > 1
-    ? `\n\nVARIATION #${variationNumber} of ${totalVariations}: Make this DISTINCTLY DIFFERENT from other variations in cooking method, cuisine style, or flavor profile.`
+    ? `\n\nMEAL VARIETY REQUIREMENT: This is meal #${variationNumber} of ${totalVariations}. Each meal MUST be distinctly different:
+  * Use DIFFERENT proteins (chicken vs beef vs fish vs vegetarian)
+  * Use DIFFERENT cuisines (Italian vs Asian vs Mexican vs Mediterranean, etc.)
+  * Use DIFFERENT taste profiles (spicy vs mild vs tangy vs savory)
+  * Use DIFFERENT cooking methods (baked vs stir-fried vs grilled vs sautéed)
+  * DO NOT repeat similar meals (e.g., no multiple chicken stir-fries or pasta dishes)
+  * Goal: Maximum variety so the user has truly different options to choose from`
     : '';
 
   return `You are Roscoe, an expert chef AI creating custom recipes.${userRequest}${constraintsText}${pantryInstructions}${variationGuidance}
@@ -993,9 +1005,158 @@ RESPONSE FORMAT (JSON):
   }
 }
 
+/**
+ * Regenerates a recipe based on user feedback
+ * Takes an existing recipe and user feedback, applies changes
+ *
+ * @param {Object} options - Regeneration options
+ * @param {Object} options.originalRecipe - The original recipe object
+ * @param {string} options.feedback - User feedback for changes
+ * @param {Object[]} options.pantryItems - Available pantry items
+ * @param {Object} genAI - Google Generative AI instance
+ * @param {Object} logger - Pino logger instance
+ * @returns {Promise<Object>} Updated recipe
+ */
+async function regenerateRecipeWithFeedback(options, genAI, logger) {
+  const {
+    originalRecipe,
+    feedback,
+    pantryItems = []
+  } = options;
+
+  const startTime = Date.now();
+
+  try {
+    // Create pantry context
+    const pantryContext = pantryItems.length > 0
+      ? '\n\nAVAILABLE PANTRY ITEMS:\n' +
+        pantryItems.map(item => {
+          const expiry = item.expiresAt ? calculateRemainingDays(item.expiresAt) : null;
+          const expiryNote = expiry !== null && expiry <= EXPIRING_SOON_THRESHOLD_DAYS
+            ? ` (expires in ${expiry} days)`
+            : '';
+          return `- ${item.name}${item.quantity ? ` (${item.quantity})` : ''}${expiryNote}`;
+        }).join('\n')
+      : '';
+
+    // Create regeneration prompt
+    const prompt = `You are Roscoe, an expert chef AI. The user has requested changes to a recipe you generated.
+
+ORIGINAL RECIPE:
+${JSON.stringify(originalRecipe, null, 2)}
+
+USER FEEDBACK:
+"${feedback}"
+${pantryContext}
+
+TASK:
+Apply the user's feedback to generate an UPDATED recipe. The feedback might request:
+- Changing the protein (e.g., "use beef instead of chicken")
+- Adjusting taste/spice level (e.g., "make it spicier")
+- Modifying cooking time (e.g., "make it faster")
+- Changing cuisine style
+- Any other recipe modifications
+
+REQUIREMENTS:
+1. Keep the same serving size as the original unless feedback specifies otherwise
+2. Maintain recipe quality - only make changes that make culinary sense
+3. Re-match ingredients to the pantry if protein or major ingredients change
+4. Update shopping list accordingly
+5. Ensure the updated recipe is still delicious and practical
+
+RESPONSE FORMAT (exact JSON):
+{
+  "success": true,
+  "title": "Updated Recipe Name",
+  "description": "Brief appealing description",
+  "prepTime": "X minutes",
+  "cookTime": "X minutes",
+  "servings": ${originalRecipe.servings || 2},
+  "difficulty": "Easy/Medium/Hard",
+  "qualityScore": 85,
+  "ingredients": ["ingredient with amount"],
+  "pantryItemsUsed": [
+    {
+      "itemName": "Item from pantry",
+      "quantity": "amount used",
+      "matchConfidence": 0.9
+    }
+  ],
+  "shoppingListItems": [
+    {
+      "name": "Item to buy",
+      "quantity": "amount",
+      "category": "produce/dairy/meat/pantry",
+      "priority": "essential/optional"
+    }
+  ],
+  "instructions": ["Step 1", "Step 2"],
+  "tips": ["Helpful tip"]
+}`;
+
+    // Generate with AI
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+
+    // Parse JSON response
+    const parsedRecipe = parseAIJsonResponse(responseText, logger);
+
+    if (!parsedRecipe || !parsedRecipe.success) {
+      throw new Error('AI failed to regenerate recipe');
+    }
+
+    // Re-match ingredients to pantry if pantry items available
+    if (pantryItems.length > 0 && parsedRecipe.ingredients) {
+      const matchResult = await matchIngredientsToPantry(
+        parsedRecipe.ingredients,
+        pantryItems,
+        genAI,
+        logger
+      );
+
+      if (matchResult) {
+        parsedRecipe.pantryItemsUsed = matchResult.pantryMatches || [];
+        parsedRecipe.shoppingListItems = matchResult.shoppingItems || [];
+      }
+    }
+
+    const responseTime = Date.now() - startTime;
+    logger.info({
+      feedback: feedback.substring(0, 100),
+      newTitle: parsedRecipe.title,
+      aiResponseTime: responseTime
+    }, 'Recipe regenerated with feedback');
+
+    return parsedRecipe;
+
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    logger.error({
+      err: error,
+      feedback,
+      aiResponseTime: responseTime
+    }, 'Failed to regenerate recipe with feedback');
+    throw new Error(`Recipe regeneration failed: ${error.message}`);
+  }
+}
+
+/**
+ * Helper function to calculate remaining days until expiry
+ * @private
+ */
+function calculateRemainingDays(expiresAt) {
+  if (!expiresAt) return null;
+  const expiry = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt);
+  const now = new Date();
+  const diff = expiry.getTime() - now.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
 module.exports = {
   generateRecipes,
   generateRoscoesChoiceRecipe,
   generateCustomRecipe,
-  matchIngredientsToPantry
+  matchIngredientsToPantry,
+  regenerateRecipeWithFeedback
 };
