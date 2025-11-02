@@ -91,7 +91,7 @@ npm run dev:local -- 3020
 - **Dynamic Proxy**: Frontend proxy automatically adapts to backend port via environment variables
 - **Browser Control**: Use `--browser` or `--open` flag to automatically open browser on startup
 
-**Note:** The `--` separator is required by npm to pass arguments to the script. The backend port is automatically calculated as `frontendPort + 1`. Supported port range: 3000-3099.
+**Note:** The `--` separator is required by npm to pass arguments to the script. The backend port is automatically calculated as `frontendPort + 1`. Supported frontend port range: 3000-3098 (backend will be 3001-3099, matching CORS configuration).
 
 ## Logging Access
 - **Local Development**: View logs in terminal where `npm run dev:local` runs
