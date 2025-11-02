@@ -49,7 +49,11 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 │   └── contexts/            # ToastContext
 ├── backend/
 │   ├── server.js           # Main server with AI endpoints, shopping list endpoints (timestamp conversion)
-│   ├── services/           # shoppingListAI.js (AI parsing service with qualifier preservation)
+│   ├── config/             # Configuration modules
+│   │   └── ai.js           # Centralized AI model configuration (GEMINI_MODEL)
+│   ├── services/           # recipeAI.js, pantryAI.js, shoppingListAI.js (all use centralized GEMINI_MODEL)
+│   ├── middleware/         # rateLimiter.js (AI endpoint rate limiting)
+│   ├── utils/              # logger.js, secrets.js, aiHelpers.js
 │   └── uploads/            # Temp AI image processing
 ├── version.json            # Single source of truth
 └── eslint.config.mjs       # Modern ESLint config
@@ -94,6 +98,31 @@ For complete deployment details, setup instructions, and troubleshooting, see [D
 // MealPlan: { date, mealType, planned?: {recipeId, recipeName, ingredients}, actual?: {description, loggedAt} }
 // Recipe: { title, ingredients[], instructions[], pantryIngredients[], missingIngredients[] }
 // ShoppingList: { homeId, items: [{id, name, quantity, unit, category, checked, addedBy, addedAt, source}], lastUpdated, createdAt }
+```
+
+## AI Configuration
+
+**Centralized Model Management**: All AI operations use a single source of truth for the Gemini model.
+
+**Configuration File**: [backend/config/ai.js](backend/config/ai.js)
+- Exports `GEMINI_MODEL` constant (currently `'gemini-2.5-flash'`)
+- Used across all AI services (recipe, pantry, shopping list)
+- Change model for entire app by updating one constant
+
+**AI Services Using Centralized Config**:
+- [backend/services/recipeAI.js](backend/services/recipeAI.js) - Recipe generation (6 instances)
+- [backend/services/pantryAI.js](backend/services/pantryAI.js) - Pantry suggestions, quick defaults, image detection (3 instances)
+- [backend/services/shoppingListAI.js](backend/services/shoppingListAI.js) - Natural language parsing (1 instance)
+
+**Benefits**:
+- Single location to update AI model for entire application
+- Guaranteed consistency across all AI features
+- Easy model version management
+
+**Usage Pattern**:
+```javascript
+const { GEMINI_MODEL } = require('../config/ai');
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 ```
 
 ## Claude Code Version Management Protocol

@@ -1,11 +1,44 @@
 // recipeAI.js - AI recipe generation service
 
 const { parseAIJsonResponse } = require('../utils/aiHelpers');
+const { GEMINI_MODEL } = require('../config/ai');
 
 // --- Constants ---
 const MAX_AI_RETRY_ATTEMPTS = 3; // Maximum number of retry attempts for AI generation
 const MIN_QUALITY_SCORE = 50; // Minimum acceptable quality score for recipes
 const EXPIRING_SOON_THRESHOLD_DAYS = 3; // Items expiring within this many days are considered expiring soon
+
+/**
+ * Sanitizes user feedback to prevent prompt injection
+ * @private
+ * @param {string} feedback - Raw user feedback
+ * @returns {string} Sanitized feedback safe for AI prompts
+ */
+function sanitizeFeedback(feedback) {
+  return feedback
+    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/\n{3,}/g, '\n\n') // Limit consecutive newlines to max 2
+    .trim();
+}
+
+/**
+ * Creates variation guidance for multiple recipe generation
+ * @private
+ * @param {number} variationNumber - Current variation number (1-indexed)
+ * @param {number} totalVariations - Total number of variations to generate
+ * @returns {string} Variation guidance text or empty string
+ */
+function createVariationGuidance(variationNumber, totalVariations) {
+  if (totalVariations <= 1) return '';
+
+  return `\n- MEAL VARIETY REQUIREMENT: This is meal #${variationNumber} of ${totalVariations}. Each meal MUST be distinctly different:
+  * Use DIFFERENT proteins (chicken vs beef vs fish vs vegetarian)
+  * Use DIFFERENT cuisines (Italian vs Asian vs Mexican vs Mediterranean, etc.)
+  * Use DIFFERENT taste profiles (spicy vs mild vs tangy vs savory)
+  * Use DIFFERENT cooking methods (baked vs stir-fried vs grilled vs sautéed)
+  * DO NOT repeat similar meals (e.g., no multiple chicken stir-fries or pasta dishes)
+  * Goal: Maximum variety so the user has truly different options to choose from`;
+}
 
 /**
  * Generates one or more recipes based on provided ingredients and preferences
@@ -49,7 +82,7 @@ async function generateRecipes(options, genAI, logger) {
       );
 
       const promise = (async () => {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const generatedText = response.text();
@@ -87,7 +120,7 @@ async function generateRecipes(options, genAI, logger) {
     pantryItems
   );
 
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const generatedText = response.text();
@@ -358,7 +391,7 @@ async function generateSingleRoscoesRecipe(prompt, genAI, pantryItems, logger, m
     try {
       attempts++;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
@@ -492,15 +525,7 @@ function createRoscoesChoicePrompt(options) {
     ? `\n- CRITICAL: MUST use items expiring in ≤${EXPIRING_SOON_THRESHOLD_DAYS} days prominently in the recipe`
     : '';
 
-  const variationGuidance = totalVariations > 1
-    ? `\n- MEAL VARIETY REQUIREMENT: This is meal #${variationNumber} of ${totalVariations}. Each meal MUST be distinctly different:
-  * Use DIFFERENT proteins (chicken vs beef vs fish vs vegetarian)
-  * Use DIFFERENT cuisines (Italian vs Asian vs Mexican vs Mediterranean, etc.)
-  * Use DIFFERENT taste profiles (spicy vs mild vs tangy vs savory)
-  * Use DIFFERENT cooking methods (baked vs stir-fried vs grilled vs sautéed)
-  * DO NOT repeat similar meals (e.g., no multiple chicken stir-fries or pasta dishes)
-  * Goal: Maximum variety so the user has truly different options to choose from`
-    : '';
+  const variationGuidance = createVariationGuidance(variationNumber, totalVariations);
 
   return `You are Roscoe, an expert home chef AI. Your goal is to create DELICIOUS, PRACTICAL meals.
 
@@ -690,7 +715,7 @@ async function generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, ma
     try {
       attempts++;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
@@ -825,17 +850,9 @@ function createCustomRecipePrompt(options) {
     pantryInstructions = `${pantryContext}\n\nPANTRY MODE: USE PANTRY ONLY\n- ONLY use ingredients from the available pantry\n- Do not add any items to shopping list\n- If pantry items insufficient, refuse politely and suggest adding more pantry items\n- Assume salt, pepper, water, and basic cooking oil are available`;
   }
 
-  const variationGuidance = totalVariations > 1
-    ? `\n\nMEAL VARIETY REQUIREMENT: This is meal #${variationNumber} of ${totalVariations}. Each meal MUST be distinctly different:
-  * Use DIFFERENT proteins (chicken vs beef vs fish vs vegetarian)
-  * Use DIFFERENT cuisines (Italian vs Asian vs Mexican vs Mediterranean, etc.)
-  * Use DIFFERENT taste profiles (spicy vs mild vs tangy vs savory)
-  * Use DIFFERENT cooking methods (baked vs stir-fried vs grilled vs sautéed)
-  * DO NOT repeat similar meals (e.g., no multiple chicken stir-fries or pasta dishes)
-  * Goal: Maximum variety so the user has truly different options to choose from`
-    : '';
+  const variationGuidance = createVariationGuidance(variationNumber, totalVariations);
 
-  return `You are Roscoe, an expert chef AI creating custom recipes.${userRequest}${constraintsText}${pantryInstructions}${variationGuidance}
+  return `You are Roscoe, an expert chef AI creating custom recipes.${userRequest}${constraintsText}${pantryInstructions}${variationGuidance ? '\n' + variationGuidance : ''}
 
 CORE PRINCIPLES:
 1. Create DELICIOUS recipes that make culinary sense
@@ -951,7 +968,7 @@ RESPONSE FORMAT (JSON):
   ]
 }`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
@@ -1013,6 +1030,8 @@ RESPONSE FORMAT (JSON):
  * @param {Object} options.originalRecipe - The original recipe object
  * @param {string} options.feedback - User feedback for changes
  * @param {Object[]} options.pantryItems - Available pantry items
+ * @param {string} options.userId - User ID for logging
+ * @param {string} options.homeId - Home ID for logging
  * @param {Object} genAI - Google Generative AI instance
  * @param {Object} logger - Pino logger instance
  * @returns {Promise<Object>} Updated recipe
@@ -1021,7 +1040,9 @@ async function regenerateRecipeWithFeedback(options, genAI, logger) {
   const {
     originalRecipe,
     feedback,
-    pantryItems = []
+    pantryItems = [],
+    userId,
+    homeId
   } = options;
 
   const startTime = Date.now();
@@ -1046,7 +1067,7 @@ ORIGINAL RECIPE:
 ${JSON.stringify(originalRecipe, null, 2)}
 
 USER FEEDBACK:
-"${feedback}"
+"${sanitizeFeedback(feedback)}"
 ${pantryContext}
 
 TASK:
@@ -1095,7 +1116,7 @@ RESPONSE FORMAT (exact JSON):
 }`;
 
     // Generate with AI
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
@@ -1134,7 +1155,10 @@ RESPONSE FORMAT (exact JSON):
     const responseTime = Date.now() - startTime;
     logger.error({
       err: error,
-      feedback,
+      userId,
+      homeId,
+      originalTitle: originalRecipe?.title,
+      feedback: feedback?.substring(0, 100), // Truncate for security
       aiResponseTime: responseTime
     }, 'Failed to regenerate recipe with feedback');
     throw new Error(`Recipe regeneration failed: ${error.message}`);

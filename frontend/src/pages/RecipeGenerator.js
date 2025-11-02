@@ -541,7 +541,32 @@ export default function RecipeGenerator() {
     }
   }, [userToken, activeHomeId, pantryMode, numberOfPeople, quickMealsOnly, prioritizeExpiring, numberOfRecipes, getAuthHeaders]);
 
-  // Recipe regeneration with feedback
+  /**
+   * Regenerates the current recipe based on user feedback.
+   *
+   * Sends the original recipe and user feedback to the AI service to generate
+   * an improved version. Updates both the current recipe and the recipes array
+   * with the regenerated result.
+   *
+   * @async
+   * @function handleRegenerateWithFeedback
+   * @returns {Promise<void>}
+   *
+   * @throws {Error} When the API request fails or returns an error
+   *
+   * @requires userToken - User authentication token
+   * @requires activeHomeId - Current home ID
+   * @requires generatedRecipe - The original recipe to regenerate
+   * @requires recipeFeedback - User's feedback for regeneration (must be non-empty)
+   *
+   * @sideEffects
+   * - Sets `isRegenerating` loading state
+   * - Updates `generatedRecipe` with new version
+   * - Updates `generatedRecipes` array at current index
+   * - Adds to `recentRecipes` history
+   * - Clears `recipeFeedback` on success
+   * - Sets `error` state on failure
+   */
   const handleRegenerateWithFeedback = useCallback(async () => {
     if (!userToken || !activeHomeId || !generatedRecipe) {
       setError('Cannot regenerate recipe');
@@ -570,10 +595,9 @@ export default function RecipeGenerator() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle rate limit error
+        // Handle rate limit error with specific message
         if (response.status === 429) {
-          setError(data.message || 'Too many requests. Please try again later.');
-          return;
+          throw new Error(data.message || 'Too many requests. Please try again later.');
         }
 
         throw new Error(data.error || 'Failed to regenerate recipe');
@@ -581,11 +605,12 @@ export default function RecipeGenerator() {
 
       // Update the current recipe with regenerated version
       setGeneratedRecipe(data);
-      if (generatedRecipes.length > 0) {
-        const updatedRecipes = [...generatedRecipes];
+      setGeneratedRecipes(prev => {
+        if (prev.length === 0) return prev;
+        const updatedRecipes = [...prev];
         updatedRecipes[currentRecipeIndex] = data;
-        setGeneratedRecipes(updatedRecipes);
-      }
+        return updatedRecipes;
+      });
       setRecentRecipes(prev => [data, ...prev].slice(0, 10));
       setRecipeFeedback(''); // Clear feedback after successful regeneration
       logger.info('Recipe regenerated with feedback:', data.title);
@@ -596,7 +621,7 @@ export default function RecipeGenerator() {
     } finally {
       setIsRegenerating(false);
     }
-  }, [userToken, activeHomeId, generatedRecipe, recipeFeedback, generatedRecipes, currentRecipeIndex, getAuthHeaders]);
+  }, [userToken, activeHomeId, generatedRecipe, currentRecipeIndex, getAuthHeaders]);
 
   // Customize recipe generation
   const handleGenerateCustomize = useCallback(async () => {
