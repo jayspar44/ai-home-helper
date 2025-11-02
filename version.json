@@ -1,6 +1,6 @@
 {
-  "version": "2.27.0",
-  "lastUpdated": "2025-11-01T20:19:29.304Z",
+  "version": "2.27.2",
+  "lastUpdated": "2025-11-02T17:20:26.726Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -332,6 +332,16 @@
       "description": "Add Recipe V3 with Roscoe's Choice and Customize modes, view-based navigation, enhanced pantry integration, and new AI generation endpoints",
       "timestamp": "2025-11-01T20:19:29.304Z",
       "date": "November 1, 2025"
+    },
+    "2.27.1": {
+      "description": "Fix PR review issues: authorization check, input validation, feedback sanitization, AI model consistency, React hook dependencies, error logging, JSDoc documentation",
+      "timestamp": "2025-11-02T17:18:17.292Z",
+      "date": "November 2, 2025"
+    },
+    "2.27.2": {
+      "description": "Centralize AI model configuration: Create backend/config/ai.js with GEMINI_MODEL constant, update all AI services (recipeAI, pantryAI, shoppingListAI) to use centralized config, update CLAUDE.md documentation",
+      "timestamp": "2025-11-02T17:20:26.726Z",
+      "date": "November 2, 2025"
     }
   }
 }

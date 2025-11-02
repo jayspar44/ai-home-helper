@@ -20,6 +20,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // --- Constants ---
 const MAX_AI_PROMPT_LENGTH = 250; // Prevent prompt injection and timeout
+const MAX_FEEDBACK_LENGTH = 500; // Maximum length for recipe regeneration feedback
 
 // --- Global Variables (initialized after secrets load) ---
 let db;
@@ -827,6 +828,77 @@ app.post('/api/generate-recipe/customize', checkAuth, aiRateLimiter, async (req,
   } catch (error) {
     req.log.error({ err: error, userId: req.user.uid }, 'Error in Customize generation');
     res.status(500).json({ error: 'Failed to generate recipe' });
+  }
+});
+
+// Regenerate recipe with user feedback
+app.post('/api/generate-recipe/regenerate', checkAuth, aiRateLimiter, async (req, res) => {
+  try {
+    const { homeId, originalRecipe, feedback } = req.body;
+    const userId = req.user.uid;
+
+    // Validate required fields
+    if (!homeId || !originalRecipe || !feedback) {
+      req.log.warn({ userId, homeId }, 'Missing required fields for recipe regeneration');
+      return res.status(400).json({ error: 'Missing required fields: homeId, originalRecipe, feedback' });
+    }
+
+    // Verify user belongs to this home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[userId] === undefined) {
+      req.log.warn({ userId, homeId }, 'Unauthorized access attempt to regenerate recipe');
+      return res.status(403).json({ error: 'Not authorized for this home' });
+    }
+
+    // Validate recipe structure
+    if (!originalRecipe?.title || !Array.isArray(originalRecipe?.ingredients)) {
+      req.log.warn({ userId, homeId }, 'Invalid recipe structure for regeneration');
+      return res.status(400).json({ error: 'Invalid recipe structure: title and ingredients required' });
+    }
+
+    // Validate feedback length (prevent prompt injection)
+    if (feedback.length > MAX_FEEDBACK_LENGTH) {
+      req.log.warn({ userId, feedbackLength: feedback.length }, 'Feedback too long');
+      return res.status(400).json({ error: `Feedback must be less than ${MAX_FEEDBACK_LENGTH} characters` });
+    }
+
+    req.log.info({ userId, homeId, originalTitle: originalRecipe.title, feedback: feedback.substring(0, 100) }, 'Regenerating recipe with feedback');
+
+    // Fetch pantry items for the home
+    const pantrySnapshot = await db.collection('pantryItems')
+      .where('homeId', '==', homeId)
+      .get();
+
+    const pantryItems = pantrySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Call regeneration service
+    const { regenerateRecipeWithFeedback } = require('./services/recipeAI');
+    const regeneratedRecipe = await regenerateRecipeWithFeedback(
+      {
+        originalRecipe,
+        feedback,
+        pantryItems,
+        userId,
+        homeId
+      },
+      genAI,
+      req.log
+    );
+
+    req.log.info({
+      userId,
+      homeId,
+      newTitle: regeneratedRecipe.title,
+      pantryItemsUsed: regeneratedRecipe.pantryItemsUsed?.length || 0
+    }, 'Recipe successfully regenerated');
+
+    res.json(regeneratedRecipe);
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error regenerating recipe');
+    res.status(500).json({ error: 'Failed to regenerate recipe' });
   }
 });
 
