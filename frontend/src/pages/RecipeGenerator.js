@@ -621,7 +621,7 @@ export default function RecipeGenerator() {
     } finally {
       setIsRegenerating(false);
     }
-  }, [userToken, activeHomeId, generatedRecipe, currentRecipeIndex, getAuthHeaders]);
+  }, [userToken, activeHomeId, generatedRecipe, recipeFeedback, currentRecipeIndex, getAuthHeaders]);
 
   // Customize recipe generation
   const handleGenerateCustomize = useCallback(async () => {
