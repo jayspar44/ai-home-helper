@@ -6,6 +6,9 @@ import RecipeSelector from '../components/RecipeSelector';
 import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
 import logger from '../utils/logger';
 
+// Constants
+const MAX_FEEDBACK_LENGTH = 500; // Must match backend constant in recipeAI.js
+
 const LoadingSpinner = () => <div className="w-6 h-6 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--border-light)', borderTopColor: 'var(--color-primary)' }}></div>;
 const SkeletonCard = () => (
   <div className="space-y-6 p-6">
@@ -1710,14 +1713,22 @@ export default function RecipeGenerator() {
                   Provide feedback and I'll regenerate the recipe to match your preferences
                 </p>
                 <div className="space-y-3">
-                  <textarea
-                    value={recipeFeedback}
-                    onChange={(e) => setRecipeFeedback(e.target.value)}
-                    placeholder="E.g., 'Change to beef instead of chicken' or 'Make it spicier' or 'Use less cooking time'"
-                    className="w-full p-3 rounded-lg bg-secondary text-color-primary border border-color-light focus:border-color-primary outline-none resize-none text-sm"
-                    rows={2}
-                    disabled={isRegenerating}
-                  />
+                  <div>
+                    <textarea
+                      value={recipeFeedback}
+                      onChange={(e) => setRecipeFeedback(e.target.value)}
+                      placeholder="E.g., 'Change to beef instead of chicken' or 'Make it spicier' or 'Use less cooking time'"
+                      className="w-full p-3 rounded-lg bg-secondary text-color-primary border border-color-light focus:border-color-primary outline-none resize-none text-sm"
+                      rows={2}
+                      maxLength={MAX_FEEDBACK_LENGTH}
+                      disabled={isRegenerating}
+                    />
+                    <div className="flex justify-end mt-1">
+                      <span className="text-xs text-color-muted">
+                        {recipeFeedback.length} / {MAX_FEEDBACK_LENGTH}
+                      </span>
+                    </div>
+                  </div>
                   <button
                     onClick={handleRegenerateWithFeedback}
                     disabled={isRegenerating || !recipeFeedback.trim()}

@@ -7,6 +7,7 @@ const { GEMINI_MODEL } = require('../config/ai');
 const MAX_AI_RETRY_ATTEMPTS = 3; // Maximum number of retry attempts for AI generation
 const MIN_QUALITY_SCORE = 50; // Minimum acceptable quality score for recipes
 const EXPIRING_SOON_THRESHOLD_DAYS = 3; // Items expiring within this many days are considered expiring soon
+const MAX_FEEDBACK_LENGTH = 500; // Maximum character length for user feedback
 
 /**
  * Sanitizes user feedback to prevent prompt injection
@@ -20,7 +21,7 @@ function sanitizeFeedback(feedback) {
     .replace(/\n{3,}/g, '\n\n') // Limit consecutive newlines to max 2
     // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters (intentional for security)
-    .slice(0, 500) // Hard limit at function level
+    .slice(0, MAX_FEEDBACK_LENGTH) // Enforce maximum length
     .trim();
 }
 
@@ -1185,5 +1186,6 @@ module.exports = {
   generateRoscoesChoiceRecipe,
   generateCustomRecipe,
   matchIngredientsToPantry,
-  regenerateRecipeWithFeedback
+  regenerateRecipeWithFeedback,
+  MAX_FEEDBACK_LENGTH
 };
