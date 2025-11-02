@@ -2183,11 +2183,11 @@ const startServer = async () => {
     await initializeServices();
 
     // Configure CORS after services are initialized
-    // Support both default ports (3000/3001) and alternate dev instances (3010/3011, 3020/3021, etc.)
+    // Support up to 5 concurrent dev instances (3000/3001, 3002/3003, 3004/3005, 3006/3007, 3008/3009)
     const allowedOrigins = [];
 
-    // Add localhost origins for port ranges 3000-3099 (frontend) and 3001-3099 (backend)
-    for (let port = 3000; port < 3100; port++) {
+    // Add localhost origins for port ranges 3000-3010 (supports 5 concurrent instances)
+    for (let port = 3000; port < 3011; port++) {
       allowedOrigins.push(
         `http://localhost:${port}`,
         `http://127.0.0.1:${port}`,

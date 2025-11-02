@@ -72,17 +72,23 @@ npm run install-all                  # Install all dependencies
 
 **Running Multiple Development Instances:**
 
-You can run multiple development servers simultaneously with different ports:
+You can run up to 5 development servers simultaneously with different ports:
 
 ```bash
 # Instance 1 (default ports 3000/3001)
 npm run dev:local
 
-# Instance 2 (ports 3010/3011)
-npm run dev:local -- 3010
+# Instance 2 (ports 3002/3003)
+npm run dev:local -- 3002
 
-# Instance 3 (ports 3020/3021)
-npm run dev:local -- 3020
+# Instance 3 (ports 3004/3005)
+npm run dev:local -- 3004
+
+# Instance 4 (ports 3006/3007)
+npm run dev:local -- 3006
+
+# Instance 5 (ports 3008/3009)
+npm run dev:local -- 3008
 ```
 
 **Smart Features:**
@@ -91,7 +97,7 @@ npm run dev:local -- 3020
 - **Dynamic Proxy**: Frontend proxy automatically adapts to backend port via environment variables
 - **Browser Control**: Use `--browser` or `--open` flag to automatically open browser on startup
 
-**Note:** The `--` separator is required by npm to pass arguments to the script. The backend port is automatically calculated as `frontendPort + 1`. Supported frontend port range: 3000-3098 (backend will be 3001-3099, matching CORS configuration).
+**Note:** The `--` separator is required by npm to pass arguments to the script. The backend port is automatically calculated as `frontendPort + 1`. Supported frontend port range: 3000-3008 (backend will be 3001-3009). Supports 5 concurrent development instances.
 
 ## Logging Access
 - **Local Development**: View logs in terminal where `npm run dev:local` runs

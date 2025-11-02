@@ -60,11 +60,12 @@ args.forEach(arg => {
   }
 });
 
-// Validate port (must be 3000-3098 to keep backend within CORS range 3001-3099)
+// Validate port (must be 3000-3008 to keep backend within CORS range 3001-3009)
 const frontendPortNum = parseInt(frontendPort, 10);
-if (isNaN(frontendPortNum) || frontendPortNum < 3000 || frontendPortNum > 3098) {
+if (isNaN(frontendPortNum) || frontendPortNum < 3000 || frontendPortNum > 3008) {
   console.error(`Error: Invalid port number "${frontendPort}"`);
-  console.error('Port must be between 3000 and 3098 (backend will be port+1, max 3099)');
+  console.error('Port must be between 3000 and 3008 (backend will be port+1, max 3009)');
+  console.error('Supports 5 concurrent instances (e.g., 3000/3001, 3002/3003, ..., 3008/3009)');
   console.error('\nRun "npm run dev:local -- --help" for usage information');
   process.exit(1);
 }
