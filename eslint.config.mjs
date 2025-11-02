@@ -37,6 +37,23 @@ export default [
       ]
     }
   },
+  // Frontend Node.js config files (setupProxy.js runs in Node.js, not browser)
+  {
+    files: ["frontend/src/setupProxy.js"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "commonjs",
+      globals: { ...globals.node }
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      "no-unused-vars": ["warn", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrors": "none"
+      }]
+    }
+  },
   // Frontend React/JSX files
   {
     files: ["frontend/src/**/*.{js,jsx}"],
