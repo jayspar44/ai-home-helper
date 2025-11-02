@@ -1,5 +1,5 @@
 {
-  "version": "2.27.2",
+  "version": "2.28.0",
   "lastUpdated": "2025-11-02T17:20:26.726Z",
   "date": "October 31, 2025",
   "changelog": {
@@ -341,6 +341,11 @@
     "2.27.2": {
       "description": "Centralize AI model configuration: Create backend/config/ai.js with GEMINI_MODEL constant, update all AI services (recipeAI, pantryAI, shoppingListAI) to use centralized config, update CLAUDE.md documentation",
       "timestamp": "2025-11-02T17:20:26.726Z",
+      "date": "November 2, 2025"
+    },
+    "2.28.0": {
+      "description": "Add unified dev:local script with dynamic port configuration, browser control, worktree support, and auto dependency installation",
+      "timestamp": "2025-11-02T16:32:17.730Z",
       "date": "November 2, 2025"
     }
   }
