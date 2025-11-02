@@ -2183,14 +2183,18 @@ const startServer = async () => {
     await initializeServices();
 
     // Configure CORS after services are initialized
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'https://localhost:3000',
-      'https://127.0.0.1:3000',
-      'http://localhost:3001',  // Allow proxy origin for development (webpack dev server)
-      'http://127.0.0.1:3001'
-    ];
+    // Support both default ports (3000/3001) and alternate dev instances (3010/3011, 3020/3021, etc.)
+    const allowedOrigins = [];
+
+    // Add localhost origins for port ranges 3000-3099 (frontend) and 3001-3099 (backend)
+    for (let port = 3000; port < 3100; port++) {
+      allowedOrigins.push(
+        `http://localhost:${port}`,
+        `http://127.0.0.1:${port}`,
+        `https://localhost:${port}`,
+        `https://127.0.0.1:${port}`
+      );
+    }
 
     // Add GCP URLs if running on GCP
     if (isGCP()) {
@@ -2225,13 +2229,19 @@ const startServer = async () => {
     app.use(cors(corsOptions));
     logger.info({ originCount: allowedOrigins.length }, 'CORS enabled');
 
-    // Serve static files AFTER all API routes
-    app.use(express.static(path.join(__dirname, '../frontend/build')));
+    // Only serve static files in production (in dev, frontend runs on separate server)
+    if (process.env.NODE_ENV === 'production' || isGCP()) {
+      // Serve static files AFTER all API routes
+      app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-    // Catch-all route for React app - must be last
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-    });
+      // Catch-all route for React app - must be last
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+      });
+      logger.info('Static file serving enabled (production mode)');
+    } else {
+      logger.info('Static file serving disabled (development mode - use frontend dev server)');
+    }
 
     // Try to start server with port handling
     const server = app.listen(port, () => {

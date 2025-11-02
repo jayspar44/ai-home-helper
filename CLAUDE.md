@@ -61,10 +61,37 @@ AI home helper for families - recipe generation, pantry management, meal plannin
 
 ## Key Commands
 ```bash
-npm run dev:local           # Run full stack locally
-npm run build              # Build frontend only
-npm run install-all        # Install all dependencies
+npm run dev:local                    # Default ports (3000/3001), no browser
+npm run dev:local -- 3010            # Custom ports (3010/3011), no browser
+npm run dev:local -- --browser       # Default ports, open browser
+npm run dev:local -- 3010 --browser  # Custom ports, open browser
+npm run dev:local -- --help          # Show usage information
+npm run build                        # Build frontend only
+npm run install-all                  # Install all dependencies
 ```
+
+**Running Multiple Development Instances:**
+
+You can run multiple development servers simultaneously with different ports:
+
+```bash
+# Instance 1 (default ports 3000/3001)
+npm run dev:local
+
+# Instance 2 (ports 3010/3011)
+npm run dev:local -- 3010
+
+# Instance 3 (ports 3020/3021)
+npm run dev:local -- 3020
+```
+
+**Smart Features:**
+- **Worktree Support**: Automatically detects worktrees and copies .env files from base `ai-home-helper` directory
+- **Auto-Install**: Automatically installs missing dependencies in backend/frontend
+- **Dynamic Proxy**: Frontend proxy automatically adapts to backend port via environment variables
+- **Browser Control**: Use `--browser` or `--open` flag to automatically open browser on startup
+
+**Note:** The `--` separator is required by npm to pass arguments to the script. The backend port is automatically calculated as `frontendPort + 1`. Supported port range: 3000-3099.
 
 ## Logging Access
 - **Local Development**: View logs in terminal where `npm run dev:local` runs
