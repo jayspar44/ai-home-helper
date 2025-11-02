@@ -16,9 +16,10 @@ const EXPIRING_SOON_THRESHOLD_DAYS = 3; // Items expiring within this many days 
  */
 function sanitizeFeedback(feedback) {
   return feedback
-    .replace(/[<>{}\[\]]/g, '') // Remove brackets and braces
+    .replace(/[<>{}[\]]/g, '') // Remove brackets and braces
     .replace(/\n{3,}/g, '\n\n') // Limit consecutive newlines to max 2
-    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters (intentional for security)
     .slice(0, 500) // Hard limit at function level
     .trim();
 }
