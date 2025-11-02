@@ -6,6 +6,9 @@ import RecipeSelector from '../components/RecipeSelector';
 import RecipeSchedulingModal from '../components/RecipeSchedulingModal';
 import logger from '../utils/logger';
 
+// Constants
+const MAX_FEEDBACK_LENGTH = 500; // Must match backend constant in recipeAI.js
+
 const LoadingSpinner = () => <div className="w-6 h-6 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--border-light)', borderTopColor: 'var(--color-primary)' }}></div>;
 const SkeletonCard = () => (
   <div className="space-y-6 p-6">
@@ -541,7 +544,32 @@ export default function RecipeGenerator() {
     }
   }, [userToken, activeHomeId, pantryMode, numberOfPeople, quickMealsOnly, prioritizeExpiring, numberOfRecipes, getAuthHeaders]);
 
-  // Recipe regeneration with feedback
+  /**
+   * Regenerates the current recipe based on user feedback.
+   *
+   * Sends the original recipe and user feedback to the AI service to generate
+   * an improved version. Updates both the current recipe and the recipes array
+   * with the regenerated result.
+   *
+   * @async
+   * @function handleRegenerateWithFeedback
+   * @returns {Promise<void>}
+   *
+   * @throws {Error} When the API request fails or returns an error
+   *
+   * @requires userToken - User authentication token
+   * @requires activeHomeId - Current home ID
+   * @requires generatedRecipe - The original recipe to regenerate
+   * @requires recipeFeedback - User's feedback for regeneration (must be non-empty)
+   *
+   * @sideEffects
+   * - Sets `isRegenerating` loading state
+   * - Updates `generatedRecipe` with new version
+   * - Updates `generatedRecipes` array at current index
+   * - Adds to `recentRecipes` history
+   * - Clears `recipeFeedback` on success
+   * - Sets `error` state on failure
+   */
   const handleRegenerateWithFeedback = useCallback(async () => {
     if (!userToken || !activeHomeId || !generatedRecipe) {
       setError('Cannot regenerate recipe');
@@ -570,10 +598,9 @@ export default function RecipeGenerator() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle rate limit error
+        // Handle rate limit error with specific message
         if (response.status === 429) {
-          setError(data.message || 'Too many requests. Please try again later.');
-          return;
+          throw new Error(data.message || 'Too many requests. Please try again later.');
         }
 
         throw new Error(data.error || 'Failed to regenerate recipe');
@@ -581,11 +608,12 @@ export default function RecipeGenerator() {
 
       // Update the current recipe with regenerated version
       setGeneratedRecipe(data);
-      if (generatedRecipes.length > 0) {
-        const updatedRecipes = [...generatedRecipes];
+      setGeneratedRecipes(prev => {
+        if (prev.length === 0) return prev;
+        const updatedRecipes = [...prev];
         updatedRecipes[currentRecipeIndex] = data;
-        setGeneratedRecipes(updatedRecipes);
-      }
+        return updatedRecipes;
+      });
       setRecentRecipes(prev => [data, ...prev].slice(0, 10));
       setRecipeFeedback(''); // Clear feedback after successful regeneration
       logger.info('Recipe regenerated with feedback:', data.title);
@@ -596,7 +624,7 @@ export default function RecipeGenerator() {
     } finally {
       setIsRegenerating(false);
     }
-  }, [userToken, activeHomeId, generatedRecipe, recipeFeedback, generatedRecipes, currentRecipeIndex, getAuthHeaders]);
+  }, [userToken, activeHomeId, generatedRecipe, recipeFeedback, currentRecipeIndex, getAuthHeaders]);
 
   // Customize recipe generation
   const handleGenerateCustomize = useCallback(async () => {
@@ -1685,14 +1713,22 @@ export default function RecipeGenerator() {
                   Provide feedback and I'll regenerate the recipe to match your preferences
                 </p>
                 <div className="space-y-3">
-                  <textarea
-                    value={recipeFeedback}
-                    onChange={(e) => setRecipeFeedback(e.target.value)}
-                    placeholder="E.g., 'Change to beef instead of chicken' or 'Make it spicier' or 'Use less cooking time'"
-                    className="w-full p-3 rounded-lg bg-secondary text-color-primary border border-color-light focus:border-color-primary outline-none resize-none text-sm"
-                    rows={2}
-                    disabled={isRegenerating}
-                  />
+                  <div>
+                    <textarea
+                      value={recipeFeedback}
+                      onChange={(e) => setRecipeFeedback(e.target.value)}
+                      placeholder="E.g., 'Change to beef instead of chicken' or 'Make it spicier' or 'Use less cooking time'"
+                      className="w-full p-3 rounded-lg bg-secondary text-color-primary border border-color-light focus:border-color-primary outline-none resize-none text-sm"
+                      rows={2}
+                      maxLength={MAX_FEEDBACK_LENGTH}
+                      disabled={isRegenerating}
+                    />
+                    <div className="flex justify-end mt-1">
+                      <span className="text-xs text-color-muted">
+                        {recipeFeedback.length} / {MAX_FEEDBACK_LENGTH}
+                      </span>
+                    </div>
+                  </div>
                   <button
                     onClick={handleRegenerateWithFeedback}
                     disabled={isRegenerating || !recipeFeedback.trim()}

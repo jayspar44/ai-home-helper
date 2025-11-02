@@ -1,6 +1,7 @@
 // pantryAI.js - AI pantry management service
 
 const { parseAIJsonResponse } = require('../utils/aiHelpers');
+const { GEMINI_MODEL } = require('../config/ai');
 
 /**
  * Suggests pantry items based on user input with confidence scoring
@@ -62,7 +63,7 @@ Return JSON format:
 
   try {
     // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
@@ -114,7 +115,7 @@ Use these rules:
 
   try {
     // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
@@ -193,7 +194,7 @@ If no food items are detected, return an empty array: []`;
 
   try {
     // Call Gemini API with image
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent([
       prompt,
       {

@@ -1,6 +1,7 @@
 // shoppingListAI.js - AI parsing service for shopping list items
 
 const { parseAIJsonResponse } = require('../utils/aiHelpers');
+const { GEMINI_MODEL } = require('../config/ai');
 
 /**
  * Parses natural language shopping list item text into structured data
@@ -55,7 +56,7 @@ Rules:
 Return ONLY valid JSON, no explanation or markdown formatting.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const responseText = response.text();

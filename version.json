@@ -1,6 +1,6 @@
 {
-  "version": "2.27.1",
-  "lastUpdated": "2025-11-02T16:16:45.938Z",
+  "version": "2.27.2",
+  "lastUpdated": "2025-11-02T17:20:26.726Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -334,8 +334,13 @@
       "date": "November 1, 2025"
     },
     "2.27.1": {
-      "description": "UI refinements for recipe generator: restructured cards with new button layouts and icons, improved mobile ordering, fixed light mode button styling, added Load More for saved recipes, more compact options panels",
-      "timestamp": "2025-11-02T16:16:45.938Z",
+      "description": "Fix PR review issues: authorization check, input validation, feedback sanitization, AI model consistency, React hook dependencies, error logging, JSDoc documentation",
+      "timestamp": "2025-11-02T17:18:17.292Z",
+      "date": "November 2, 2025"
+    },
+    "2.27.2": {
+      "description": "Centralize AI model configuration: Create backend/config/ai.js with GEMINI_MODEL constant, update all AI services (recipeAI, pantryAI, shoppingListAI) to use centralized config, update CLAUDE.md documentation",
+      "timestamp": "2025-11-02T17:20:26.726Z",
       "date": "November 2, 2025"
     }
   }
