@@ -6,7 +6,7 @@ const { GEMINI_MODEL } = require('../config/ai');
 // --- Constants ---
 const MAX_AI_RETRY_ATTEMPTS = 3; // Maximum number of retry attempts for AI generation
 const MIN_QUALITY_SCORE = 50; // Minimum acceptable quality score for recipes
-const EXPIRING_SOON_THRESHOLD_DAYS = 7; // Items expiring within this many days are considered expiring soon (updated from 3 to 7)
+const EXPIRING_SOON_THRESHOLD_DAYS = 3; // Items expiring within this many days are considered expiring soon
 const MAX_FEEDBACK_LENGTH = 100; // Maximum character length for user feedback
 
 /**
@@ -74,6 +74,14 @@ async function generateRecipes(options, genAI, logger) {
   // Generate multiple recipes in parallel
   if (generateCount > 1) {
     const promises = [];
+    const promptVariables = {
+      ingredients,
+      servingSize,
+      dietaryRestrictions,
+      recipeType,
+      pantryItemCount: pantryItems.length,
+      generateCount
+    };
 
     for (let i = 0; i < generateCount; i++) {
       const prompt = createRecipePrompt(
@@ -86,11 +94,27 @@ async function generateRecipes(options, genAI, logger) {
       );
 
       const promise = (async () => {
+        const recipeStartTime = Date.now();
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const generatedText = response.text();
-        return parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients, logger);
+        const parsed = parseRecipeResponse(generatedText, servingSize, pantryItems, ingredients, logger);
+
+        // Log each parallel AI call
+        logger.debug({
+          aiService: 'recipeAI',
+          aiFunction: 'generateRecipes',
+          variationNumber: i + 1,
+          promptVariables,
+          fullPrompt: prompt,
+          fullResponse: generatedText,
+          parsedResult: parsed,
+          responseTime: Date.now() - recipeStartTime,
+          attempt: 1
+        }, `AI call completed (variation ${i + 1}/${generateCount})`);
+
+        return parsed;
       })();
 
       promises.push(promise);
@@ -116,6 +140,14 @@ async function generateRecipes(options, genAI, logger) {
   }
 
   // Generate single recipe
+  const promptVariables = {
+    ingredients,
+    servingSize,
+    dietaryRestrictions,
+    recipeType,
+    pantryItemCount: pantryItems.length
+  };
+
   const prompt = createRecipePrompt(
     ingredients,
     servingSize,
@@ -137,9 +169,23 @@ async function generateRecipes(options, genAI, logger) {
     throw new Error('Generated recipe has invalid format');
   }
 
+  const responseTime = Date.now() - startTime;
+
+  // Comprehensive AI logging (DEBUG level, dev only)
+  logger.debug({
+    aiService: 'recipeAI',
+    aiFunction: 'generateRecipes',
+    promptVariables,
+    fullPrompt: prompt,
+    fullResponse: generatedText,
+    parsedResult: recipe,
+    responseTime,
+    attempt: 1
+  }, 'AI call completed');
+
   logger.debug({
     recipeTitle: recipe.title,
-    aiResponseTime: Date.now() - startTime
+    aiResponseTime: responseTime
   }, 'Recipe generated');
 
   return recipe;
@@ -394,6 +440,7 @@ async function generateSingleRoscoesRecipe(prompt, genAI, pantryItems, logger, m
   while (attempts < maxAttempts) {
     try {
       attempts++;
+      const attemptStartTime = Date.now();
 
       const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
@@ -407,6 +454,17 @@ async function generateSingleRoscoesRecipe(prompt, genAI, pantryItems, logger, m
 
       // Parse response
       const parsed = parseAIJsonResponse(text, logger, { context: 'roscoes-choice' });
+
+      // Comprehensive AI logging (DEBUG level, dev only)
+      logger.debug({
+        aiService: 'recipeAI',
+        aiFunction: 'generateRoscoesChoiceRecipe',
+        fullPrompt: prompt,
+        fullResponse: text,
+        parsedResult: parsed,
+        responseTime: Date.now() - attemptStartTime,
+        attempt: attempts
+      }, 'AI call completed (Roscoe\'s Choice)');
 
       // Check if AI refused
       if (parsed.success === false && parsed.refusalReason) {
@@ -718,6 +776,7 @@ async function generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, ma
   while (attempts < maxAttempts) {
     try {
       attempts++;
+      const attemptStartTime = Date.now();
 
       const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
@@ -731,6 +790,17 @@ async function generateSingleCustomRecipe(prompt, genAI, pantryItems, logger, ma
 
       // Parse response
       const parsed = parseAIJsonResponse(text, logger, { context: 'custom-recipe' });
+
+      // Comprehensive AI logging (DEBUG level, dev only)
+      logger.debug({
+        aiService: 'recipeAI',
+        aiFunction: 'generateCustomRecipe',
+        fullPrompt: prompt,
+        fullResponse: text,
+        parsedResult: parsed,
+        responseTime: Date.now() - attemptStartTime,
+        attempt: attempts
+      }, 'AI call completed (Custom Recipe)');
 
       // Check if AI refused
       if (parsed.success === false && parsed.refusalReason) {
@@ -1053,6 +1123,7 @@ async function generateSingleUnifiedRecipe(prompt, genAI, pantryItems, logger, m
   while (attempts < maxAttempts) {
     try {
       attempts++;
+      const attemptStartTime = Date.now();
 
       const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
@@ -1066,6 +1137,17 @@ async function generateSingleUnifiedRecipe(prompt, genAI, pantryItems, logger, m
 
       // Parse response
       const parsed = parseAIJsonResponse(text, logger, { context: 'unified-recipe' });
+
+      // Comprehensive AI logging (DEBUG level, dev only)
+      logger.debug({
+        aiService: 'recipeAI',
+        aiFunction: 'generateUnifiedRecipe',
+        fullPrompt: prompt,
+        fullResponse: text,
+        parsedResult: parsed,
+        responseTime: Date.now() - attemptStartTime,
+        attempt: attempts
+      }, 'AI call completed (Unified Recipe)');
 
       // Check if AI refused
       if (parsed.success === false && parsed.refusalReason) {
@@ -1350,6 +1432,11 @@ RESPONSE FORMAT (JSON):
   ]
 }`;
 
+    const promptVariables = {
+      recipeIngredientCount: recipeIngredients.length,
+      pantryItemCount: pantryItems.length
+    };
+
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -1357,10 +1444,24 @@ RESPONSE FORMAT (JSON):
 
     const parsed = parseAIJsonResponse(text, logger, { context: 'ingredient-matching' });
 
+    const responseTime = Date.now() - startTime;
+
+    // Comprehensive AI logging (DEBUG level, dev only)
+    logger.debug({
+      aiService: 'recipeAI',
+      aiFunction: 'matchIngredientsToPantry',
+      promptVariables,
+      fullPrompt: prompt,
+      fullResponse: text,
+      parsedResult: parsed,
+      responseTime,
+      attempt: 1
+    }, 'AI call completed (Ingredient Matching)');
+
     logger.debug({
       matchCount: (parsed.matches || []).length,
       shoppingCount: (parsed.needToBuy || []).length,
-      aiResponseTime: Date.now() - startTime
+      aiResponseTime: responseTime
     }, 'Ingredient matching completed');
 
     return {
@@ -1499,12 +1600,31 @@ RESPONSE FORMAT (exact JSON):
 }`;
 
     // Generate with AI
+    const promptVariables = {
+      hasOriginalRecipe: !!originalRecipe,
+      originalTitle: originalRecipe?.title,
+      feedbackLength: feedback.length,
+      pantryItemCount: pantryItems.length
+    };
+
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
     // Parse JSON response
     const parsedRecipe = parseAIJsonResponse(responseText, logger);
+
+    // Comprehensive AI logging (DEBUG level, dev only)
+    logger.debug({
+      aiService: 'recipeAI',
+      aiFunction: 'regenerateRecipeWithFeedback',
+      promptVariables,
+      fullPrompt: prompt,
+      fullResponse: responseText,
+      parsedResult: parsedRecipe,
+      responseTime: Date.now() - startTime,
+      attempt: 1
+    }, 'AI call completed (Regenerate with Feedback)');
 
     if (!parsedRecipe || !parsedRecipe.success) {
       throw new Error('AI failed to regenerate recipe');

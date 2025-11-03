@@ -47,33 +47,27 @@ function RecipeCard({ recipe, onSave, onUnsave, isSaved, onSchedule }) {
     <div className="space-y-6 animate-fade-in relative">
        <button
          onClick={isSaved ? onUnsave : onSave}
-         className="btn-base px-4 py-2 absolute top-0 right-0 shadow-md transition-all flex items-center gap-2"
-         style={{
-           backgroundColor: isSaved ? 'var(--bg-tertiary)' : 'var(--color-primary)',
-           color: isSaved ? 'var(--text-primary)' : 'white'
-         }}
+         className={`btn-base px-4 py-2 absolute top-0 right-0 shadow-md transition-all flex items-center gap-2 ${
+           isSaved ? 'bg-tertiary text-color-primary' : 'btn-primary'
+         }`}
        >
          💾 {isSaved ? 'Unsave' : 'Save'}
        </button>
       <div>
-        <h2 className="text-2xl font-bold mb-2 pr-32" style={{ color: 'var(--text-primary)' }}>{recipe.title}</h2>
-        <p className="mb-4 pr-32" style={{ color: 'var(--text-secondary)' }}>{recipe.description}</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm py-3" style={{
-          color: 'var(--text-secondary)' ,
+        <h2 className="text-2xl font-bold mb-2 pr-32 text-color-primary">{recipe.title}</h2>
+        <p className="mb-4 pr-32 text-color-secondary">{recipe.description}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm py-3 text-color-secondary" style={{
           borderTop: '1px solid var(--border-light)',
           borderBottom: '1px solid var(--border-light)'
         }}>
           <div className="flex items-center gap-1.5"><span>⏱️</span> Prep: <strong>{recipe.prepTime}</strong></div>
           <div className="flex items-center gap-1.5"><span>🍳</span> Cook: <strong>{recipe.cookTime}</strong></div>
           <div className="flex items-center gap-1.5"><span>👥</span> Serves: <strong>{recipe.servings}</strong></div>
-          <span className="px-3 py-1 rounded-full font-medium" style={{
-            backgroundColor: 'var(--color-success-light)',
-            color: 'var(--color-success)'
+          <span className="px-3 py-1 rounded-full font-medium text-color-success" style={{
+            backgroundColor: 'var(--color-success-light)'
           }}>{recipe.difficulty}</span>
           {process.env.NODE_ENV === 'development' && recipe.qualityScore && (
-            <span className="px-2 py-1 rounded text-xs font-mono" style={{
-              backgroundColor: 'var(--bg-tertiary)',
-              color: 'var(--text-muted)',
+            <span className="px-2 py-1 rounded text-xs font-mono bg-tertiary text-color-muted" style={{
               border: '1px solid var(--border-light)'
             }}>
               Q: {recipe.qualityScore}
@@ -83,31 +77,31 @@ function RecipeCard({ recipe, onSave, onUnsave, isSaved, onSchedule }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Ingredients</h3>
+          <h3 className="text-xl font-semibold mb-3 text-color-primary">Ingredients</h3>
           <ul className="space-y-2">{recipe.ingredients.map((ing, i) => {
             const isPantryItem = recipe.pantryIngredients && recipe.pantryIngredients.includes(ing);
             return (
               <li key={i} className="flex items-start gap-3">
                 <span className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: isPantryItem ? 'var(--color-success)' : 'var(--color-accent)' }}></span>
-                <span style={{ color: isPantryItem ? 'var(--color-success)' : 'var(--text-secondary)' }}>{ing}</span>
+                <span className={isPantryItem ? 'text-color-success' : 'text-color-secondary'}>{ing}</span>
               </li>
             );
           })}</ul>
         </div>
         <div>
-          <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Chef's Tips</h3>
-          <ul className="space-y-2">{recipe.tips && recipe.tips.map((tip, i) => <li key={i} className="flex items-start gap-3 text-sm"><span className="mt-1" style={{ color: 'var(--color-primary)' }}>💡</span><span style={{ color: 'var(--text-secondary)' }}>{tip}</span></li>)}</ul>
+          <h3 className="text-xl font-semibold mb-3 text-color-primary">Chef's Tips</h3>
+          <ul className="space-y-2">{recipe.tips && recipe.tips.map((tip, i) => <li key={i} className="flex items-start gap-3 text-sm"><span className="mt-1 text-color-primary-brand">💡</span><span className="text-color-secondary">{tip}</span></li>)}</ul>
         </div>
       </div>
       <div>
-        <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Instructions</h3>
-        <ol className="space-y-4">{recipe.instructions.map((step, i) => <li key={i} className="flex gap-4"><span className="flex-shrink-0 w-7 h-7 text-white rounded-full flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--color-primary)' }}>{i + 1}</span><span className="pt-0.5" style={{ color: 'var(--text-secondary)' }}>{step}</span></li>)}</ol>
+        <h3 className="text-xl font-semibold mb-3 text-color-primary">Instructions</h3>
+        <ol className="space-y-4">{recipe.instructions.map((step, i) => <li key={i} className="flex gap-4"><span className="flex-shrink-0 w-7 h-7 text-white rounded-full flex items-center justify-center font-bold bg-color-primary">{i + 1}</span><span className="pt-0.5 text-color-secondary">{step}</span></li>)}</ol>
       </div>
 
       {/* Pantry Items Used Section - only show if not no_constraints */}
       {showPantrySection && recipe.pantryItemsUsed && recipe.pantryItemsUsed.length > 0 && (
         <div className="card p-6 border-l-4" style={{ borderLeftColor: 'var(--color-success)', backgroundColor: 'var(--color-success-light)' }}>
-          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-success)' }}>
+          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2 text-color-success">
             <span>✓</span> Pantry Items Used
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -115,15 +109,14 @@ function RecipeCard({ recipe, onSave, onUnsave, isSaved, onSchedule }) {
               <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white">
                 <span className="text-xl">🥫</span>
                 <div className="flex-1">
-                  <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                  <div className="font-medium text-color-primary">
                     {item.itemName}
                   </div>
-                  <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  <div className="text-sm text-color-muted">
                     {item.quantity}
                     {item.daysUntilExpiry !== null && item.daysUntilExpiry <= 7 && (
-                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{
-                        backgroundColor: 'var(--color-warning-light)',
-                        color: 'var(--color-warning)'
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full text-color-warning" style={{
+                        backgroundColor: 'var(--color-warning-light)'
                       }}>
                         Expires soon
                       </span>
