@@ -265,6 +265,90 @@ logger.error('Failed to load recipes:', error); // Always visible
 - GCP automatically maps Pino severity levels to Cloud Logging
 - View logs: `npm run gcp:logs:prod` or GCP Console → App Engine → Logs
 
+**AI Call Logging (Development Only)**:
+
+All Gemini AI calls include comprehensive logging at DEBUG level for prompt optimization and debugging:
+
+**What is Logged**:
+- `aiService`: Service name (e.g., 'recipeAI', 'pantryAI', 'shoppingListAI')
+- `aiFunction`: Function name (e.g., 'generateRecipes', 'suggestPantryItem')
+- `promptVariables`: Variables used in prompt construction (as object)
+- `fullPrompt`: Complete prompt sent to Gemini API
+- `fullResponse`: Complete response received from Gemini
+- `parsedResult`: Parsed/structured result object
+- `responseTime`: Time in milliseconds
+- `attempt`: Retry attempt number (1 for first try)
+
+**AI Functions with Comprehensive Logging** (10 total):
+- **Recipe AI** (6 functions): `generateRecipes`, `generateRoscoesChoiceRecipe`, `generateCustomRecipe`, `generateUnifiedRecipe`, `matchIngredientsToPantry`, `regenerateRecipeWithFeedback`
+- **Pantry AI** (3 functions): `suggestPantryItem`, `getQuickDefaults`, `detectItemsFromImage`
+- **Shopping List AI** (1 function): `parseShoppingListItem`
+
+**Usage Pattern**:
+```javascript
+// Before AI call - capture variables
+const promptVariables = {
+  ingredients,
+  servingSize,
+  pantryItemCount: pantryItems.length
+};
+
+const fullPrompt = createRecipePrompt(...);
+const startTime = Date.now();
+
+// Make AI call
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+const result = await model.generateContent(fullPrompt);
+const text = response.text();
+const parsed = parseResponse(text);
+
+// Comprehensive AI logging (DEBUG level, dev only)
+logger.debug({
+  aiService: 'recipeAI',
+  aiFunction: 'generateRecipes',
+  promptVariables,
+  fullPrompt,
+  fullResponse: text,
+  parsedResult: parsed,
+  responseTime: Date.now() - startTime,
+  attempt: 1
+}, 'AI call completed');
+```
+
+**Log Output Example** (with `singleLine: false` in development):
+```
+[backend] [00:27:13] DEBUG: AI call completed
+    aiService: "recipeAI"
+    aiFunction: "generateRecipes"
+    promptVariables: {
+      "ingredients": ["chicken", "rice"],
+      "servingSize": 4,
+      "pantryItemCount": 12
+    }
+    fullPrompt: "Create a complete recipe using the following ingredients:\n- chicken\n- rice\n\nServing size: 4..."
+    fullResponse: "{\"title\": \"Chicken and Rice Bowl\", \"ingredients\": [...], \"instructions\": [...]}"
+    parsedResult: {
+      "title": "Chicken and Rice Bowl",
+      "ingredients": ["2 lbs chicken breast", "2 cups rice"],
+      "instructions": ["Step 1...", "Step 2..."]
+    }
+    responseTime: 1523
+    attempt: 1
+```
+
+**Benefits**:
+- ✅ See exact prompts for optimization and debugging
+- ✅ Inspect all variables used in prompt construction
+- ✅ View complete AI responses before parsing
+- ✅ Track response times and retry patterns
+- ✅ Zero production overhead (DEBUG level only)
+- ✅ Structured format for easy searching/filtering
+
+**Special Cases**:
+- **Image detection**: Base64 image data is truncated to first 100 chars to prevent log bloat
+- **Parallel recipe generation**: Each variation logs separately with `variationNumber` field
+- **Retry attempts**: `attempt` field tracks retry count for quality failures
+
 ## Rate Limiting Protocol
 
 **Purpose**: Protect AI endpoints from abuse and prevent runaway scripts while allowing generous legitimate use.

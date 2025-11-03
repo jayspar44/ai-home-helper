@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
@@ -21,6 +21,16 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const timeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -44,7 +54,14 @@ export default function AuthPage() {
       try {
         await signInWithEmailAndPassword(auth, email, password);
         // Keep loading state active - App.js will take over after auth succeeds
+        // Fallback timeout if App.js doesn't take over (edge case safety net)
+        timeoutRef.current = setTimeout(() => setLoading(false), 10000);
       } catch (err) {
+        // Clear timeout on error
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
         if (err.code === 'auth/invalid-credential') {
             setError('Invalid email or password.');
         } else {

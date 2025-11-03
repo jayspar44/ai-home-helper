@@ -62,6 +62,10 @@ Return JSON format:
 }`;
 
   try {
+    const promptVariables = {
+      itemName
+    };
+
     // Call Gemini API
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
@@ -71,12 +75,26 @@ Return JSON format:
     // Parse AI response
     const suggestionData = parseAIJsonResponse(text, logger, { itemName, context: 'suggest-item' });
 
+    const responseTime = Date.now() - startTime;
+
+    // Comprehensive AI logging (DEBUG level, dev only)
+    logger.debug({
+      aiService: 'pantryAI',
+      aiFunction: 'suggestPantryItem',
+      promptVariables,
+      fullPrompt: prompt,
+      fullResponse: text,
+      parsedResult: suggestionData,
+      responseTime,
+      attempt: 1
+    }, 'AI call completed (Pantry Suggestions)');
+
     logger.debug({
       itemName,
       confidence: suggestionData.confidence,
       action: suggestionData.action,
       suggestionCount: suggestionData.suggestions?.length,
-      aiResponseTime: Date.now() - startTime
+      aiResponseTime: responseTime
     }, 'AI suggestions returned');
 
     return suggestionData;
@@ -114,6 +132,10 @@ Use these rules:
 - Reasonable expiry days (1-3 for fresh, 7-30 for pantry items)`;
 
   try {
+    const promptVariables = {
+      itemName
+    };
+
     // Call Gemini API
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
@@ -130,11 +152,25 @@ Use these rules:
       defaultsData = createDefaultsFallback(itemName);
     }
 
+    const responseTime = Date.now() - startTime;
+
+    // Comprehensive AI logging (DEBUG level, dev only)
+    logger.debug({
+      aiService: 'pantryAI',
+      aiFunction: 'getQuickDefaults',
+      promptVariables,
+      fullPrompt: prompt,
+      fullResponse: text,
+      parsedResult: defaultsData,
+      responseTime,
+      attempt: 1
+    }, 'AI call completed (Quick Defaults)');
+
     logger.debug({
       itemName,
       location: defaultsData.location,
       daysUntilExpiry: defaultsData.daysUntilExpiry,
-      aiResponseTime: Date.now() - startTime
+      aiResponseTime: responseTime
     }, 'AI defaults returned');
 
     return defaultsData;
@@ -193,6 +229,12 @@ Respond ONLY with a JSON array, no other text:
 If no food items are detected, return an empty array: []`;
 
   try {
+    const promptVariables = {
+      mimeType,
+      base64ImageLength: base64Image.length,
+      base64ImagePreview: base64Image.substring(0, 100) + '...'
+    };
+
     // Call Gemini API with image
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent([
@@ -226,9 +268,24 @@ If no food items are detected, return an empty array: []`;
       };
     });
 
+    const responseTime = Date.now() - startTime;
+
+    // Comprehensive AI logging (DEBUG level, dev only)
+    // Note: base64 image is truncated to prevent log bloat
+    logger.debug({
+      aiService: 'pantryAI',
+      aiFunction: 'detectItemsFromImage',
+      promptVariables,
+      fullPrompt: prompt,
+      fullResponse: text,
+      parsedResult: formattedItems,
+      responseTime,
+      attempt: 1
+    }, 'AI call completed (Image Detection)');
+
     logger.debug({
       itemsDetected: formattedItems.length,
-      aiResponseTime: Date.now() - startTime
+      aiResponseTime: responseTime
     }, 'AI detected items from image');
 
     return formattedItems;

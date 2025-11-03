@@ -1,6 +1,6 @@
 {
-  "version": "2.30.0",
-  "lastUpdated": "2025-11-03T00:52:01.223Z",
+  "version": "2.30.1",
+  "lastUpdated": "2025-11-03T01:59:12.457Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -361,6 +361,11 @@
     "2.30.0": {
       "description": "Add cross-platform dev instance management scripts (dev:local:list and dev:local:kill)",
       "timestamp": "2025-11-03T00:52:01.223Z",
+      "date": "November 2, 2025"
+    },
+    "2.30.1": {
+      "description": "Development and security improvements: Add comprehensive DEBUG-level AI logging to all 10 Gemini functions for prompt optimization (dev only), fix security vulnerability in recipe save endpoint with proper home authorization check, fix AuthPage timeout memory leak with proper cleanup, adjust EXPIRING_SOON_THRESHOLD_DAYS to 3 days, refactor inline styles to CSS utility classes for maintainability, and respond to PR 55 review comments",
+      "timestamp": "2025-11-03T01:59:12.457Z",
       "date": "November 2, 2025"
     }
   }
