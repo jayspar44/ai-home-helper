@@ -7,17 +7,19 @@ module.exports = function(app) {
 
   console.log(`[Proxy] Configuring API proxy: /api/* -> ${target}/api/*`);
 
-  // Use context matching with target that includes /api path
-  // This way: /api/user/me -> strips to /user/me -> proxies to target/api + /user/me
+  // Use context matching with pathRewrite to keep /api in forwarded requests
+  // This way: /api/user/me -> matches /api context -> proxies to target + /api/user/me
   app.use(
     '/api',
     createProxyMiddleware({
-      target: `${target}/api`,  // Include /api in target
+      target: target,  // No /api suffix - pathRewrite handles it
       changeOrigin: true,
       logLevel: 'debug',
+      pathRewrite: {
+        '^/api': '/api'  // Explicitly keep /api in forwarded requests
+      },
       onProxyReq: (proxyReq, req, res) => {
-        // req.url is the path AFTER /api is stripped by Express
-        console.log(`[Proxy] ${req.method} /api${req.url} -> ${target}/api${req.url}`);
+        console.log(`[Proxy] ${req.method} ${req.url} -> ${target}${req.url}`);
       },
       onError: (err, req, res) => {
         console.error(`[Proxy Error] Failed to proxy ${req.url}:`, err.message);
