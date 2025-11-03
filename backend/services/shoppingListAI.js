@@ -56,6 +56,11 @@ Rules:
 Return ONLY valid JSON, no explanation or markdown formatting.`;
 
   try {
+    const promptVariables = {
+      inputText: text,
+      inputLength: text.length
+    };
+
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -85,10 +90,24 @@ Return ONLY valid JSON, no explanation or markdown formatting.`;
       parsedItem.category = 'other';
     }
 
+    const responseTime = Date.now() - startTime;
+
+    // Comprehensive AI logging (DEBUG level, dev only)
+    logger.debug({
+      aiService: 'shoppingListAI',
+      aiFunction: 'parseShoppingListItem',
+      promptVariables,
+      fullPrompt: prompt,
+      fullResponse: responseText,
+      parsedResult: parsedItem,
+      responseTime,
+      attempt: 1
+    }, 'AI call completed (Shopping List Parsing)');
+
     logger.debug({
       inputText: text,
       parsedItem,
-      aiResponseTime: Date.now() - startTime
+      aiResponseTime: responseTime
     }, 'Shopping list item parsed successfully');
 
     return parsedItem;

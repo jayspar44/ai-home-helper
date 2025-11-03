@@ -538,6 +538,13 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
     const { homeId, recipe } = req.body;
     if (!homeId || !recipe) return res.status(400).json({ error: "homeId and recipe are required." });
 
+    // Verify user belongs to this home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[req.user.uid] === undefined) {
+      req.log.warn({ userId: req.user.uid, homeId, recipeTitle: recipe.title }, 'Unauthorized recipe save attempt');
+      return res.status(403).json({ error: 'Not authorized for this home' });
+    }
+
     // Add timestamp for proper sorting
     const recipeWithTimestamp = {
       ...recipe,

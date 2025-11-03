@@ -44,6 +44,8 @@ export default function AuthPage() {
       try {
         await signInWithEmailAndPassword(auth, email, password);
         // Keep loading state active - App.js will take over after auth succeeds
+        // Fallback timeout if App.js doesn't take over (edge case safety net)
+        setTimeout(() => setLoading(false), 10000);
       } catch (err) {
         if (err.code === 'auth/invalid-credential') {
             setError('Invalid email or password.');
