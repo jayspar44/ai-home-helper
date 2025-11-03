@@ -14,11 +14,20 @@ Roscoe is a modern web application designed to streamline household management b
 ## ✨ Key Features
 
 ### 🍳 **AI Recipe Generator**
-- **Smart Recipe Creation**: Generate personalized recipes based on available pantry ingredients
-- **Dietary Preferences**: Support for various dietary restrictions and preferences
-- **Recipe Complexity**: Choose between quick meals (15-30 min) or sophisticated cooking (45+ min)
-- **Multiple Options**: Generate 3 recipe variations to choose from
-- **Recipe Library**: Save and organize favorite recipes
+- **Unified Progressive Interface**: Three-level disclosure UI (basic → more options → advanced) for intuitive recipe customization
+- **Smart Pantry Integration**: Three modes for flexible meal planning
+  - **Pantry Only**: Use only what you have
+  - **Pantry + Shopping**: Foundation from pantry, add 2-6 items to shopping list
+  - **No Constraints**: Full creative freedom without pantry limitations
+- **Empty Pantry Intelligence**: Auto-detects empty pantry and switches to no-constraints mode with helpful banner
+- **AI-Powered Regeneration**: Refine recipes with natural language feedback (e.g., "make it spicier")
+- **Smart Expiring Priority**: Automatically prioritizes ingredients expiring within 7 days
+- **Multi-Recipe Generation**: Generate 1-5 recipes simultaneously with intelligent variety
+- **Quick Meals Filter**: 30-minute meal constraint for busy nights
+- **Advanced Customization**: Cuisines, proteins, dietary preferences, serving sizes (1-10), and specific ingredient requirements
+- **Recipe Library**: Save/unsave with confirmation modal, view recent and saved recipes
+- **Settings Summary**: Clear feedback showing active constraints before generation
+- **Reset Functionality**: One-click reset to smart defaults with toast confirmation
 
 ### 🥫 **Intelligent Pantry Management**
 - **Multi-Location Tracking**: Organize items across pantry, fridge, and freezer
@@ -88,9 +97,11 @@ Roscoe is a modern web application designed to streamline household management b
 - Branded authentication experience
 
 #### **Recipe Generator**
-- Pantry integration with ingredient selection
-- AI-powered recipe creation with multiple options
-- Recipe saving and management
+- Unified three-level progressive disclosure interface
+- Smart pantry mode switching (pantry only, pantry + shopping, no constraints)
+- AI-powered generation with feedback-based regeneration
+- Save/unsave with confirmation, recent and saved recipe lists
+- Empty pantry detection with auto-switching and banner notification
 
 #### **Pantry Manager**
 - Multi-location inventory tracking

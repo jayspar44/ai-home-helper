@@ -1,6 +1,6 @@
 {
-  "version": "2.28.0",
-  "lastUpdated": "2025-11-02T17:20:26.726Z",
+  "version": "2.30.0",
+  "lastUpdated": "2025-11-03T00:52:01.223Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -346,6 +346,21 @@
     "2.28.0": {
       "description": "Add unified dev:local script with dynamic port configuration, browser control, worktree support, and auto dependency installation",
       "timestamp": "2025-11-02T16:32:17.730Z",
+      "date": "November 2, 2025"
+    },
+    "2.28.1": {
+      "description": "Improve login button UX with loading state feedback and animated indicator",
+      "timestamp": "2025-11-02T23:28:24.978Z",
+      "date": "November 2, 2025"
+    },
+    "2.29.0": {
+      "description": "Complete Recipe Generator redesign: unified progressive 3-level interface replaces separate Roscoe's Choice and Customize flows, new backend unified endpoint with smart constraint merging, save/unsave functionality with UI confirmation modal, AI-powered recipe regeneration with feedback (100 char limit), saved and recent recipe lists with list view design, improved visual hierarchy and spacing, and extensive UX improvements",
+      "timestamp": "2025-11-03T00:08:35.368Z",
+      "date": "November 2, 2025"
+    },
+    "2.30.0": {
+      "description": "Add cross-platform dev instance management scripts (dev:local:list and dev:local:kill)",
+      "timestamp": "2025-11-03T00:52:01.223Z",
       "date": "November 2, 2025"
     }
   }

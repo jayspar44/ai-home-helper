@@ -12,7 +12,7 @@ const logger = require('./utils/logger');
 const pinoHttp = require('pino-http');
 const { loadAllSecrets, isGCP, getProjectId } = require('./utils/secrets');
 const { parseShoppingListItem } = require('./services/shoppingListAI');
-const { generateRecipes, generateRoscoesChoiceRecipe, generateCustomRecipe, matchIngredientsToPantry } = require('./services/recipeAI');
+const { generateRecipes, generateRoscoesChoiceRecipe, generateCustomRecipe, generateUnifiedRecipe, matchIngredientsToPantry } = require('./services/recipeAI');
 const { suggestPantryItem, getQuickDefaults, detectItemsFromImage } = require('./services/pantryAI');
 const { version } = require('../version.json');
 const { aiRateLimiter } = require('./middleware/rateLimiter');
@@ -537,12 +537,46 @@ app.post('/api/recipes/save', checkAuth, async (req, res) => {
   try {
     const { homeId, recipe } = req.body;
     if (!homeId || !recipe) return res.status(400).json({ error: "homeId and recipe are required." });
-    const docRef = await db.collection('homes').doc(homeId).collection('recipes').add(recipe);
+
+    // Add timestamp for proper sorting
+    const recipeWithTimestamp = {
+      ...recipe,
+      savedAt: new Date().toISOString(),
+      savedBy: req.user.uid
+    };
+
+    const docRef = await db.collection('homes').doc(homeId).collection('recipes').add(recipeWithTimestamp);
     req.log.info({ homeId, userId: req.user.uid, recipeTitle: recipe.title, recipeId: docRef.id }, 'Recipe saved');
-    res.status(201).json({ id: docRef.id, ...recipe });
+    res.status(201).json({ id: docRef.id, ...recipeWithTimestamp });
   } catch (error) {
     req.log.error({ err: error, homeId: req.body.homeId, userId: req.user.uid }, 'Error saving recipe');
     res.status(500).json({ error: 'Failed to save recipe' });
+  }
+});
+
+app.delete('/api/recipes/:recipeId', checkAuth, async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const { homeId } = req.query;
+
+    if (!homeId) {
+      req.log.warn({ userId: req.user.uid }, 'No homeId provided for recipe deletion');
+      return res.status(400).json({ error: 'homeId is required' });
+    }
+
+    // Verify user belongs to this home
+    const homeDoc = await db.collection('homes').doc(homeId).get();
+    if (!homeDoc.exists || homeDoc.data().members[req.user.uid] === undefined) {
+      req.log.warn({ userId: req.user.uid, homeId, recipeId }, 'Unauthorized recipe deletion attempt');
+      return res.status(403).json({ error: 'Not authorized for this home' });
+    }
+
+    await db.collection('homes').doc(homeId).collection('recipes').doc(recipeId).delete();
+    req.log.info({ homeId, userId: req.user.uid, recipeId }, 'Recipe deleted');
+    res.json({ success: true });
+  } catch (error) {
+    req.log.error({ err: error, recipeId: req.params.recipeId, userId: req.user.uid }, 'Error deleting recipe');
+    res.status(500).json({ error: 'Failed to delete recipe' });
   }
 });
 
@@ -827,6 +861,151 @@ app.post('/api/generate-recipe/customize', checkAuth, aiRateLimiter, async (req,
     res.json(enhancedRecipes);
   } catch (error) {
     req.log.error({ err: error, userId: req.user.uid }, 'Error in Customize generation');
+    res.status(500).json({ error: 'Failed to generate recipe' });
+  }
+});
+
+// Unified - Single progressive flow merging Roscoe's Choice and Customize
+app.post('/api/generate-recipe/unified', checkAuth, aiRateLimiter, async (req, res) => {
+  try {
+    const {
+      homeId,
+      numberOfMeals,
+      quickMealsOnly,
+      pantryMode,
+      prioritizeExpiring,
+      mainPrompt,
+      cuisines,
+      proteins,
+      preferences,
+      servingSize,
+      specificIngredients
+    } = req.body;
+
+    const userUid = req.user.uid;
+
+    // Validate required fields
+    if (!homeId) {
+      return res.status(400).json({ error: 'homeId is required' });
+    }
+
+    // Validate pantryMode
+    const validPantryModes = ['pantry_only', 'pantry_plus_shopping', 'no_constraints'];
+    const mode = pantryMode || 'pantry_plus_shopping';
+    if (!validPantryModes.includes(mode)) {
+      return res.status(400).json({
+        error: `pantryMode must be one of: ${validPantryModes.join(', ')}`
+      });
+    }
+
+    // Validate mainPrompt length
+    if (mainPrompt && mainPrompt.length > MAX_AI_PROMPT_LENGTH) {
+      return res.status(400).json({
+        error: `Main prompt exceeds maximum length of ${MAX_AI_PROMPT_LENGTH} characters`
+      });
+    }
+
+    // Set defaults
+    const meals = numberOfMeals || 1;
+    const quick = quickMealsOnly !== undefined ? quickMealsOnly : false;
+    const expiring = prioritizeExpiring !== undefined ? prioritizeExpiring : true;
+    const servings = servingSize || 2;
+
+    // Fetch pantry items (unless no_constraints mode)
+    let pantryItems = [];
+
+    if (mode !== 'no_constraints') {
+      const pantrySnapshot = await db.collection('homes')
+        .doc(homeId)
+        .collection('pantry_items')
+        .get();
+
+      pantrySnapshot.forEach(doc => {
+        const data = doc.data();
+        const daysUntilExpiry = data.expiresAt
+          ? Math.ceil((data.expiresAt.toDate() - new Date()) / (1000 * 60 * 60 * 24))
+          : null;
+
+        pantryItems.push({
+          id: doc.id,
+          name: data.name,
+          quantity: data.quantity,
+          location: data.location,
+          expiresAt: data.expiresAt,
+          daysUntilExpiry
+        });
+      });
+    }
+
+    req.log.info({
+      userId: userUid,
+      homeId,
+      pantryMode: mode,
+      numberOfMeals: meals,
+      pantryItemCount: pantryItems.length,
+      quickMealsOnly: quick,
+      prioritizeExpiring: expiring,
+      hasMainPrompt: !!mainPrompt,
+      hasCuisines: !!(cuisines && cuisines.length > 0),
+      hasProteins: !!(proteins && proteins.length > 0),
+      hasPreferences: !!(preferences && preferences.length > 0)
+    }, 'Generating unified recipe(s)');
+
+    // Generate recipes using unified function
+    const result = await generateUnifiedRecipe({
+      pantryItems,
+      pantryMode: mode,
+      numberOfMeals: meals,
+      quickMealsOnly: quick,
+      prioritizeExpiring: expiring,
+      mainPrompt: mainPrompt || '',
+      cuisines: cuisines || [],
+      proteins: proteins || [],
+      preferences: preferences || [],
+      servingSize: servings,
+      specificIngredients: specificIngredients || []
+    }, genAI, req.log);
+
+    // Handle refusal
+    if (result.success === false) {
+      return res.status(400).json({
+        error: 'Recipe generation refused',
+        reason: result.refusalReason,
+        suggestions: result.suggestions
+      });
+    }
+
+    // Handle multiple meals
+    const variationFamily = meals > 1 ? uuidv4() : null;
+    const recipes = Array.isArray(result) ? result : [result];
+
+    const enhancedRecipes = recipes.map((recipe, index) => ({
+      ...recipe,
+      createdBy: userUid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      homeId,
+      generationMode: 'unified',
+      generationParams: {
+        pantryMode: mode,
+        numberOfMeals: meals,
+        quickMealsOnly: quick,
+        prioritizeExpiring: expiring,
+        mainPrompt,
+        cuisines: cuisines || [],
+        proteins: proteins || [],
+        preferences: preferences || [],
+        servingSize: servings,
+        specificIngredients: specificIngredients || []
+      },
+      ...(variationFamily && {
+        variationNumber: index + 1,
+        variationFamily
+      })
+    }));
+
+    res.json(enhancedRecipes);
+  } catch (error) {
+    req.log.error({ err: error, userId: req.user.uid }, 'Error in Unified generation');
     res.status(500).json({ error: 'Failed to generate recipe' });
   }
 });

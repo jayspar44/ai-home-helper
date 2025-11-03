@@ -43,12 +43,14 @@ export default function AuthPage() {
     if (isLogin) {
       try {
         await signInWithEmailAndPassword(auth, email, password);
+        // Keep loading state active - App.js will take over after auth succeeds
       } catch (err) {
         if (err.code === 'auth/invalid-credential') {
             setError('Invalid email or password.');
         } else {
             setError('Failed to log in. Please try again.');
         }
+        setLoading(false);
       }
     } else {
       try {
@@ -62,11 +64,12 @@ export default function AuthPage() {
           throw new Error(data.error || 'An unknown error occurred.');
         }
         await signInWithEmailAndPassword(auth, email, password);
+        // Keep loading state active - App.js will take over after auth succeeds
       } catch (err) {
         setError(err.message);
+        setLoading(false);
       }
     }
-    setLoading(false);
   };
 
   return (
@@ -167,12 +170,21 @@ export default function AuthPage() {
               </div>
             )}
             
-            <button 
-              type="submit" 
-              disabled={loading} 
+            <button
+              type="submit"
+              disabled={loading}
               className="w-full btn-base btn-primary font-semibold text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span>Signing in</span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+                  </span>
+                </span>
+              ) : (isLogin ? 'Log In' : 'Sign Up')}
             </button>
           </form>
           

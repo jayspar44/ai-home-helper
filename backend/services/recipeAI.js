@@ -6,8 +6,8 @@ const { GEMINI_MODEL } = require('../config/ai');
 // --- Constants ---
 const MAX_AI_RETRY_ATTEMPTS = 3; // Maximum number of retry attempts for AI generation
 const MIN_QUALITY_SCORE = 50; // Minimum acceptable quality score for recipes
-const EXPIRING_SOON_THRESHOLD_DAYS = 3; // Items expiring within this many days are considered expiring soon
-const MAX_FEEDBACK_LENGTH = 500; // Maximum character length for user feedback
+const EXPIRING_SOON_THRESHOLD_DAYS = 7; // Items expiring within this many days are considered expiring soon (updated from 3 to 7)
+const MAX_FEEDBACK_LENGTH = 100; // Maximum character length for user feedback
 
 /**
  * Sanitizes user feedback to prevent prompt injection
@@ -907,6 +907,384 @@ If refusing:
 }
 
 /**
+ * Generates recipes using unified flow - merges Roscoe's Choice and Customize approaches
+ * Single progressive interface with smart constraint merging
+ *
+ * @param {Object} options - Generation options
+ * @param {Object[]} options.pantryItems - Available pantry items (empty if no_constraints mode)
+ * @param {string} options.pantryMode - "pantry_only" | "pantry_plus_shopping" | "no_constraints"
+ * @param {number} options.numberOfMeals - 1-5 meals to generate
+ * @param {boolean} options.quickMealsOnly - Under 30 min constraint
+ * @param {boolean} options.prioritizeExpiring - Use expiring items first (≤7 days)
+ * @param {string} options.mainPrompt - User's natural language request
+ * @param {string[]} options.cuisines - Selected cuisines
+ * @param {string[]} options.proteins - Selected proteins
+ * @param {string[]} options.preferences - Quick/Healthy/Comfort/Easy
+ * @param {number} options.servingSize - 1-10 servings
+ * @param {string[]} options.specificIngredients - Must-use pantry ingredients
+ * @param {Object} genAI - Google Generative AI instance
+ * @param {Object} logger - Pino logger instance
+ * @returns {Promise<Object|Object[]>} Recipe(s) or refusal object
+ */
+async function generateUnifiedRecipe(options, genAI, logger) {
+  const {
+    pantryItems = [],
+    pantryMode = 'pantry_plus_shopping',
+    numberOfMeals = 1,
+    quickMealsOnly = false,
+    prioritizeExpiring = true,
+    mainPrompt = '',
+    cuisines = [],
+    proteins = [],
+    preferences = [],
+    servingSize = 2,
+    specificIngredients = []
+  } = options;
+
+  const startTime = Date.now();
+  const maxAttempts = MAX_AI_RETRY_ATTEMPTS;
+
+  // Build pantry context based on mode
+  let pantryContext = '';
+  if (pantryMode !== 'no_constraints' && pantryItems.length > 0) {
+    // Group by expiring vs regular
+    const expiringItems = pantryItems.filter(item =>
+      item.daysUntilExpiry && item.daysUntilExpiry <= EXPIRING_SOON_THRESHOLD_DAYS
+    );
+    const regularItems = pantryItems.filter(item =>
+      !item.daysUntilExpiry || item.daysUntilExpiry > EXPIRING_SOON_THRESHOLD_DAYS
+    );
+
+    if (expiringItems.length > 0) {
+      pantryContext += `\n\nEXPIRING SOON (≤${EXPIRING_SOON_THRESHOLD_DAYS} days):\n`;
+      pantryContext += expiringItems.map(item =>
+        `- ${item.name} (${item.quantity || 'unknown qty'}) - expires in ${item.daysUntilExpiry} days`
+      ).join('\n');
+    }
+    if (regularItems.length > 0) {
+      pantryContext += '\n\nOTHER PANTRY ITEMS:\n';
+      pantryContext += regularItems.map(item =>
+        `- ${item.name} (${item.quantity || 'unknown qty'})`
+      ).join('\n');
+    }
+  }
+
+  // Generate multiple meals in parallel if requested
+  if (numberOfMeals > 1) {
+    const promises = [];
+
+    for (let i = 0; i < numberOfMeals; i++) {
+      const prompt = createUnifiedPrompt({
+        pantryContext,
+        pantryMode,
+        quickMealsOnly,
+        prioritizeExpiring,
+        mainPrompt,
+        cuisines,
+        proteins,
+        preferences,
+        servingSize,
+        specificIngredients,
+        variationNumber: i + 1,
+        totalVariations: numberOfMeals,
+        pantryItems
+      });
+
+      const promise = generateSingleUnifiedRecipe(prompt, genAI, pantryItems, logger, maxAttempts);
+      promises.push(promise);
+    }
+
+    const results = await Promise.all(promises);
+
+    // Check for refusals
+    const refusals = results.filter(r => r.success === false);
+    if (refusals.length > 0) {
+      logger.info({ refusalReason: refusals[0].refusalReason }, 'Unified recipe refused');
+      return refusals[0];
+    }
+
+    const validRecipes = results.filter(r => r.success !== false);
+
+    logger.info({
+      recipeCount: validRecipes.length,
+      aiResponseTime: Date.now() - startTime,
+      pantryMode,
+      hasMainPrompt: !!mainPrompt
+    }, 'Unified recipes generated');
+
+    return validRecipes;
+  }
+
+  // Generate single meal
+  const prompt = createUnifiedPrompt({
+    pantryContext,
+    pantryMode,
+    quickMealsOnly,
+    prioritizeExpiring,
+    mainPrompt,
+    cuisines,
+    proteins,
+    preferences,
+    servingSize,
+    specificIngredients,
+    pantryItems
+  });
+
+  const result = await generateSingleUnifiedRecipe(prompt, genAI, pantryItems, logger, maxAttempts);
+
+  logger.info({
+    success: result.success !== false,
+    qualityScore: result.qualityScore,
+    aiResponseTime: Date.now() - startTime,
+    pantryMode,
+    hasMainPrompt: !!mainPrompt
+  }, 'Unified recipe generated');
+
+  return result;
+}
+
+/**
+ * Generates a single unified recipe with retry logic
+ * @private
+ */
+async function generateSingleUnifiedRecipe(prompt, genAI, pantryItems, logger, maxAttempts) {
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    try {
+      attempts++;
+
+      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      logger.debug({
+        responsePreview: text.substring(0, 300),
+        attempt: attempts
+      }, 'Unified recipe AI response');
+
+      // Parse response
+      const parsed = parseAIJsonResponse(text, logger, { context: 'unified-recipe' });
+
+      // Check if AI refused
+      if (parsed.success === false && parsed.refusalReason) {
+        return {
+          success: false,
+          refusalReason: parsed.refusalReason,
+          suggestions: parsed.suggestions || []
+        };
+      }
+
+      // Validate required fields
+      const requiredFields = ['title', 'ingredients', 'instructions', 'qualityScore'];
+      const missingFields = requiredFields.filter(field => !parsed[field]);
+
+      if (missingFields.length > 0) {
+        logger.warn({ missingFields, attempt: attempts }, 'Missing fields in unified recipe');
+
+        if (attempts < maxAttempts) {
+          continue; // Retry
+        }
+
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Quality check
+      if (parsed.qualityScore < MIN_QUALITY_SCORE) {
+        logger.warn({
+          qualityScore: parsed.qualityScore,
+          title: parsed.title
+        }, 'Low quality unified recipe');
+
+        if (attempts < maxAttempts) {
+          continue; // Retry
+        }
+
+        return {
+          success: false,
+          refusalReason: `Unable to create a quality recipe with your constraints (score below ${MIN_QUALITY_SCORE})`,
+          suggestions: [
+            'Try adjusting your constraints',
+            'Use "Pantry + Shopping" mode for more flexibility',
+            'Add more ingredients to your pantry'
+          ]
+        };
+      }
+
+      // Return recipe
+      return {
+        title: parsed.title,
+        description: parsed.description || 'A delicious meal crafted just for you',
+        prepTime: parsed.prepTime || '15 minutes',
+        cookTime: parsed.cookTime || '30 minutes',
+        servings: parsed.servings,
+        difficulty: parsed.difficulty || 'Medium',
+        ingredients: parsed.ingredients,
+        instructions: parsed.instructions,
+        tips: parsed.tips || [],
+        pantryItemsUsed: parsed.pantryItemsUsed || [],
+        shoppingListItems: parsed.shoppingListItems || [],
+        qualityScore: parsed.qualityScore
+      };
+
+    } catch (error) {
+      logger.error({
+        err: error,
+        attempt: attempts
+      }, 'Error in unified recipe generation');
+
+      if (attempts >= maxAttempts) {
+        return {
+          success: false,
+          refusalReason: 'Technical issue generating recipe. Please try again.',
+          suggestions: [
+            'Check your internet connection',
+            'Try with fewer constraints',
+            'Contact support if problem persists'
+          ]
+        };
+      }
+    }
+  }
+}
+
+/**
+ * Creates AI prompt for unified recipe generation
+ * Intelligently merges constraints from both legacy flows
+ * @private
+ */
+function createUnifiedPrompt(options) {
+  const {
+    pantryContext,
+    pantryMode,
+    quickMealsOnly,
+    prioritizeExpiring,
+    mainPrompt,
+    cuisines,
+    proteins,
+    preferences,
+    servingSize,
+    specificIngredients,
+    variationNumber = 1,
+    totalVariations = 1,
+    pantryItems = []
+  } = options;
+
+  // Build user intent section
+  let userIntentSection = '';
+  if (mainPrompt) {
+    userIntentSection = `\n\nUSER REQUEST: "${mainPrompt}"\n- This is the primary guidance - honor the user's intent above all else`;
+  }
+
+  // Build constraints section
+  const constraints = [];
+  if (cuisines && cuisines.length > 0) constraints.push(`Preferred Cuisines: ${cuisines.join(', ')}`);
+  if (proteins && proteins.length > 0) constraints.push(`Preferred Proteins: ${proteins.join(', ')}`);
+  if (preferences && preferences.length > 0) {
+    const prefsText = preferences.join(', ');
+    constraints.push(`Preferences: ${prefsText}`);
+    // Reinforce "Quick" if selected and quickMealsOnly is true
+    if (quickMealsOnly && preferences.includes('Quick')) {
+      constraints.push('REINFORCED: Quick meals only (≤30 minutes total)');
+    }
+  }
+  if (specificIngredients && specificIngredients.length > 0) {
+    constraints.push(`Must Include These Pantry Items: ${specificIngredients.join(', ')}`);
+  }
+
+  const constraintsText = constraints.length > 0
+    ? '\n\nUSER CONSTRAINTS:\n- ' + constraints.join('\n- ')
+    : '';
+
+  // Build pantry mode instructions
+  let pantryInstructions = '';
+  if (pantryMode === 'no_constraints') {
+    pantryInstructions = '\n\nPANTRY MODE: NO CONSTRAINTS\n- Focus ENTIRELY on user preferences and requests\n- Build complete shopping list from scratch\n- Create the best possible recipe without pantry limitations\n- Maximize creativity and quality';
+  } else if (pantryMode === 'pantry_only') {
+    pantryInstructions = `${pantryContext}\n\nPANTRY MODE: PANTRY ONLY\n- ONLY use ingredients from the available pantry\n- Do NOT add items to shopping list\n- If pantry insufficient for quality meal, refuse politely\n- Assume salt, pepper, water, basic cooking oil available`;
+  } else if (pantryMode === 'pantry_plus_shopping') {
+    pantryInstructions = `${pantryContext}\n\nPANTRY MODE: PANTRY + SHOPPING (BALANCED APPROACH)\n- Use pantry items as the foundation\n- Add 2-6 items to shopping list to complete the meal\n- Prioritize using pantry items, especially those expiring soon\n- Balance between what's available and what's needed for quality`;
+  }
+
+  // Build time constraint
+  const timeConstraint = quickMealsOnly
+    ? '\n- TIME CONSTRAINT: Recipe MUST be under 30 minutes total (prep + cook)'
+    : '\n- Time: Flexible';
+
+  // Build expiring priority
+  const expiryPriority = (prioritizeExpiring && pantryMode !== 'no_constraints')
+    ? `\n- CRITICAL PRIORITY: MUST prominently use items expiring in ≤${EXPIRING_SOON_THRESHOLD_DAYS} days if available`
+    : '';
+
+  // Meal variety guidance
+  const variationGuidance = createVariationGuidance(variationNumber, totalVariations);
+
+  return `You are Roscoe, an expert chef AI creating delicious, practical meals.${userIntentSection}${constraintsText}${pantryInstructions}${timeConstraint}${expiryPriority}${variationGuidance ? '\n' + variationGuidance : ''}
+
+CORE PRINCIPLES:
+1. Quality First: Only generate recipes that would genuinely taste good
+2. Smart Selection: Choose ingredients that complement each other
+3. Culinary Logic: Follow established flavor profiles and techniques
+4. Single Meal: Generate ONE complete dish (not multiple courses)
+5. User Intent: Honor mainPrompt as primary guidance
+6. Practical: Recipe must be executable by home cooks
+7. Common Staples: Assume salt, pepper, water are available
+
+SERVING SIZE: ${servingSize} people
+
+REFUSAL CRITERIA:
+- Not enough pantry items for quality meal (pantry_only mode)
+- Ingredients don't combine well
+- Cannot fulfill constraints with available resources
+- Would create unappetizing dish
+- Conflicting constraints (explain politely)
+
+RESPONSE FORMAT:
+If generating recipe:
+{
+  "success": true,
+  "title": "Recipe Name",
+  "description": "Brief appealing description (one sentence)",
+  "prepTime": "X minutes",
+  "cookTime": "X minutes",
+  "servings": ${servingSize},
+  "difficulty": "Easy/Medium/Hard",
+  "qualityScore": 85,
+  "ingredients": [
+    "2 cups ingredient with amount",
+    "1 tbsp another ingredient"
+  ],
+  "pantryItemsUsed": [
+    {
+      "itemName": "Item from pantry",
+      "quantity": "amount used",
+      "matchConfidence": 0.95
+    }
+  ],
+  "shoppingListItems": [
+    {
+      "name": "Item to buy",
+      "quantity": "amount",
+      "category": "produce/dairy/meat/pantry",
+      "priority": "essential/optional"
+    }
+  ],
+  "instructions": ["Step 1 description", "Step 2 description"],
+  "tips": ["Helpful cooking tip", "Storage tip"]
+}
+
+If refusing:
+{
+  "success": false,
+  "refusalReason": "Clear explanation of why recipe cannot be generated",
+  "suggestions": ["Helpful suggestion 1", "Helpful suggestion 2", "Helpful suggestion 3"]
+}
+
+Quality score must be honest (50-100). Only generate if genuinely delicious and practical.`;
+}
+
+/**
  * Uses AI to match recipe ingredients to pantry items
  * More sophisticated than string matching
  *
@@ -1092,6 +1470,7 @@ REQUIREMENTS:
 RESPONSE FORMAT (exact JSON):
 {
   "success": true,
+  "message": "Brief, friendly message about the changes (1-2 sentences)",
   "title": "Updated Recipe Name",
   "description": "Brief appealing description",
   "prepTime": "X minutes",
@@ -1185,6 +1564,7 @@ module.exports = {
   generateRecipes,
   generateRoscoesChoiceRecipe,
   generateCustomRecipe,
+  generateUnifiedRecipe, // New unified flow
   matchIngredientsToPantry,
   regenerateRecipeWithFeedback,
   MAX_FEEDBACK_LENGTH
