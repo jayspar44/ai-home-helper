@@ -7,8 +7,9 @@ module.exports = function(app) {
 
   console.log(`[Proxy] Configuring API proxy: /api/* -> ${target}/api/*`);
 
-  // Use context matching with pathRewrite to keep /api in forwarded requests
-  // This way: /api/user/me -> matches /api context -> proxies to target + /api/user/me
+  // Use context matching with pathRewrite to add /api back to forwarded requests
+  // Express strips '/api' when using app.use('/api', ...), so we need to add it back
+  // This way: /api/user/me -> Express strips to /user/me -> pathRewrite adds /api back -> /api/user/me
   app.use(
     '/api',
     createProxyMiddleware({
@@ -16,7 +17,7 @@ module.exports = function(app) {
       changeOrigin: true,
       logLevel: 'debug',
       pathRewrite: {
-        '^/api': '/api'  // Explicitly keep /api in forwarded requests
+        '^/': '/api/'  // Add /api back to the path (Express strips it from context)
       },
       onProxyReq: (proxyReq, req, res) => {
         console.log(`[Proxy] ${req.method} ${req.url} -> ${target}${req.url}`);
