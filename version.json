@@ -1,6 +1,6 @@
 {
-  "version": "2.30.1",
-  "lastUpdated": "2025-11-03T01:59:12.457Z",
+  "version": "2.31.0",
+  "lastUpdated": "2025-11-04T06:16:43.191Z",
   "date": "October 31, 2025",
   "changelog": {
     "1.0.0": {
@@ -367,6 +367,11 @@
       "description": "Development and security improvements: Add comprehensive DEBUG-level AI logging to all 10 Gemini functions for prompt optimization (dev only), fix security vulnerability in recipe save endpoint with proper home authorization check, fix AuthPage timeout memory leak with proper cleanup, adjust EXPIRING_SOON_THRESHOLD_DAYS to 3 days, refactor inline styles to CSS utility classes for maintainability, and respond to PR 55 review comments",
       "timestamp": "2025-11-03T01:59:12.457Z",
       "date": "November 2, 2025"
+    },
+    "2.31.0": {
+      "description": "Add comprehensive toast notification system with undo functionality across all major pages (Pantry, Planner, Shopping List), implement dynamic toast height calculation with ResizeObserver for perfect stacking regardless of message length, remove confirmation dialogs in favor of undo toasts for better UX, fix multiple toast display issues including pantry delete, dismiss AI suggestions, and complete meal undo",
+      "timestamp": "2025-11-04T06:16:43.191Z",
+      "date": "November 4, 2025"
     }
   }
 }

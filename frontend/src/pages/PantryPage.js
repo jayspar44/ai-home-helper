@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { daysToExpiryDate } from '../utils/dateUtils';
+import { useToast } from '../contexts/ToastContext';
 
 // New Components
 import AddItemSection from '../components/AddItemSection';
@@ -23,6 +24,7 @@ export default function PantryPage() {
   const navigate = useNavigate();
   const context = useOutletContext();
   const { userToken, activeHomeId } = context || {};
+  const { showSuccess } = useToast();
 
   // Core state
   const [items, setItems] = useState([]);
@@ -64,7 +66,7 @@ export default function PantryPage() {
     handleEditItem,
     handleDeleteItem,
     handleAIItemsDetected
-  } = useItemManager(getAuthHeaders, activeHomeId);
+  } = useItemManager(getAuthHeaders, activeHomeId, items);
 
   // Fetch items
   useEffect(() => {
@@ -158,11 +160,15 @@ export default function PantryPage() {
   };
 
   const handleDismissEnhancement = (itemId) => {
-    setItems(prev => prev.map(item => 
-      item.id === itemId 
+    const item = items.find(i => i.id === itemId);
+    setItems(prev => prev.map(item =>
+      item.id === itemId
         ? { ...item, pendingEnhancement: null }
         : item
     ));
+    if (item) {
+      showSuccess(`Dismissed suggestion for "${item.name}"`);
+    }
   };
 
   const handleEdit = (item) => {

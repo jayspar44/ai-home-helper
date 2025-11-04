@@ -582,7 +582,7 @@ export default function RecipeGenerator() {
 
         {/* Menu View */}
         {view === 'menu' && (
-          <div className="max-w-3xl mx-auto">
+          <>
             {/* Empty Pantry Banner */}
             {showEmptyPantryBanner && pantryItems.length === 0 && (
               <EmptyPantryBanner onDismiss={() => setShowEmptyPantryBanner(false)} />
@@ -953,6 +953,8 @@ export default function RecipeGenerator() {
                             recipe={recipe}
                             onClick={(r) => {
                               setGeneratedRecipe(r);
+                              setGeneratedRecipes([]);
+                              setCurrentRecipeIndex(0);
                               setView('results');
                             }}
                             borderColor="var(--color-primary-dark)"
@@ -975,6 +977,8 @@ export default function RecipeGenerator() {
                             recipe={recipe}
                             onClick={(r) => {
                               setGeneratedRecipe(r);
+                              setGeneratedRecipes([]);
+                              setCurrentRecipeIndex(0);
                               setView('results');
                             }}
                             borderColor="var(--color-primary-dark)"
@@ -986,38 +990,42 @@ export default function RecipeGenerator() {
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Results View */}
         {view === 'results' && (
-          <div className="max-w-4xl mx-auto">
-            <button
-              onClick={handleBack}
-              className="btn-base btn-ghost mb-6 flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Generator
-            </button>
+          <>
+            {/* Navigation Bar - Back button and pagination inline */}
+            <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+              {/* Back Button - Left side */}
+              <button
+                onClick={handleBack}
+                className="btn-base btn-ghost flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Generator
+              </button>
 
-            {/* Multiple Recipe Navigation */}
-            {generatedRecipes.length > 1 && (
-              <div className="flex justify-center gap-2 mb-6">
-                {generatedRecipes.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleNavigateRecipe(index)}
-                    className={`w-10 h-10 rounded-full font-semibold transition-all ${
-                      currentRecipeIndex === index
-                        ? 'bg-color-primary text-white'
-                        : 'bg-secondary text-color-secondary'
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
-            )}
+              {/* Pagination - Right side (only if multiple recipes) */}
+              {generatedRecipes.length > 1 && (
+                <div className="flex gap-2">
+                  {generatedRecipes.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleNavigateRecipe(index)}
+                      className={`w-10 h-10 rounded-full font-semibold transition-all ${
+                        currentRecipeIndex === index
+                          ? 'bg-color-primary text-white'
+                          : 'bg-secondary text-color-secondary'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Recipe Card */}
             {isGenerating ? (
@@ -1091,7 +1099,7 @@ export default function RecipeGenerator() {
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 

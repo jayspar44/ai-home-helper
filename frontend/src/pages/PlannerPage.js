@@ -14,7 +14,7 @@ import '../styles/Planner.css';
 export default function PlannerPage() {
   const context = useOutletContext();
   const { userToken, activeHomeId } = context || {};
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
 
   // State Management
   // Week navigation: These two states track different aspects of the UI
@@ -39,9 +39,11 @@ export default function PlannerPage() {
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [editingMeal, setEditingMeal] = useState(null);
 
-  // Refs for day sections (for scrolling)
+  // Refs for day sections (for scrolling) and undo operations
   const daySectionRefs = useRef({});
   const scrollTimeoutRef = useRef(null);
+  const deletedMealRef = useRef(null);
+  const originalMealStateRef = useRef(null);
 
   // Initialize current week
   useEffect(() => {
@@ -207,6 +209,9 @@ export default function PlannerPage() {
     if (!mealData || !mealData.id) return;
 
     try {
+      // Store original state for undo
+      originalMealStateRef.current = { ...mealData };
+
       const updatedMeal = {
         ...mealData,
         completed: true,
@@ -240,12 +245,55 @@ export default function PlannerPage() {
 
           return updatedPlans;
         });
+
+        // Show success toast with undo
+        const mealTypeLabel = mealData.mealType.charAt(0).toUpperCase() + mealData.mealType.slice(1);
+        showSuccess(`Completed ${mealTypeLabel}`, {
+          action: 'Undo',
+          onAction: async () => {
+            // Revert to planned state - explicitly clear completion fields
+            try {
+              const revertedMealData = {
+                ...originalMealStateRef.current,
+                completed: false,
+                completedDate: null,
+                completionType: null,
+                actual: null
+              };
+
+              const revertResponse = await fetch(`/api/planner/${activeHomeId}/${mealData.id}`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(revertedMealData)
+              });
+
+              if (revertResponse.ok) {
+                const revertedMeal = await revertResponse.json();
+                setMealPlans(prevPlans =>
+                  prevPlans.map(plan =>
+                    plan.id === revertedMeal.id
+                      ? { ...revertedMeal, date: typeof revertedMeal.date === 'string' ? revertedMeal.date.split('T')[0] : formatDateForAPI(revertedMeal.date) }
+                      : plan
+                  )
+                );
+                showSuccess(`Reverted ${mealTypeLabel} to planned state`);
+              } else {
+                showError('Failed to undo completion');
+              }
+            } catch (err) {
+              logger.error('Error reverting meal:', err);
+              showError('Failed to undo completion');
+            }
+          },
+          duration: 5000
+        });
       } else {
         logger.error('Failed to complete meal:', response.status);
+        showError('Failed to complete meal');
       }
     } catch (err) {
       logger.error('Error completing meal:', err);
-      showToast('An error occurred while completing the meal', 'error');
+      showError('An error occurred while completing the meal');
     }
   };
 
@@ -253,13 +301,54 @@ export default function PlannerPage() {
     if (!savedMeal) {
       // Handle deletion case
       if (editingMeal && editingMeal.id) {
+        // Store deleted meal for undo
+        deletedMealRef.current = { ...editingMeal };
+        const mealTypeLabel = editingMeal.mealType ? editingMeal.mealType.charAt(0).toUpperCase() + editingMeal.mealType.slice(1) : 'Meal';
+
         setMealPlans(prevPlans => prevPlans.filter(plan => plan.id !== editingMeal.id));
+
+        // Show delete toast with undo
+        showSuccess(`Deleted ${mealTypeLabel}`, {
+          action: 'Undo',
+          onAction: async () => {
+            try {
+              // Re-add the deleted meal
+              const response = await fetch(`/api/planner/${activeHomeId}`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(deletedMealRef.current)
+              });
+
+              if (response.ok) {
+                const restoredMeal = await response.json();
+                const mealWithDateString = {
+                  ...restoredMeal,
+                  date: typeof restoredMeal.date === 'string' ? restoredMeal.date.split('T')[0] : formatDateForAPI(restoredMeal.date)
+                };
+                setMealPlans(prevPlans => [...prevPlans, mealWithDateString]);
+                showSuccess(`Restored ${mealTypeLabel}`);
+              } else {
+                showError('Failed to restore meal');
+              }
+            } catch (err) {
+              logger.error('Error restoring meal:', err);
+              showError('Failed to restore meal');
+            }
+          },
+          duration: 5000
+        });
       }
       setSelectedDate(null);
       setSelectedMealType(null);
       setEditingMeal(null);
       return;
     }
+
+    // Determine if this is an add or edit operation
+    const isEdit = editingMeal && editingMeal.id;
+    const mealTypeLabel = savedMeal.mealType ? savedMeal.mealType.charAt(0).toUpperCase() + savedMeal.mealType.slice(1) : 'Meal';
+    const mealDate = savedMeal.date ? (typeof savedMeal.date === 'string' ? new Date(savedMeal.date) : savedMeal.date) : new Date();
+    const dateLabel = mealDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
     // Update meal plans with the saved meal
     setMealPlans(prevPlans => {
@@ -290,6 +379,13 @@ export default function PlannerPage() {
 
       return updatedPlans;
     });
+
+    // Show appropriate toast
+    if (isEdit) {
+      showSuccess(`Updated ${mealTypeLabel}`);
+    } else {
+      showSuccess(`Added ${mealTypeLabel} for ${dateLabel}`);
+    }
 
     setSelectedDate(null);
     setSelectedMealType(null);

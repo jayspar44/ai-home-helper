@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '../contexts/ToastContext';
 
-const useItemManager = (getAuthHeaders, activeHomeId) => {
+const useItemManager = (getAuthHeaders, activeHomeId, items) => {
   const { showSuccess, showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +27,7 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       setItems(prev => [displayItem, ...prev]);
 
       // Show success toast with undo option
-      showSuccess(`✓ Added "${itemToAdd.name}" to ${itemToAdd.location}`, {
+      showSuccess(`Added "${itemToAdd.name}" to ${itemToAdd.location}`, {
         action: 'Undo',
         onAction: () => handleDeleteItem(displayItem.id, setItems),
         duration: 5000
@@ -75,7 +75,7 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       ));
 
       // Show success toast for edit
-      showSuccess(`✓ Updated "${updatedItem.name}"`);
+      showSuccess(`Updated "${updatedItem.name}"`);
 
       return updatedItem;
     } catch (err) {
@@ -100,16 +100,15 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
 
       if (!response.ok) throw new Error('Failed to delete item');
 
-      // Find and store the item before deleting
-      let deletedItem = null;
-      setItems(prev => {
-        deletedItem = prev.find(i => i.id === itemId);
-        return prev.filter(i => i.id !== itemId);
-      });
+      // Find the item BEFORE updating state (to avoid React strict mode issues)
+      const deletedItem = items.find(i => i.id === itemId);
 
-      // Show success toast after state update completes
+      // Remove from state
+      setItems(prev => prev.filter(i => i.id !== itemId));
+
+      // Show success toast
       if (deletedItem) {
-        showSuccess(`✓ Deleted "${deletedItem.name}"`, {
+        showSuccess(`Deleted "${deletedItem.name}"`, {
           action: 'Undo',
           onAction: () => handleDirectAddItem(deletedItem, setItems),
           duration: 5000
@@ -119,11 +118,11 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       const errorMessage = err.message || 'Failed to delete item';
       setError(errorMessage);
       showError(errorMessage);
-      throw err;
+      // Don't throw - we've already shown the error toast
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthHeaders, activeHomeId, showSuccess, showError, handleDirectAddItem]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError, handleDirectAddItem, items]);
 
   const handleAIItemsDetected = useCallback(async (detectedItems, setItems) => {
     try {
@@ -154,7 +153,7 @@ const useItemManager = (getAuthHeaders, activeHomeId) => {
       setItems(prev => [...displayItems, ...prev]);
       
       // Show success toast for bulk AI detection
-      showSuccess(`✓ Added ${detectedItems.length} items to pantry`, {
+      showSuccess(`Added ${detectedItems.length} items to pantry`, {
         action: 'View',
         onAction: () => {
           // Could scroll to added items or show them highlighted

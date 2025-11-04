@@ -175,12 +175,13 @@ const useShoppingList = (getAuthHeaders, activeHomeId) => {
         item.id === itemId ? updatedItem : item
       ));
 
+      showSuccess(`Updated "${updatedItem.name}"`);
       logger.debug('Item updated', { itemId, updates });
     } catch (err) {
       logger.error('Error editing item:', err);
       showError('Failed to update item');
     }
-  }, [getAuthHeaders, activeHomeId, showError]);
+  }, [getAuthHeaders, activeHomeId, showSuccess, showError]);
 
   // Delete item
   const deleteItem = useCallback(async (itemId) => {
