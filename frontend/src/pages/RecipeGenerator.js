@@ -582,7 +582,7 @@ export default function RecipeGenerator() {
 
         {/* Menu View */}
         {view === 'menu' && (
-          <div className="max-w-3xl mx-auto">
+          <>
             {/* Empty Pantry Banner */}
             {showEmptyPantryBanner && pantryItems.length === 0 && (
               <EmptyPantryBanner onDismiss={() => setShowEmptyPantryBanner(false)} />
@@ -986,12 +986,12 @@ export default function RecipeGenerator() {
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Results View */}
         {view === 'results' && (
-          <div className="max-w-4xl mx-auto">
+          <>
             <button
               onClick={handleBack}
               className="btn-base btn-ghost mb-6 flex items-center gap-2"
@@ -1091,7 +1091,7 @@ export default function RecipeGenerator() {
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
