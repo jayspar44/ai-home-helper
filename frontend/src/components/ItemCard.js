@@ -179,8 +179,8 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
                   Edit
                 </button>
                 <button
-                  onClick={() => {
-                    onDelete(item.id);
+                  onClick={async () => {
+                    await onDelete(item.id);
                     setShowMenu(false);
                   }}
                   className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 flex items-center gap-3 transition-colors rounded-b-lg text-color-error"
@@ -267,7 +267,7 @@ const ItemCard = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnhance
                     Update
                   </button>
                   <button
-                    onClick={() => onDelete(item.id)}
+                    onClick={async () => await onDelete(item.id)}
                     className="flex-1 btn-base btn-secondary py-1 text-xs"
                   >
                     Remove

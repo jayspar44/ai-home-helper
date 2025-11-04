@@ -86,16 +86,14 @@ const EditItemModal = ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-      try {
-        setIsLoading(true);
-        await onDelete(item.id);
-        onClose();
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
+    try {
+      setIsLoading(true);
+      await onDelete(item.id);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 

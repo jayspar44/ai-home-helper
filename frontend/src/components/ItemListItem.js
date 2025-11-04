@@ -11,9 +11,9 @@ const ItemListItem = ({ item, onEdit, onDelete, onApplyEnhancement, onDismissEnh
     onEdit(item);
   };
 
-  const handleDelete = (e) => {
+  const handleDelete = async (e) => {
     e.stopPropagation();
-    onDelete(item.id);
+    await onDelete(item.id);
   };
 
   // Custom getExpiryInfo for list items (shows short format)

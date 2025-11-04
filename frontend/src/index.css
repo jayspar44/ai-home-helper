@@ -1258,10 +1258,7 @@ input, textarea, select {
 
 /* === TOAST COMPONENT === */
 .toast {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 50;
+  position: relative;
   background-color: var(--color-success);
   color: white;
   border-radius: var(--radius-lg);
